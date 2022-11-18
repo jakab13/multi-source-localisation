@@ -38,7 +38,9 @@ import slab
 #checking if input equals x via if clause
 
 # save data once the threshold is reached (don't forget to add participant ID)
-
+#threshhold = open ( id , w)
+#threshhold.write ()
+  
 
 
 # extra 1: rove the loudness of both the talker and the masker
