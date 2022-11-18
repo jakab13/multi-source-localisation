@@ -7,13 +7,6 @@
 
 # Use an "adaptive staircase" method from slab to find this loudness threshold for every participant
 
-# https://pypi.org/project/slab/ (first textbox, second line)
-#stimulus = slab.Sound.tone(frequency=500, duration=0.5) # make a 0.5 sec pure tone of 500 Hz
-#stairs = slab.Staircase(start_val=50, n_reversals=10) # set up the adaptive staircase
-#for level in stairs: # the staircase object returns a value between 0 and 50 dB for each trial
-#    stimulus.level = level
-#    stairs.present_tone_trial(stimulus) # plays the tone and records a keypress (1 for 'heard', 2 for 'not heard')
-#print(stairs.threshold()) # print threshold when done
 
 
 
@@ -37,9 +30,18 @@
 #TODO 
 #checking if input equals x via if clause
 
+
+# https://pypi.org/project/slab/ (first textbox, second line)
+#stimulus = slab.Sound.tone(frequency=500, duration=0.5) # make a 0.5 sec pure tone of 500 Hz
+#stairs = slab.Staircase(start_val=50, n_reversals=10) # set up the adaptive staircase
+#for l in stairs: # the staircase object returns a value between 0 and 50 dB for each trial
+#    stimulus.level = l
+#    stairs.present_tone_trial(stimulus) # plays the tone and records a keypress (1 for 'heard', 2 for 'not heard')
+#threshhold = stairs.threshold()) # print threshold when done
+
 # save data once the threshold is reached (don't forget to add participant ID)
-#threshhold = open ( id , w)
-#threshhold.write ()
+#save = open ( id , w)
+#save.write ("/n threshhold")
   
 
 
