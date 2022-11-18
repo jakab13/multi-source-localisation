@@ -5,6 +5,7 @@
 
 # Task: find the loudness threshold of a noise that masks the content of a speech sound
 # Use an "adaptive staircase" method from slab to find this loudness threshold for every participant
+# https://pypi.org/project/slab/ (first textbox, second line)
 
 # generate a unique participant ID
 
