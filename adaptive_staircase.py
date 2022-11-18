@@ -1,11 +1,21 @@
-#import slab
+import slab
 #import random # for ID generation
 #import string # for ID generation
 
 
 # Task: find the loudness threshold of a noise that masks the content of a speech sound
+
 # Use an "adaptive staircase" method from slab to find this loudness threshold for every participant
+
 # https://pypi.org/project/slab/ (first textbox, second line)
+#stimulus = slab.Sound.tone(frequency=500, duration=0.5) # make a 0.5 sec pure tone of 500 Hz
+#stairs = slab.Staircase(start_val=50, n_reversals=10) # set up the adaptive staircase
+#for level in stairs: # the staircase object returns a value between 0 and 50 dB for each trial
+#    stimulus.level = level
+#    stairs.present_tone_trial(stimulus) # plays the tone and records a keypress (1 for 'heard', 2 for 'not heard')
+#print(stairs.threshold()) # print threshold when done
+
+
 
 # generate a unique participant ID
 
