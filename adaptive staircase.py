@@ -1,13 +1,45 @@
-import slab
+import slab as s
 import adstfunc as func
+
 
 # initialization + checking for existing ID
 id = func.randId()
+
 #print(id)  # for debugging
 
-# load sound files
+trials = input("Pls enter Value for Amount of trials, press enter for default\n")
 
-# test for loudness threshhold 
+if trials == "":
+    trials = 50
+else:
+    # failsafe
+    try:
+        int(trials)
+    except:
+        print("your input is invalid pls enter an numeric value")
+        exit(1)
+
+print(trials)  #for debugging
+
+#TODO
+# load sound files
+# 1. locate sound files
+# 2. load sound files
+
+#TODO
+# test for loudness threshhold and write a quick savefile
+# 1. checking if loudness test is needed + setting boolean
+# 2. set up adaptive staircase
+# 3. running the test
+# 4. writing savefile and closing it afterwards
+
+#TODO
+# generating a masker noise
+# setting up a staircase for level manipulation
+
+#TODO
+# setting up the actual trial
+
 
 # Task: find the loudness threshold of a noise that masks the content of a speech sound
 # Use an "adaptive staircase" method from slab to find this loudness threshold for every participant
