@@ -2,14 +2,8 @@
 #import random # for ID generation
 #import string # for ID generation
 
-
 # Task: find the loudness threshold of a noise that masks the content of a speech sound
-
 # Use an "adaptive staircase" method from slab to find this loudness threshold for every participant
-
-
-
-
 # generate a unique participant ID
 
 # TODO
@@ -43,8 +37,6 @@
 #save = open ( id , w)
 #save.write ("/n threshhold")
   
-
-
 # extra 1: rove the loudness of both the talker and the masker
 # extra 2: extend the above for speech sounds of multiple talkers
 # extra 3: vocode the speech sounds and use those as maskers
