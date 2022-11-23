@@ -1,5 +1,5 @@
-import slab as s
 import adstfunc as func
+import slab
 
 
 # initialization + checking for existing ID
@@ -28,6 +28,15 @@ print(trials)  #for debugging
 
 #TODO
 # test for loudness threshhold and write a quick savefile
+noise = slab.Sound.whitenoise(duration=2.0)
+tone = slab.Sound.tone(duration=2.0)
+stairs = slab.Staircase(start_val=10, n_reversals=5, step_sizes=[4, 1])
+for level in stairs:
+    tone.level = level
+    combined = tone + noise
+    stairs.present_tone_trial(stimulus=combined, correct_key_idx=121, key_codes=range(110, 122))
+    stairs.print_trial_info()
+
 # 1. checking if loudness test is needed + setting boolean
 # 2. set up adaptive staircase
 # 3. running the test
@@ -36,6 +45,7 @@ print(trials)  #for debugging
 #TODO
 # generating a masker noise
 # setting up a staircase for level manipulation
+
 
 #TODO
 # setting up the actual trial
