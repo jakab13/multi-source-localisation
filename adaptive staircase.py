@@ -2,6 +2,7 @@ import adstfunc as func
 import slab
 from pathlib import Path
 import os
+import freefield
 
 
 # initialization + checking for existing ID
@@ -43,10 +44,12 @@ for number in list(range(1, 2)):
 
 
 #TODO
-# test for loudness threshhold and write a quick savefile
-noise = slab.Sound.whitenoise(duration=2.0)
+# test for loudness threshold and write a quick savefile
+noise = slab.Sound.pinknoise(duration=2.0)
 tone = slab.Sound.tone(duration=2.0)
 stairs = slab.Staircase(start_val=70, n_reversals=5, step_sizes=[4, 1])
+freefield.initialize(setup="dome", device=["RX810", "RX8", "E:/projects/multi-source-localization/data/play_buf_msl.rcx"])
+speakers = list(x for x in range(20, 27) if x is not 23)
 for level in stairs:
     tone.level = level
     combined = tone + noise
