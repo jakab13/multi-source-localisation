@@ -1,5 +1,6 @@
 import adstfunc as func
 import slab
+from pathlib import Path
 
 
 # initialization + checking for existing ID
@@ -23,8 +24,19 @@ print(trials)  #for debugging
 
 #TODO
 # load sound files
+gender = "F"  # F or M
+talker = "max" # number of talker
+root = Path("D:/Projects/multi-source-localisation/data/")
+duration = 2.0
+for number in list(range(1, 11)):
+    filename = Path(f"talker-{talkert}_number-{number}_gender-{gender}.wav")
+    print("Press any key to start recording")
+    sound = slab.Sound.record(duration=duration)
+    sound.write(root/filename)
+    print(f"Sucessfully saved sound {number} from talker {talker}!")
 # 1. locate sound files
 # 2. load sound files
+
 
 #TODO
 # test for loudness threshhold and write a quick savefile
@@ -37,7 +49,7 @@ for level in stairs:
     combined.play()
     with slab.key("Please press button between 1 and 5.") as key:
         response = key.getch()
-    if response == :
+    if response == 121:
         stairs.add_response()
     elif response == 110:
         stairs.add_response(False)
