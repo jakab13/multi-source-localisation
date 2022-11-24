@@ -3,6 +3,7 @@ import slab
 from pathlib import Path
 import os
 import freefield
+import random
 
 
 # initialization + checking for existing ID
@@ -33,7 +34,7 @@ duration = 2.0
 samplerate = 48828
 for number in list(range(1, 2)):
     filename = Path(f"talker-{talker}_number-{number}_gender-{gender}.wav")
-    filepath = Path(root/f"{talker}")
+    filepath = Path(root/f"sounds/{talker}")
     input(f"Press any key to start recording number {number}")
     sound = slab.Sound.record(duration=duration, samplerate=samplerate)
     if not os.path.exists(filepath):
@@ -46,11 +47,31 @@ for number in list(range(1, 2)):
 
 #TODO
 # test for loudness threshold and write a quick savefile
-noise = slab.Sound.pinknoise(duration=2.0)
+masker_sound = slab.Sound.pinknoise(duration=2.0)
 tone = slab.Sound.tone(duration=2.0)
 stairs = slab.Staircase(start_val=70, n_reversals=5, step_sizes=[4, 1])
-freefield.initialize(setup="dome", device=["RX810", "RX8", "E:/projects/multi-source-localization/data/play_buf_msl.rcx"])
-speakers = list(x for x in range(20, 27) if x is not 23)
+freefield.initialize(setup="dome", device=["RX81", "RX8", "E:/projects/multi-source-localisation/data/rcx/play_buf_msl.rcx"])
+speaker_list = list(x for x in range(20, 27) if x is not 23)
+sound_list = list()
+filepath = Path("E:\projects\multi-source-localisation\data\sounds\max")
+target_speaker = freefield.pick_speakers(picks=23)[0]
+freefield.write(tag="chan0", value=target_speaker.analog_channel, processors=target_speaker.analog_proc)
+freefield.write(tag="data1", value=masker_sound.data, processors=target_speaker.analog_proc)
+freefield.write(tag="playbuflen", value=masker_sound.n_samples)
+
+
+for file in os.listdir(filepath):
+    sound_list.append(slab.Sound.read(filepath/file))
+
+for trial in list(range(1, 10)):
+    target_sound = random.choice(sound_list)
+    masker_speaker = freefield.pick_speakers(picks=random.choice(speaker_list))[0]
+    freefield.write(tag="data0", value=target_sound.data, processors=target_speaker.analog_proc)
+    freefield.write(tag="chan1", value=masker_speaker.analog_channel, processors=masker_speaker.analog_proc)
+
+
+
+
 for level in stairs:
     tone.level = level
     combined = tone + noise
