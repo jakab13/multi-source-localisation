@@ -25,11 +25,11 @@ print(trials)  #for debugging
 #TODO
 # load sound files
 gender = "F"  # F or M
-talker = "max" # number of talker
+talker = "max"  # number of talker
 root = Path("D:/Projects/multi-source-localisation/data/")
 duration = 2.0
 for number in list(range(1, 11)):
-    filename = Path(f"talker-{talkert}_number-{number}_gender-{gender}.wav")
+    filename = Path(f"talker-{talker}_number-{number}_gender-{gender}.wav")
     print("Press any key to start recording")
     sound = slab.Sound.record(duration=duration)
     sound.write(root/filename)
