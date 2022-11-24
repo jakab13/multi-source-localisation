@@ -30,7 +30,7 @@ print(trials)  #for debugging
 # generate sound files
 gender = "M"  # F or M
 talker = "max"  # number of talker
-root = Path("D:/Projects/multi-source-localisation/data/")
+root = Path(os.getcwd())/"data"
 if not os.path.exists(root):
     os.mkdir(root)
 duration = 2.0
@@ -50,31 +50,30 @@ for number in list(range(1, 11)):
 
 #TODO
 # test for loudness threshold and write a quick savefile
-masker_sound = slab.Sound.pinknoise(duration=2.0)
-tone = slab.Sound.tone(duration=2.0)
-stairs = slab.Staircase(start_val=70, n_reversals=5, step_sizes=[4, 1])
-freefield.initialize(setup="dome", device=["RX81", "RX8", "E:/projects/multi-source-localisation/data/rcx/play_buf_msl.rcx"])
-speaker_list = list(x for x in range(20, 27) if x is not 23)
-sound_list = list()
-filepath = Path("E:\projects\multi-source-localisation\data\max")
-target_speaker = freefield.pick_speakers(picks=23)[0]
+masker_sound = slab.Sound.pinknoise(duration=2.0)  # masker sound is always noise
+stairs = slab.Staircase(start_val=70, n_reversals=5, step_sizes=[4, 1])  # staircase for different target dB levels
+freefield.initialize(setup="dome", device=["RX81", "RX8", "E:/projects/multi-source-localisation/data/rcx/play_buf_msl.rcx"])  # initialize freefield
+speaker_list = list(x for x in range(20, 27) if x != 23)  # central dome speakers without speaker 23 (ele:0°)
+sound_list = list()  # list of sounds to choose target from (numbers 1-10)
+filepath = Path(os.getcwd()) / "data" / "max"  # example file path
+target_speaker = freefield.pick_speakers(picks=23)[0]  # pick central speaker
 
-for file in os.listdir(filepath):
+for file in os.listdir(filepath):  # load sound files into list
     sound_list.append(slab.Sound.read(filepath/file))
 
 
-freefield.write(tag="chan0", value=target_speaker.analog_channel, processors=target_speaker.analog_proc)
-freefield.write(tag="data1", value=masker_sound.data, processors=target_speaker.analog_proc)
-freefield.write(tag="playbuflen", value=masker_sound.n_samples, processors="RX81")
+freefield.write(tag="chan0", value=target_speaker.analog_channel, processors=target_speaker.analog_proc)  # target speaker location
+freefield.write(tag="data1", value=masker_sound.data, processors=target_speaker.analog_proc)  # masker sound
+freefield.write(tag="playbuflen", value=masker_sound.n_samples, processors="RX81")  # 2 seconds duration
 
 
-for trial in list(range(1, 10)):
-    target_sound = random.choice(sound_list)
-    masker_speaker = freefield.pick_speakers(picks=random.choice(speaker_list))[0]
-    freefield.write(tag="data0", value=target_sound.data, processors=target_speaker.analog_proc)
-    freefield.write(tag="chan1", value=masker_speaker.analog_channel, processors=masker_speaker.analog_proc)
-    freefield.play()
-    time.sleep(2.0)
+for trial in list(range(1, 10)):  # 10 trials
+    target_sound = random.choice(sound_list)  # choose random number from sound_list
+    masker_speaker = freefield.pick_speakers(picks=random.choice(speaker_list))[0]  # pick random masker speaker
+    freefield.write(tag="data0", value=target_sound.data, processors=target_speaker.analog_proc)  # load target sound
+    freefield.write(tag="chan1", value=masker_speaker.analog_channel, processors=masker_speaker.analog_proc)  # load masker speaker
+    freefield.play()  # play trial
+    time.sleep(2.0)  # wait a bit so that trials do not overlap (not needed when button press is implemented)
 
 freefield.halt()
 
