@@ -1,6 +1,7 @@
 import adstfunc as func
 import slab
 from pathlib import Path
+import os
 
 
 # initialization + checking for existing ID
@@ -24,15 +25,18 @@ print(trials)  #for debugging
 
 #TODO
 # load sound files
-gender = "F"  # F or M
+gender = "M"  # F or M
 talker = "max"  # number of talker
 root = Path("D:/Projects/multi-source-localisation/data/")
 duration = 2.0
-for number in list(range(1, 11)):
+for number in list(range(1, 2)):
     filename = Path(f"talker-{talker}_number-{number}_gender-{gender}.wav")
-    print("Press any key to start recording")
+    filepath = Path(root/f"{talker}")
+    input(f"Press any key to start recording number {number}")
     sound = slab.Sound.record(duration=duration)
-    sound.write(root/filename)
+    if not os.path.exists(filepath):
+        os.mkdir(filepath)
+    sound.write(filepath/filename)
     print(f"Sucessfully saved sound {number} from talker {talker}!")
 # 1. locate sound files
 # 2. load sound files
