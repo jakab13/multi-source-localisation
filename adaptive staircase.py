@@ -4,6 +4,7 @@ from pathlib import Path
 import os
 import freefield
 import random
+import time
 
 
 # initialization + checking for existing ID
@@ -26,7 +27,7 @@ else:
 print(trials)  #for debugging
 
 #TODO
-# load sound files
+# generate sound files
 gender = "M"  # F or M
 talker = "max"  # number of talker
 root = Path("D:/Projects/multi-source-localisation/data/")
@@ -55,23 +56,27 @@ stairs = slab.Staircase(start_val=70, n_reversals=5, step_sizes=[4, 1])
 freefield.initialize(setup="dome", device=["RX81", "RX8", "E:/projects/multi-source-localisation/data/rcx/play_buf_msl.rcx"])
 speaker_list = list(x for x in range(20, 27) if x is not 23)
 sound_list = list()
-filepath = Path("E:\projects\multi-source-localisation\data\sounds\max")
+filepath = Path("E:\projects\multi-source-localisation\data\max")
 target_speaker = freefield.pick_speakers(picks=23)[0]
-freefield.write(tag="chan0", value=target_speaker.analog_channel, processors=target_speaker.analog_proc)
-freefield.write(tag="data1", value=masker_sound.data, processors=target_speaker.analog_proc)
-freefield.write(tag="playbuflen", value=masker_sound.n_samples)
-
 
 for file in os.listdir(filepath):
     sound_list.append(slab.Sound.read(filepath/file))
+
+
+freefield.write(tag="chan0", value=target_speaker.analog_channel, processors=target_speaker.analog_proc)
+freefield.write(tag="data1", value=masker_sound.data, processors=target_speaker.analog_proc)
+freefield.write(tag="playbuflen", value=masker_sound.n_samples, processors="RX81")
+
 
 for trial in list(range(1, 10)):
     target_sound = random.choice(sound_list)
     masker_speaker = freefield.pick_speakers(picks=random.choice(speaker_list))[0]
     freefield.write(tag="data0", value=target_sound.data, processors=target_speaker.analog_proc)
     freefield.write(tag="chan1", value=masker_speaker.analog_channel, processors=masker_speaker.analog_proc)
+    freefield.play()
+    time.sleep(2.0)
 
-
+freefield.halt()
 
 
 for level in stairs:
