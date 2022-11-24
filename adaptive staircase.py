@@ -30,11 +30,12 @@ gender = "M"  # F or M
 talker = "max"  # number of talker
 root = Path("D:/Projects/multi-source-localisation/data/")
 duration = 2.0
+samplerate = 48828
 for number in list(range(1, 2)):
     filename = Path(f"talker-{talker}_number-{number}_gender-{gender}.wav")
     filepath = Path(root/f"{talker}")
     input(f"Press any key to start recording number {number}")
-    sound = slab.Sound.record(duration=duration)
+    sound = slab.Sound.record(duration=duration, samplerate=samplerate)
     if not os.path.exists(filepath):
         os.mkdir(filepath)
     sound.write(filepath/filename)
