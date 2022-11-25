@@ -8,7 +8,7 @@ import time
 # TODO: set unused channels on processors to 99.
 
 
-freefield.initialize(setup="dome", device=['RX81', 'RX8', 'E:\projects\multi-source-localisation\data\play_buf_msl.rcx'])
+freefield.initialize(setup="dome", device=['RX81', 'RX8', 'E:\projects\multi-source-localisation\data\\rcx\play_buf_msl.rcx'])
 filepath = Path("E:\projects\multi-source-localisation\data\max")
 # freefield.write(tag='bitmask', value=1, processors='RX81')
 
@@ -18,7 +18,10 @@ samplerate = 48828 * 2
 play_duration = 2.0
 
 for file in os.listdir(filepath):
-    sound_list.append(slab.Sound.read(filepath/file))
+    sound = slab.Sound.read(filepath/file)
+    sound.data = sound.data[::-1]
+    sound_list.append(sound)
+
 
 
 speaker_list = list(x for x in range(20, 27))
