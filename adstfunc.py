@@ -1,5 +1,6 @@
 import string
 import random
+import os
 
 
 def randId():
@@ -19,3 +20,11 @@ def randId():
     else:
         print("input is invalid, pls answer with either yes or no")
         exit(1)
+
+# creation of a file at the same location
+def init(projectName):
+    os.mkdir(os.getcwd()+"/"+projectName)
+    os.chdir(os.getcwd()+"/"+projectName)
+    mastersheat = open("Mastersheet.txt", "x")
+    timesheat = open("timesheet.txt", "x")
+    print("set up finished")
