@@ -1,7 +1,7 @@
 import string
 import random
 import os
-
+import csv
 
 def randId():
     first = input("enter if the participant is visiting for the first time.\n")
