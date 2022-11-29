@@ -36,5 +36,5 @@ def init(projectName):
                             quotechar='|',
                             quoting=csv.QUOTE_MINIMAL
                             )
-        writer.writerow('participant_ID', 'age', 'sex', 'Hearing_related')
+        writer.writerow(['participant_ID', 'age', 'sex', 'Hearing_related'])
     print("set up finished")
