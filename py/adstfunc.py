@@ -21,7 +21,6 @@ def randId():
         print("input is invalid, pls answer with either yes or no")
         exit(1)
 
-# creation of a file at the same location
 def init(projectName):
     os.mkdir(os.getcwd()+"/"+projectName)  # creating Projectfolder
     os.chdir(os.getcwd()+"/"+projectName)  # changing Location to Project
@@ -30,8 +29,8 @@ def init(projectName):
     os.mkdir(os.getcwd()+"/soundSamples")  # adding soundfolder
 
     os.chdir(os.getcwd() + "/results")     # changing location to resultsfolder
-    with open('participants.csv', 'wb') as file:
-        writer = csv.writer(file,
+    with open('participants.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile,
                             delimiter=',',
                             quotechar='|',
                             quoting=csv.QUOTE_MINIMAL
