@@ -23,8 +23,18 @@ def randId():
 
 # creation of a file at the same location
 def init(projectName):
-    os.mkdir(os.getcwd()+"/"+projectName)       # creating Projectfolder
-    os.chdir(os.getcwd()+"/"+projectName)       # changing Location to Project
-    mastersheat = open("Mastersheet.txt", "x")  # creating mastersheet in Projectfolder
-    timesheat = open("timesheet.txt", "x")      # creating Timesheet in Projectfolder
+    os.mkdir(os.getcwd()+"/"+projectName)  # creating Projectfolder
+    os.chdir(os.getcwd()+"/"+projectName)  # changing Location to Project
+
+    os.mkdir(os.getcwd()+"/results")       # adding resultsfolder
+    os.mkdir(os.getcwd()+"/soundSamples")  # adding soundfolder
+
+    os.chdir(os.getcwd() + "/results")     # changing location to resultsfolder
+    with open('participants.csv', 'wb') as file:
+        writer = csv.writer(file,
+                            delimiter=',',
+                            quotechar='|',
+                            quoting=csv.QUOTE_MINIMAL
+                            )
+        writer.writerow('participant_ID', 'age', 'sex', 'Hearing_related')
     print("set up finished")
