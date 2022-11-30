@@ -38,11 +38,12 @@ freefield.initialize(setup="dome", device=proc_list)  # initialize freefield
 stim_dur = 2.0
 samplerate = 48828 / 2
 masker_sound = slab.Sound.pinknoise(duration=stim_dur)  # masker sound is always noise
-stairs1 = slab.Staircase(start_val=65, n_reversals=5, step_sizes=[4, 1], n_pretrials=3)  # staircase for different target dB levels
-stairs2 = slab.Staircase(start_val=65, n_reversals=5, step_sizes=[4, 1], n_pretrials=3)
-stairs3 = slab.Staircase(start_val=65, n_reversals=5, step_sizes=[4, 1], n_pretrials=3)
-stairs4 = slab.Staircase(start_val=65, n_reversals=5, step_sizes=[4, 1], n_pretrials=3)
-seq = slab.Trialsequence(conditions=4, n_reps=5)
+stairs_dict = dict()
+for e in range(1, 5):
+    stairs_dict[f"stairs{e}"] = slab.Staircase(start_val=65, n_reversals=2, step_sizes=[4, 1])
+stairs_dict_copy = stairs_dict.copy()
+
+seq = slab.Trialsequence(conditions=4, kind="infinite")
 speaker_list = list(x for x in range(20, 27) if x != 23)  # central dome speakers without speaker 23 (ele:0°)
 sound_list = list()  # list of sounds to choose target from (numbers 1-10)
 filepath = pathlib.Path(os.getcwd()) / "data" / "sounds" / "max"  # example file path
@@ -58,25 +59,22 @@ freefield.write(tag="chan0", value=target_speaker.analog_channel, processors=tar
 freefield.write(tag="data1", value=masker_sound.data, processors=target_speaker.analog_proc)  # masker sound
 freefield.write(tag="playbuflen", value=masker_sound.n_samples, processors="RX81")  # 2 seconds duration
 
-
-results = slab.ResultsFile()
-
+results = dict()
+for x in range(1, 5):
+    results[str(x)] = slab.ResultsFile()
+threshs = list()
 # TODO: how to implement interleaved staircases?
 for trial in seq:
     seq.__next__()
     if seq.this_trial == 1:
-        stairs = stairs1
         masker_speaker = freefield.pick_speakers(picks=speaker_list[seq.this_trial-1])[0]  # pick random masker speaker
     elif seq.this_trial == 2:
-        stairs = stairs2
         masker_speaker = freefield.pick_speakers(picks=speaker_list[seq.this_trial-1])[0]  # pick random masker speaker
     elif seq.this_trial == 3:
-        stairs = stairs3
         masker_speaker = freefield.pick_speakers(picks=speaker_list[seq.this_trial-1])[0]  # pick random masker speaker
     elif seq.this_trial == 4:
-        stairs = stairs4
         masker_speaker = freefield.pick_speakers(picks=speaker_list[seq.this_trial-1])[0]  # pick random masker speaker
-    stairs.__next__()
+    level = stairs_dict_copy[f"stairs{seq.this_trial}"]._next_intensity
     start_time = time.time()
     reaction_time = None
     response = None
@@ -96,17 +94,21 @@ for trial in seq:
         response = int(np.log2(curr_response))
     solution = target_i + 1
     correct_response = True if solution / response == 1 else False
-    stairs.add_response(1) if correct_response is True else stairs.add_response(0)
-    results.write(solution, "solution")
-    results.write(response, "response")
-    results.write(masker_speaker.elevation, "elevation")
-    results.write(reaction_time, "rt")
-    if stairs.finished is True:
-        results.write(stairs.data, "iscorrect")
-        results.write(stairs.threshold(), "threshold")
-        results.write(stairs.intensities, "intensities")
-        results.write(stairs.reversal_points, "reversal_points")
-        results.write(stairs.reversal_intensities, "reversal_intensities")
+    stairs_dict_copy[f"stairs{seq.this_trial}"].add_response(1) if correct_response is True else stairs_dict_copy[f"stairs{seq.this_trial}"].add_response(0)
+    results[str(seq.this_trial)].write(solution, "solution")
+    results[str(seq.this_trial)].write(response, "response")
+    results[str(seq.this_trial)].write(masker_speaker.elevation, "elevation")
+    results[str(seq.this_trial)].write(reaction_time, "rt")
+    if stairs_dict[f"stairs{seq.this_trial}"].finished is True:
+        for stairs in range(1, len(stairs_dict_copy)+1):
+            if stairs_dict_copy[f"stairs{seq.this_trial}"].finished:
+                stairs_dict[f"stairs{seq.this_trial}"] = stairs_dict_copy[f"stairs{seq.this_trial}"].pop(f"stairs{seq.this_trial}")
+        stair_num = seq.this_trial
+        results[str(seq.this_trial)].write(stairs_dict_copy[f"stairs{seq.this_trial}"].data, "iscorrect")
+        results[str(seq.this_trial)].write(stairs_dict_copy[f"stairs{seq.this_trial}"].threshold(), "threshold")
+        results[str(seq.this_trial)].write(stairs_dict[f"stairs{seq.this_trial}"].intensities, "intensities")
+        results[str(seq.this_trial)].write(stairs_dict[f"stairs{seq.this_trial}"].reversal_points, "reversal_points")
+        results[str(seq.this_trial)].write(stairs_dict[f"stairs{seq.this_trial}"].reversal_intensities, "reversal_intensities")
     while freefield.read(tag="playback", n_samples=1, processor="RP2"):
         time.sleep(0.01)
 
