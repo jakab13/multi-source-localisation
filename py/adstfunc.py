@@ -37,3 +37,6 @@ def init(projectName):
                             )
         writer.writerow(['participant_ID', 'age', 'sex', 'Hearing_related'])
     print("set up finished")
+
+if __name__ == "__main__":
+    init("MSL")
