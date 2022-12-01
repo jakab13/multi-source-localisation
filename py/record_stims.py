@@ -43,7 +43,9 @@ for number in range(1, nums_rec+1):  # record sound files
     tts.save(str(filepath/filename) + ".wav")
     print(f"Successfully saved sound {number} from talker {talker}!")
 
-fp = pathlib.Path("D:\Projects\multi-source-localisation\data\sounds\gTTS-en")
-for file in os.listdir(fp):
-    sound = slab.Sound.read(fp/file)
-    sound.write(fp/file/"_new.wav")
+# generate and save different lengths of stimuli
+sound_list = list()
+fp = os.listdir(f"{root}/{talker}")
+for file in fp:
+    sound_list.append(slab.Sound.read(root/talker/file))
+
