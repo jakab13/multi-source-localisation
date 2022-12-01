@@ -1,0 +1,15 @@
+{"response": 0}
+{"solution": 3}
+{"rc": 12069}
+{"response": 0}
+{"solution": 5}
+{"rc": 2515}
+{"response": 0}
+{"solution": 4}
+{"rc": 2711}
+{"response": 0}
+{"solution": 5}
+{"rc": 2390}
+{"response": 0}
+{"solution": 4}
+{"rc": 2212}
