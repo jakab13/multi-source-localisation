@@ -9,10 +9,10 @@ import time
 
 
 freefield.initialize(setup="dome", device=['RX81', 'RX8', 'E:\projects\multi-source-localisation\data\\rcx\play_buf_msl.rcx'])
-filepath = Path("E:\projects\multi-source-localisation\data/sounds")
+filepath = Path("E:\projects\multi-source-localisation\data/sounds/gTTS-de")
 # freefield.write(tag='bitmask', value=1, processors='RX81')
 
-speaker_list = list(x for x in range(20, 27) if x is not 23)
+speaker_list = list(x for x in range(20, 27))
 sound_list = list()
 samplerate = 48828 * 2
 play_duration = 2.0
