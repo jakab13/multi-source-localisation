@@ -1,7 +1,7 @@
 import slab
 import pathlib
 import os
-import gtts
+# import gtts
 import random
 import numpy as np
 
@@ -46,16 +46,20 @@ for number in range(1, nums_rec+1):  # record sound files
     print(f"Successfully saved sound {number} from talker {talker}!")
 
 # generate and save different lengths of stimuli
+samplerate = 48828
 sound_list = list()
 fp = os.listdir(f"{root}/{talker}")
 for file in fp:
     sound_list.append(slab.Sound.read(root/talker/file))
 
+# resample
+for sound in sound_list:
+    sound = sound.resample(samplerate)
 
 shortstims = list(x.resize(duration=0.3) for x in sound_list.copy())
 
 for i, stim in enumerate(shortstims):
-    slab.Sound.write(stim, filename=f"C:\\Users\\neurobio\\Desktop\\sounds\\300ms\\{i}.wav")
+    slab.Sound.write(stim, filename=f"C:\\Users\\neurobio\\Desktop\\sounds\\300ms\\sample_{i}.wav")
 
 medstims = sound_list.copy()
 random.shuffle(medstims)
