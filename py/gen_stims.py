@@ -46,8 +46,11 @@ for number in range(1, nums_rec+1):  # record sound files
     print(f"Successfully saved sound {number} from talker {talker}!")
 
 # generate and save different lengths of stimuli
+talker = "gTTS-de"  # number of talker
 samplerate = 48828
+root = pathlib.Path.cwd() / "data" / "sounds"
 sound_list = list()
+sound_list_resampled = list()
 fp = os.listdir(f"{root}/{talker}")
 for file in fp:
     sound_list.append(slab.Sound.read(root/talker/file))
@@ -55,19 +58,23 @@ for file in fp:
 # resample
 for sound in sound_list:
     sound = sound.resample(samplerate)
+    sound_list_resampled.append(sound)
 
-shortstims = list(x.resize(duration=0.3) for x in sound_list.copy())
+for i, sound in enumerate(sound_list_resampled):
+    slab.Sound.write(sound, filename=f"C:\\Users\\neurobio\\Desktop\\sounds\\1s\\sample_{i+1}.wav")
+
+shortstims = list(x.resize(duration=0.3) for x in sound_list_resampled.copy())
 
 for i, stim in enumerate(shortstims):
-    slab.Sound.write(stim, filename=f"C:\\Users\\neurobio\\Desktop\\sounds\\300ms\\sample_{i}.wav")
+    slab.Sound.write(stim, filename=f"C:\\Users\\neurobio\\Desktop\\sounds\\0.3s\\sample_{i+1}.wav")
 
-medstims = sound_list.copy()
+medstims = sound_list_resampled.copy()
 random.shuffle(medstims)
 sample = slab.Sound.sequence(medstims[0], medstims[1], medstims[2], medstims[3], medstims[4])
 sample.write("C:\\Users\\neurobio\\Desktop\\sounds\\5s\\sample_5.wav")
 
 
-longstims = sound_list.copy() * 2
+longstims = sound_list_resampled.copy() * 2
 
 random.shuffle(longstims)
 sample = slab.Sound.sequence(longstims[0], longstims[1], longstims[2], longstims[3], longstims[4], longstims[5], longstims[6], longstims[7], longstims[8], longstims[9])
