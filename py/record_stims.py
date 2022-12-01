@@ -40,5 +40,5 @@ for number in range(1, nums_rec+1):  # record sound files
     if not os.path.exists(filepath):
         os.mkdir(filepath)
     tts = gtts.gTTS(str(number), lang=language)
-    tts.save(str(filepath/filename) + ".mp3")
+    tts.save(str(filepath/filename) + ".wav")
     print(f"Successfully saved sound {number} from talker {talker}!")
