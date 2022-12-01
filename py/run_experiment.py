@@ -29,6 +29,12 @@ talker_count = list(x for x in range(1, 6))
 trials = 20
 freefield.write(tag="playbuflen", value=samplerate, processors="RX81")
 
+while not freefield.read(tag="response", processor="RP2"):
+    time.sleep(0.01)
+curr_response = int(freefield.read(tag="response", processor="RP2"))
+if curr_response != 0:
+    reaction_time = int(round(time.time() - start_time, 3) * 1000)
+    response = int(np.log2(curr_response))
 
 for trial in range(trials):
     num_talkers = random.choice(talker_count)
