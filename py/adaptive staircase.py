@@ -46,7 +46,7 @@ stairs_dict_copy = stairs_dict.copy()
 seq = slab.Trialsequence(conditions=4, kind="infinite")
 speaker_list = list(x for x in range(20, 27) if x != 23)  # central dome speakers without speaker 23 (ele:0°)
 sound_list = list()  # list of sounds to choose target from (numbers 1-10)
-filepath = pathlib.Path(os.getcwd()) / "data" / "sounds" / "max"  # example file path
+filepath = pathlib.Path(os.getcwd()) / "data" / "sounds" / "gTTS-de"  # example file path
 target_speaker = freefield.pick_speakers(picks=23)[0]  # pick central speaker
 
 for file in os.listdir(filepath):  # load sound files into list
