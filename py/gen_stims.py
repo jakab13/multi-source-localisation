@@ -2,6 +2,8 @@ import slab
 import pathlib
 import os
 import gtts
+import random
+import numpy as np
 
 
 gender = "M"  # F or M
@@ -49,3 +51,20 @@ fp = os.listdir(f"{root}/{talker}")
 for file in fp:
     sound_list.append(slab.Sound.read(root/talker/file))
 
+
+shortstims = list(x.resize(duration=0.3) for x in sound_list.copy())
+
+for i, stim in enumerate(shortstims):
+    slab.Sound.write(stim, filename=f"C:\\Users\\neurobio\\Desktop\\sounds\\300ms\\{i}.wav")
+
+medstims = sound_list.copy()
+random.shuffle(medstims)
+sample = slab.Sound.sequence(medstims[0], medstims[1], medstims[2], medstims[3], medstims[4])
+sample.write("C:\\Users\\neurobio\\Desktop\\sounds\\5s\\sample_5.wav")
+
+
+longstims = sound_list.copy() * 2
+
+random.shuffle(longstims)
+sample = slab.Sound.sequence(longstims[0], longstims[1], longstims[2], longstims[3], longstims[4], longstims[5], longstims[6], longstims[7], longstims[8], longstims[9])
+sample.write("C:\\Users\\neurobio\\Desktop\\sounds\\10s\\sample_5.wav")
