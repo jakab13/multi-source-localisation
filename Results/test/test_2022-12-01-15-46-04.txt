@@ -1,0 +1,12 @@
+{"response": 0}
+{"solution": 1}
+{"rc": 18714}
+{"response": 0}
+{"solution": 3}
+{"rc": 16754}
+{"response": 0}
+{"solution": 3}
+{"rc": 22229}
+{"response": 0}
+{"solution": 2}
+{"rc": 12976}

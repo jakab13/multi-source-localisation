@@ -17,7 +17,7 @@ freefield.initialize(setup="dome", device=proc_list)  # initialize freefield
 # pick speakers and sounds
 speaker_list = list(x for x in range(20, 27))
 sound_list = list()
-stim_dur = 10  # can be 0.3,1,5 or 10s
+stim_dur = 1  # can be 0.3,1,5 or 10s
 filepath = pathlib.Path(f"E:\projects\multi-source-localisation\data/sounds/{stim_dur}s")
 for file in os.listdir(filepath):
     sound = slab.Sound.read(filepath/file)
@@ -25,7 +25,6 @@ for file in os.listdir(filepath):
     sound_list.append(sound)
 
 # number of maximum talkers
-talker_count = list(x for x in range(1, 6))  # number of maximum talkers
 freefield.write(tag="playbuflen", value=sound_list[0].n_samples, processors="RX81")
 
 # initialize sequence and response object
@@ -35,8 +34,7 @@ results = slab.ResultsFile()
 # loop through sequence
 for trial in seq:
     seq.__next__()
-    num_talkers = random.choice(talker_count)
-    speaker_ids = random.sample(speaker_list, num_talkers)
+    speaker_ids = random.sample(speaker_list, trial)
     sound_list_copy = sound_list.copy()
     response = None
     for i, speaker_id in enumerate(speaker_ids):
@@ -54,9 +52,16 @@ for trial in seq:
     if curr_response != 0:
         reaction_time = int(round(time.time() - start_time, 3) * 1000)
         response = int(np.log2(curr_response))
+    solution = trial + 1
+    # correct_response = True if solution / response == 1 else False
     results.write(response, "response")
-    results.write(num_talkers, "solution")
+    results.write(solution, "solution")
     results.write(reaction_time, "rc")
+    # results.write(correct_response, "is_correct")
+    while freefield.read(tag="playback", n_samples=1, processor="RP2"):
+        time.sleep(0.01)
+
+
 
 
 freefield.halt()
