@@ -6,13 +6,26 @@
   <component name="ChangeListManager">
     <list default="true" id="f35156d0-92b0-4b75-9467-07f62d918e08" name="Changes" comment="excerpt from staircase branch">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/rcx/play_buf_msl.rcx" beforeDir="false" afterPath="$PROJECT_DIR$/data/rcx/play_buf_msl.rcx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/300ms/0.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/300ms/1.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/300ms/2.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/300ms/3.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/300ms/4.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/py/run_experiment.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/run_experiment.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/0.3s/sample_1.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/0.3s/sample_2.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/0.3s/sample_3.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/0.3s/sample_4.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/0.3s/sample_5.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/10s/sample_1.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/10s/sample_1.wav" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/10s/sample_2.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/10s/sample_2.wav" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/10s/sample_3.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/10s/sample_3.wav" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/10s/sample_4.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/10s/sample_4.wav" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/10s/sample_5.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/10s/sample_5.wav" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/1s/talker-gTTS-de_number-1_gender-F.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/1s/talker-gTTS-de_number-2_gender-F.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/1s/talker-gTTS-de_number-3_gender-F.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/1s/talker-gTTS-de_number-4_gender-F.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/1s/talker-gTTS-de_number-5_gender-F.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/5s/sample_1.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/5s/sample_1.wav" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/5s/sample_2.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/5s/sample_2.wav" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/5s/sample_3.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/5s/sample_3.wav" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/5s/sample_4.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/5s/sample_4.wav" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sounds/5s/sample_5.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/5s/sample_5.wav" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -22,17 +35,17 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="num_judge" />
+        <entry key="$PROJECT_DIR$" value="adaptive-staircase" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "node.js.selected.package.tslint": "(autodetect)",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="adstfunc" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="multi-source-localisation" />
