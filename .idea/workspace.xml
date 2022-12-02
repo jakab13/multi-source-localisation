@@ -5,27 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f35156d0-92b0-4b75-9467-07f62d918e08" name="Changes" comment="excerpt from staircase branch">
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/multi-source-localisation.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/multi-source-localisation.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_12_1_2022_10_11_AM__Changes_.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_12_1_2022_10_11_AM__Changes_.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_12_1_2022_10_14_AM__Changes_.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_12_1_2022_10_14_AM__Changes_.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/rcx/play_buf_msl.rcx" beforeDir="false" afterPath="$PROJECT_DIR$/data/rcx/play_buf_msl.rcx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/0.3ms/sample_0.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/0.3ms/sample_1.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/0.3ms/sample_2.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/0.3ms/sample_3.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/0.3ms/sample_4.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/10s/sample_1.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/10s/sample_1.wav" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/10s/sample_2.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/10s/sample_2.wav" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/10s/sample_3.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/10s/sample_3.wav" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/10s/sample_4.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/10s/sample_4.wav" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/10s/sample_5.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/10s/sample_5.wav" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/5s/sample_1.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/5s/sample_1.wav" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/5s/sample_2.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/5s/sample_2.wav" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/5s/sample_3.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/5s/sample_3.wav" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/5s/sample_4.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/5s/sample_4.wav" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/5s/sample_5.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/5s/sample_5.wav" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/run_experiment.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/run_experiment.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

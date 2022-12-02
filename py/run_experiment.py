@@ -53,11 +53,11 @@ for trial in seq:
         reaction_time = int(round(time.time() - start_time, 3) * 1000)
         response = int(np.log2(curr_response))
     solution = trial + 1
-    # correct_response = True if solution / response == 1 else False
+    correct_response = True if solution / response == 1 else False
     results.write(response, "response")
     results.write(solution, "solution")
     results.write(reaction_time, "rc")
-    # results.write(correct_response, "is_correct")
+    results.write(correct_response, "is_correct")
     while freefield.read(tag="playback", n_samples=1, processor="RP2"):
         time.sleep(0.01)
 
