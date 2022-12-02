@@ -6,11 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="f35156d0-92b0-4b75-9467-07f62d918e08" name="Changes" comment="excerpt from staircase branch">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/gTTS-de/talker-gTTS-de_number-1_gender-F.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/gTTS-de/talker-gTTS-de_number-1_gender-F.wav" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/gTTS-de/talker-gTTS-de_number-2_gender-F.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/gTTS-de/talker-gTTS-de_number-2_gender-F.wav" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/gTTS-de/talker-gTTS-de_number-3_gender-F.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/gTTS-de/talker-gTTS-de_number-3_gender-F.wav" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/gTTS-de/talker-gTTS-de_number-4_gender-F.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/gTTS-de/talker-gTTS-de_number-4_gender-F.wav" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sounds/gTTS-de/talker-gTTS-de_number-5_gender-F.wav" beforeDir="false" afterPath="$PROJECT_DIR$/data/sounds/gTTS-de/talker-gTTS-de_number-5_gender-F.wav" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/py/adaptive staircase.py" beforeDir="false" afterPath="$PROJECT_DIR$/py/adaptive staircase.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -40,6 +35,8 @@
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "WebServerToolWindowFactoryState": "false",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
