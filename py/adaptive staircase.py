@@ -7,74 +7,66 @@ import time
 import numpy as np
 
 
-# initialization + checking for existing ID
-id = func.randId()
-
-#print(id)  # for debugging
-
-trials = input("Pls enter Value for Amount of trials, press enter for default\n")
-
-if trials == "":
-    trials = 50
-else:
-    # failsafe
-    try:
-        int(trials)
-    except:
-        print("your input is invalid pls enter an numeric value")
-        exit(1)
-
-print(trials)  #for debugging
-
-
-#TODO
-# test for loudness threshold and write a quick savefile
+# initialize freefield setup
 DIR = pathlib.Path(os.getcwd()).absolute()
 proc_list = [['RP2', 'RP2', DIR / 'data' / "rcx" / 'button_rec.rcx'],
              ['RX81', 'RX8', DIR / 'data' / "rcx" / 'play_buf_msl.rcx'],
              ['RX82', 'RX8', DIR / 'data' / "rcx" / 'play_buf_msl.rcx']]
 freefield.initialize(setup="dome", device=proc_list)  # initialize freefield
 
-stim_dur = 2.0
-samplerate = 48828 / 2
-masker_sound = slab.Sound.pinknoise(duration=stim_dur)  # masker sound is always noise
-stairs_dict = dict()
-for e in range(1, 5):
-    stairs_dict[f"stairs{e}"] = slab.Staircase(start_val=65, n_reversals=2, step_sizes=[4, 1])
-stairs_dict_copy = stairs_dict.copy()
-
-seq = slab.Trialsequence(conditions=4, kind="infinite")
-speaker_list = list(x for x in range(20, 27) if x != 23)  # central dome speakers without speaker 23 (ele:0°)
+# load sound files for target sounds
 sound_list = list()  # list of sounds to choose target from (numbers 1-10)
 filepath = pathlib.Path(os.getcwd()) / "data" / "sounds" / "gTTS-de"  # example file path
-target_speaker = freefield.pick_speakers(picks=23)[0]  # pick central speaker
-
 for file in os.listdir(filepath):  # load sound files into list
     sound_list.append(slab.Sound.read(filepath/file))
-
 target_sounds = slab.Precomputed(sound_list)
 
+# pick target speaker (ele: 0, azi: 0)
+target_speaker = freefield.pick_speakers(picks=23)[0]  # pick central speaker
 
+# define and generate masker stimulus
+samplerate = 48828
+stim_dur = target_sounds.random_choice()[0].n_samples / samplerate
+masker_sound = slab.Sound.pinknoise(duration=stim_dur)  # masker sound is always noise
+
+# specify masker speakers without the central speaker
+speaker_list = list(x for x in range(20, 27) if x != 23)  # central dome speakers without speaker 23 (ele:0°)
+
+# initialize interleaved staircases
+stairs_dict = dict()
+for e in range(1, len(speaker_list) + 1):
+    stairs_dict[f"stairs{e}"] = slab.Staircase(start_val=70, n_reversals=2, step_sizes=[4, 1])
+stairs_dict_copy = stairs_dict.copy()
+
+# initialize infinite Trialsequence to interleave staircases
+seq = slab.Trialsequence(conditions=6, n_reps=1, kind="random_permutation")
+
+# write data to nametags in the MSL RCX file
 freefield.write(tag="chan0", value=target_speaker.analog_channel, processors=target_speaker.analog_proc)  # target speaker location
 freefield.write(tag="data1", value=masker_sound.data, processors=target_speaker.analog_proc)  # masker sound
+
+# TODO: which buffer length to choose??
 freefield.write(tag="playbuflen", value=masker_sound.n_samples, processors="RX81")  # 2 seconds duration
 
+# initialize ResultsFile to handle recording and saving of behavioral data
 results = dict()
-for x in range(1, 5):
+for x in range(1, len(speaker_list)+1):
     results[str(x)] = slab.ResultsFile()
+
+
 threshs = list()
 # TODO: how to implement interleaved staircases?
 for trial in seq:
     seq.__next__()
     if seq.this_trial == 1:
-        masker_speaker = freefield.pick_speakers(picks=speaker_list[seq.this_trial-1])[0]  # pick random masker speaker
+        masker_speaker = freefield.pick_speakers(picks=speaker_list[seq.this_trial-1])[0]
     elif seq.this_trial == 2:
-        masker_speaker = freefield.pick_speakers(picks=speaker_list[seq.this_trial-1])[0]  # pick random masker speaker
+        masker_speaker = freefield.pick_speakers(picks=speaker_list[seq.this_trial-1])[0]
     elif seq.this_trial == 3:
-        masker_speaker = freefield.pick_speakers(picks=speaker_list[seq.this_trial-1])[0]  # pick random masker speaker
+        masker_speaker = freefield.pick_speakers(picks=speaker_list[seq.this_trial-1])[0]
     elif seq.this_trial == 4:
-        masker_speaker = freefield.pick_speakers(picks=speaker_list[seq.this_trial-1])[0]  # pick random masker speaker
-    level = stairs_dict_copy[f"stairs{seq.this_trial}"]._next_intensity
+        masker_speaker = freefield.pick_speakers(picks=speaker_list[seq.this_trial-1])[0]
+    level = stairs_dict[f"stairs{seq.this_trial}"]._next_intensity
     start_time = time.time()
     reaction_time = None
     response = None
