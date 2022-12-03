@@ -14,15 +14,12 @@ proc_list = [['RP2', 'RP2', DIR / 'data' / "rcx" / 'button_rec.rcx'],
              ['RX81', 'RX8', DIR / 'data' / "rcx" / 'play_buf_msl.rcx'],
              ['RX82', 'RX8', DIR / 'data' / "rcx" / 'play_buf_msl.rcx']]
 freefield.initialize(setup="dome", device=proc_list)  # initialize freefield
+
 # pick speakers and sounds
 speaker_list = list(x for x in range(20, 27))
-sound_list = list()
 stim_dur = 1  # can be 0.3,1,5 or 10s
-filepath = pathlib.Path(f"E:\projects\multi-source-localisation\data/sounds/{stim_dur}s")
-for file in os.listdir(filepath):
-    sound = slab.Sound.read(filepath/file)
-    # sound.data = sound.data[::-1]
-    sound_list.append(sound)
+filepath = pathlib.Path(DIR / f"data/sounds/{stim_dur}s")
+sound_list = slab.Precomputed(slab.Sound.read(filepath/file) for file in os.listdir(filepath))
 
 # number of maximum talkers
 freefield.write(tag="playbuflen", value=sound_list[0].n_samples, processors="RX81")
@@ -33,7 +30,6 @@ results = slab.ResultsFile()
 
 # loop through sequence
 for trial in seq:
-    seq.__next__()
     speaker_ids = random.sample(speaker_list, trial)
     sound_list_copy = sound_list.copy()
     response = None
