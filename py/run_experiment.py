@@ -58,6 +58,4 @@ for trial in seq:
         time.sleep(0.01)
 
 
-
-
 freefield.halt()
