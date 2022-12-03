@@ -2,9 +2,9 @@ import slab
 import pathlib
 import os
 import freefield
-import random
 import time
 import numpy as np
+import random
 
 
 # initialize freefield setup
@@ -14,95 +14,70 @@ proc_list = [['RP2', 'RP2', DIR / 'data' / "rcx" / 'button_rec.rcx'],
              ['RX82', 'RX8', DIR / 'data' / "rcx" / 'play_buf_msl.rcx']]
 freefield.initialize(setup="dome", device=proc_list)  # initialize freefield
 
+# define samplerate
+samplerate = 48828 / 2
+
 # load sound files for target sounds
-sound_list = list()  # list of sounds to choose target from (numbers 1-10)
-filepath = pathlib.Path(os.getcwd()) / "data" / "sounds" / "gTTS-de"  # example file path
-for file in os.listdir(filepath):  # load sound files into list
-    sound_list.append(slab.Sound.read(filepath/file))
-target_sounds = slab.Precomputed(sound_list)
+sound_fp = pathlib.Path(os.getcwd()) / "data" / "sounds" / "gTTS-de"  # example file path
+target_sounds = slab.Precomputed(slab.Sound.read(sound_fp / file) for file in os.listdir(sound_fp))
 
 # pick target speaker (ele: 0, azi: 0)
 target_speaker = freefield.pick_speakers(picks=23)[0]  # pick central speaker
 
-# define and generate masker stimulus
-samplerate = 48828
-stim_dur = target_sounds.random_choice()[0].n_samples / samplerate
-masker_sound = slab.Sound.pinknoise(duration=stim_dur)  # masker sound is always noise
-
 # specify masker speakers without the central speaker
 speaker_list = list(x for x in range(20, 27) if x != 23)  # central dome speakers without speaker 23 (ele:0°)
 
-# initialize interleaved staircases
-stairs_dict = dict()
-for e in range(1, len(speaker_list) + 1):
-    stairs_dict[f"stairs{e}"] = slab.Staircase(start_val=70, n_reversals=2, step_sizes=[4, 1])
-stairs_dict_copy = stairs_dict.copy()
-
-# initialize infinite Trialsequence to interleave staircases
-seq = slab.Trialsequence(conditions=6, n_reps=1, kind="random_permutation")
-
 # write data to nametags in the MSL RCX file
 freefield.write(tag="chan0", value=target_speaker.analog_channel, processors=target_speaker.analog_proc)  # target speaker location
-freefield.write(tag="data1", value=masker_sound.data, processors=target_speaker.analog_proc)  # masker sound
-
-# TODO: which buffer length to choose??
-freefield.write(tag="playbuflen", value=masker_sound.n_samples, processors="RX81")  # 2 seconds duration
 
 # initialize ResultsFile to handle recording and saving of behavioral data
-results = dict()
-for x in range(1, len(speaker_list)+1):
-    results[str(x)] = slab.ResultsFile()
+subject = "max"
+results = slab.ResultsFile(subject=subject)
 
+# initialize trialsequence with according conditions
+seq = slab.Trialsequence(conditions=speaker_list, n_reps=1, kind="random_permutation")
 
-threshs = list()
-# TODO: how to implement interleaved staircases?
+# TODO: Set playbuflen outside loop as soon as stimuli have equal durations.
 for trial in seq:
-    seq.__next__()
-    if seq.this_trial == 1:
-        masker_speaker = freefield.pick_speakers(picks=speaker_list[seq.this_trial-1])[0]
-    elif seq.this_trial == 2:
-        masker_speaker = freefield.pick_speakers(picks=speaker_list[seq.this_trial-1])[0]
-    elif seq.this_trial == 3:
-        masker_speaker = freefield.pick_speakers(picks=speaker_list[seq.this_trial-1])[0]
-    elif seq.this_trial == 4:
-        masker_speaker = freefield.pick_speakers(picks=speaker_list[seq.this_trial-1])[0]
-    level = stairs_dict[f"stairs{seq.this_trial}"]._next_intensity
-    start_time = time.time()
-    reaction_time = None
-    response = None
-    target_i = random.choice(range(len(sound_list)))
-    target_sound = target_sounds[target_i]  # choose random number from sound_list
-    freefield.write(tag="data1", value=masker_sound.data, processors=target_speaker.analog_proc)  # masker sound
-    target_sound.level = level
-    freefield.write(tag="data0", value=target_sound.data, processors=target_speaker.analog_proc)  # load target sound
-    freefield.write(tag="chan1", value=masker_speaker.analog_channel, processors=masker_speaker.analog_proc)  # load masker speaker
-    freefield.play()  # play trial
-    freefield.wait_to_finish_playing()
-    while not freefield.read(tag="response", processor="RP2"):
-        time.sleep(0.01)
-    curr_response = int(freefield.read(tag="response", processor="RP2"))
-    if curr_response != 0:
-        reaction_time = int(round(time.time() - start_time, 3) * 1000)
-        response = int(np.log2(curr_response))
-    solution = target_i + 1
-    correct_response = True if solution / response == 1 else False
-    stairs_dict_copy[f"stairs{seq.this_trial}"].add_response(1) if correct_response is True else stairs_dict_copy[f"stairs{seq.this_trial}"].add_response(0)
-    results[str(seq.this_trial)].write(solution, "solution")
-    results[str(seq.this_trial)].write(response, "response")
-    results[str(seq.this_trial)].write(masker_speaker.elevation, "elevation")
-    results[str(seq.this_trial)].write(reaction_time, "rt")
-    if stairs_dict[f"stairs{seq.this_trial}"].finished is True:
-        for stairs in range(1, len(stairs_dict_copy)+1):
-            if stairs_dict_copy[f"stairs{seq.this_trial}"].finished:
-                stairs_dict[f"stairs{seq.this_trial}"] = stairs_dict_copy[f"stairs{seq.this_trial}"].pop(f"stairs{seq.this_trial}")
-        stair_num = seq.this_trial
-        results[str(seq.this_trial)].write(stairs_dict_copy[f"stairs{seq.this_trial}"].data, "iscorrect")
-        results[str(seq.this_trial)].write(stairs_dict_copy[f"stairs{seq.this_trial}"].threshold(), "threshold")
-        results[str(seq.this_trial)].write(stairs_dict[f"stairs{seq.this_trial}"].intensities, "intensities")
-        results[str(seq.this_trial)].write(stairs_dict[f"stairs{seq.this_trial}"].reversal_points, "reversal_points")
-        results[str(seq.this_trial)].write(stairs_dict[f"stairs{seq.this_trial}"].reversal_intensities, "reversal_intensities")
-    while freefield.read(tag="playback", n_samples=1, processor="RP2"):
-        time.sleep(0.01)
+    masker_speaker = freefield.pick_speakers(picks=seq.this_trial)[0]
+    ele = masker_speaker.elevation
+    stairs = slab.Staircase(start_val=70, n_reversals=2, step_sizes=[4, 1])
+    for level in stairs:
+        reaction_time = None
+        response = None
+        target_sound_i = random.choice(range(len(target_sounds)))
+        target_sound = target_sounds[target_sound_i]  # choose random number from sound_list
+        stim_dur_masker = target_sound.n_samples / samplerate
+        masker_sound = slab.Sound.pinknoise(duration=stim_dur_masker)  # masker sound is always noise
+        freefield.write(tag="data1", value=masker_sound.data, processors=target_speaker.analog_proc)  # masker sound
+        target_sound.level = level  # adjust target level according to staircase
+        freefield.write(tag="data0", value=target_sound.data, processors=target_speaker.analog_proc)  # load target sound
+        freefield.write(tag="chan1", value=masker_speaker.analog_channel, processors=masker_speaker.analog_proc)  # load masker speaker
+        freefield.write(tag="playbuflen", value=masker_sound.n_samples, processors="RX81")
+        start_time = time.time()
+        freefield.play()  # play trial
+        freefield.wait_to_finish_playing()
+        stairs.print_trial_info()
+        while not freefield.read(tag="response", processor="RP2"):
+            time.sleep(0.01)
+        curr_response = int(freefield.read(tag="response", processor="RP2"))
+        if curr_response != 0:
+            reaction_time = int(round(time.time() - start_time, 3) * 1000)
+            response = int(np.log2(curr_response))
+        solution = target_sound_i + 1
+        correct_response = True if solution / response == 1 else False
+        stairs.add_response(1) if correct_response is True else stairs.add_response(0)
+        results.write(response, "response")
+        results.write(solution, "solution")
+        results.write(reaction_time, "reaction_time")
+        while freefield.read(tag="playback", n_samples=1, processor="RP2"):
+            time.sleep(0.01)
+    results.write(ele, "elevation")
+    results.write(stairs.data, "iscorrect")
+    results.write(stairs.threshold(), "threshold")
+    results.write(stairs.intensities, "intensities")
+    results.write(stairs.reversal_points, "reversal_points")
+    results.write(stairs.reversal_intensities, "reversal_intensities")
 
 
 
@@ -110,18 +85,6 @@ for trial in seq:
 freefield.halt()
 
 
-# 1. checking if loudness test is needed + setting boolean
-# 2. set up adaptive staircase
-# 3. running the test
-# 4. writing savefile and closing it afterwards
-
-#TODO
-# generating a masker noise
-# setting up a staircase for level manipulation
-
-
-#TODO
-# setting up the actual trial
 
 
 # Task: find the loudness threshold of a noise that masks the content of a speech sound
