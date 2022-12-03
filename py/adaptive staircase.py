@@ -80,8 +80,6 @@ for trial in seq:
     results.write(stairs.reversal_intensities, "reversal_intensities")
 
 
-
-
 freefield.halt()
 
 
