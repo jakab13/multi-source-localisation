@@ -5,7 +5,7 @@ import os
 import random
 import time
 import numpy as np
-import head_tracking.meta_motion.mm_pose as motion_sensor
+# import head_tracking.meta_motion.mm_pose as motion_sensor
 
 fs = 48828
 slab.set_default_samplerate(fs)
