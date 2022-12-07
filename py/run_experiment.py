@@ -22,7 +22,7 @@ filepath = pathlib.Path(DIR / f"data/sounds/{stim_dur}s")
 sound_list = slab.Precomputed(slab.Sound.read(filepath/file) for file in os.listdir(filepath))
 
 # number of maximum talkers
-freefield.write(tag="playbuflen", value=sound_list[0].n_samples, processors="RX81")
+freefield.write(tag="playbuflen", value=100000, processors="RX81")
 
 # initialize sequence and response object
 seq = slab.Trialsequence(conditions=4, n_reps=5)
@@ -36,6 +36,7 @@ for trial in seq:
     for i, speaker_id in enumerate(speaker_ids):
         speaker = freefield.pick_speakers(picks=speaker_id)[0]
         signal = random.choice(sound_list_copy)
+        signal.data = signal.data[::-1]
         sound_list_copy.remove(signal)
         freefield.write(tag=f"data{i}", value=signal.data, processors=speaker.analog_proc)
         freefield.write(tag=f"chan{i}", value=speaker.analog_channel, processors=speaker.analog_proc)
