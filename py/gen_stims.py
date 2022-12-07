@@ -1,7 +1,6 @@
 import slab
 import pathlib
 import os
-# import gtts
 import random
 import numpy as np
 
@@ -46,14 +45,13 @@ for number in range(1, nums_rec+1):  # record sound files
     print(f"Successfully saved sound {number} from talker {talker}!")
 
 # generate and save different lengths of stimuli
-talker = "gTTS-de"  # number of talker
 samplerate = 48828
-root = pathlib.Path.cwd() / "data" / "sounds"
+root = pathlib.Path("C:\\Users\\neurobio\\Desktop\\tts-harvard-5")
 sound_list = list()
 sound_list_resampled = list()
-fp = os.listdir(f"{root}/{talker}")
+fp = os.listdir(f"{root}")
 for file in fp:
-    sound_list.append(slab.Sound.read(root/talker/file))
+    sound_list.append(slab.Sound.read(root/file))
 
 # resample
 for sound in sound_list:
@@ -61,21 +59,38 @@ for sound in sound_list:
     sound_list_resampled.append(sound)
 
 for i, sound in enumerate(sound_list_resampled):
-    slab.Sound.write(sound, filename=f"C:\\Users\\neurobio\\Desktop\\sounds\\1s\\sample_{i+1}.wav")
+    slab.Sound.write(sound, filename=f"C:\\Users\\neurobio\\Desktop\\sounds_resampled\\tts-harvard-5\\{fp[i]}")
 
 shortstims = list(x.resize(duration=0.3) for x in sound_list_resampled.copy())
 
 for i, stim in enumerate(shortstims):
-    slab.Sound.write(stim, filename=f"C:\\Users\\neurobio\\Desktop\\sounds\\0.3s\\sample_{i+1}.wav")
+    slab.Sound.write(stim, filename=f"C:\\Users\\neurobio\\Desktop\\sounds_resampled\\tts-numbers\\0.3s\\{fp[i]}")
 
 medstims = sound_list_resampled.copy()
 random.shuffle(medstims)
 sample = slab.Sound.sequence(medstims[0], medstims[1], medstims[2], medstims[3], medstims[4])
-sample.write("C:\\Users\\neurobio\\Desktop\\sounds\\5s\\sample_5.wav")
+sample.write(f"C:\\Users\\neurobio\\Desktop\\sounds_resampled\\tts-numbers\\5s\\sample_5.wav")
 
 
 longstims = sound_list_resampled.copy() * 2
 
 random.shuffle(longstims)
 sample = slab.Sound.sequence(longstims[0], longstims[1], longstims[2], longstims[3], longstims[4], longstims[5], longstims[6], longstims[7], longstims[8], longstims[9])
-sample.write("C:\\Users\\neurobio\\Desktop\\sounds\\10s\\sample_5.wav")
+sample.write(f"C:\\Users\\neurobio\\Desktop\\sounds_resampled\\tts-numbers\\10s\\sample_5.wav")
+
+# load stimuli to be reversed
+root = pathlib.Path("C:\\Users\\neurobio\\Desktop\\sounds_resampled\\tts-numbers\\10s")
+sound_list = list()
+sound_list_reversed = list()
+fp = os.listdir(f"{root}")
+for file in fp:
+    sound_list.append(slab.Sound.read(root/file))
+
+# reverse stimuli
+for sound in sound_list:
+    sound.data = sound.data[::-1]
+    sound_list_reversed.append(sound)
+
+# save reversed stimuli
+for i, sound in enumerate(sound_list_reversed):
+    slab.Sound.write(sound, filename=f"C:\\Users\\neurobio\\Desktop\\sounds_resampled\\tts-numbers_reversed\\10s\\{fp[i]}")
