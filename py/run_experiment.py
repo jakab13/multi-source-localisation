@@ -7,8 +7,6 @@ import time
 import numpy as np
 # import head_tracking.meta_motion.mm_pose as motion_sensor
 
-fs = 48828
-slab.set_default_samplerate(fs)
 
 # TODO: set unused channels on processors to 99.
 
@@ -22,14 +20,14 @@ freefield.initialize(setup="dome", device=proc_list)  # initialize freefield
 # pick speakers and sounds
 speaker_list = list(x for x in range(20, 27))
 stim_dur = 10  # can be 0.3,1,5 or 10s
-filepath = pathlib.Path("C:\\Users\\neurobio\\Desktop\\sounds_resampled\\tts-numbers\\10s")
+filepath = pathlib.Path("E:\\projects\\multi-source-localisation\\data\\sounds\\demo\\harvard\\single\\reversed")
 sound_list = slab.Precomputed(slab.Sound.read(filepath/file) for file in os.listdir(filepath))
 
 # set playbuflen tag
-freefield.write(tag="playbuflen", value=750000, processors="RX81")
+freefield.write(tag="playbuflen", value=sound_list[0].n_samples, processors="RX81")
 
 # initialize sequence and response object
-seq = slab.Trialsequence(conditions=3, n_reps=5)
+seq = slab.Trialsequence(conditions=3, n_reps=3)
 results = slab.ResultsFile()
 
 # loop through sequence
@@ -39,7 +37,7 @@ for trial in seq:
     for i, speaker_id in enumerate(speaker_ids):
         speaker = freefield.pick_speakers(picks=speaker_id)[0]
         signal = random.choice(sound_list)
-        sound_list.remove(signal)
+        # sound_list.remove(signal)
         freefield.write(tag=f"data{i}", value=signal.data, processors=speaker.analog_proc)
         freefield.write(tag=f"chan{i}", value=speaker.analog_channel, processors=speaker.analog_proc)
     start_time = time.time()
@@ -74,6 +72,8 @@ for trial in seq:
     while freefield.read(tag="playback", n_samples=1, processor="RP2"):
         time.sleep(0.01)
 
+for channel in range(5):
+    freefield.write(tag=f"data{channel}", value=np.zeros(500000), processors=speaker.analog_proc)
 
 motion_sensor.disconnect(sensor)
 freefield.halt()
