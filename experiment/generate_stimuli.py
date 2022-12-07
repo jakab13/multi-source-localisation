@@ -52,23 +52,29 @@ for tts_model_id, tts_model in tts_models.items():
         tts_models[tts_model_id]["speker_idxs"] = speaker_idxs_obj
 
 
-text = "This is number one"
-for tts_model_id, tts_model in tts_models.items():
-    tts_c_arg = tts_model["c_arg"]
-    language = get_from_c_arg(tts_c_arg, attr="language")
-    if language == "en" or language == "multilingual":
-        if "speaker_idxs" in tts_model:
-            for speaker_id in tts_model["speaker_idxs"]:
-                vocoder_model = vocoder_models[1]
-
-                file_name = save_directory / f"{tts_c_arg}_{text}.wav"
-
-                # Create a list of command line arguments
-                args = ["tts",
-                        "--text", text,
-                        "--model_name", tts_model,
-                        "--vocoder_name", vocoder_model,
-                        "--out_path", save_directory,
-                        "--speaker_idx", speaker_id]
-
-                subprocess.run(args)
+numbers = ["one", "two", "three", "four", "five"]
+sentences = [
+    "A king ruled the state in the early days.",
+    "The ship was torn apart on the sharp reef.",
+    "Sickness kept him home the third week.",
+    "The wide road shimmered in the hot sun.",
+    "The lazy cow lay in the cool grass.",
+    "Lift the square stone over the fence.",
+    "The rope will bind the seven books at once.",
+    "Hop over the fence and plunge in.",
+    "The friendly gang left the drug store.",
+    "Mesh wire keeps chicks inside."
+]
+tts_model = tts_models[16]
+tts_c_arg = tts_model["c_arg"]
+for text in sentences:
+    for speaker_id in tts_model["speaker_idxs"]:
+        filepath = save_directory / str("talker-" + speaker_id + "_" + "text-" + "'" + text + "'" + ".wav")
+        args = [
+            "tts",
+            "--text", text,
+            "--model_name", tts_c_arg,
+            "--out_path", filepath,
+            "--speaker_idx", speaker_id
+            ]
+        subprocess.run(args)
