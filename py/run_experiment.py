@@ -21,12 +21,12 @@ freefield.initialize(setup="dome", device=proc_list)  # initialize freefield
 
 # pick speakers and sounds
 speaker_list = list(x for x in range(20, 27))
-stim_dur = 1  # can be 0.3,1,5 or 10s
-filepath = pathlib.Path(DIR / f"data/sounds/tts-numbers/{stim_dur}s")
+stim_dur = 10  # can be 0.3,1,5 or 10s
+filepath = pathlib.Path(DIR / f"data/sounds/tts-harvard-5_reversed")
 sound_list = slab.Precomputed(slab.Sound.read(filepath/file) for file in os.listdir(filepath))
 
 # set playbuflen tag
-freefield.write(tag="playbuflen", value=60000, processors="RX81")
+freefield.write(tag="playbuflen", value=200000, processors="RX81")
 
 # initialize sequence and response object
 seq = slab.Trialsequence(conditions=3, n_reps=5)
