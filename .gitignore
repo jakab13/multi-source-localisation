@@ -3,3 +3,9 @@
 
 # Compiled python modules
 */__pycache__/*
+
+# sound and rcx files
+/data/
+
+# Results
+/Results
