@@ -1,8 +1,8 @@
 # pycharm metadata
-*/.idea/*
+/.idea/
 
 # Compiled python modules
-*/__pycache__/*
+/__pycache__/
 
 # sound and rcx files
 /data/
