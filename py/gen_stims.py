@@ -46,7 +46,7 @@ for number in range(1, nums_rec+1):  # record sound files
 
 # generate and save different lengths of stimuli
 samplerate = 48828
-root = pathlib.Path("C:\\Users\\neurobio\\Desktop\\tts-harvard-5")
+root = pathlib.Path("C:\\Users\\neurobio\\Desktop\\tts-numbers")
 sound_list = list()
 sound_list_resampled = list()
 fp = os.listdir(f"{root}")
@@ -66,10 +66,28 @@ shortstims = list(x.resize(duration=0.3) for x in sound_list_resampled.copy())
 for i, stim in enumerate(shortstims):
     slab.Sound.write(stim, filename=f"C:\\Users\\neurobio\\Desktop\\sounds_resampled\\tts-numbers\\0.3s\\{fp[i]}")
 
-medstims = sound_list_resampled.copy()
-random.shuffle(medstims)
-sample = slab.Sound.sequence(medstims[0], medstims[1], medstims[2], medstims[3], medstims[4])
-sample.write(f"C:\\Users\\neurobio\\Desktop\\sounds_resampled\\tts-numbers\\5s\\sample_5.wav")
+for s in range(5):
+    talker = random.randint(1, 108)
+    medstims = sound_list_resampled[talker*5:(talker+1)*5].copy()
+    random.shuffle(medstims)
+    sample = slab.Sound.sequence(medstims[0], medstims[1], medstims[2], medstims[3], medstims[4])
+    sample.write(f"C:\\Users\\neurobio\\Desktop\\sounds_resampled\\tts-numbers\\5s\\sample_{s}.wav")
+
+trial_duration = slab.Signal.in_samples(1.5, samplerate)
+
+# 10 s stimuli
+for s in range(5):
+    talker = random.randint(1, 108)
+    longstims = sound_list_resampled[talker*5:(talker+1)*5].copy()
+    random.shuffle(longstims)
+    sample_choices = [random.randint(0, 4) for i in range(10)]
+    for sample_choice in sample_choices:
+        silence_duration = trial_duration - longstims[sample_choice].n_samples
+        if silence_duration > 0:
+            silence = slab.Sound.silence(duration=silence_duration, samplerate=samplerate)
+            longstims[sample_choice] = slab.Sound.sequence(longstims[sample_choice], silence)
+    sample = slab.Sound.sequence(longstims[sample_choices[0]], longstims[sample_choices[1]], longstims[sample_choices[2]], longstims[sample_choices[3]], longstims[sample_choices[4]], longstims[sample_choices[5]], longstims[sample_choices[6]], longstims[sample_choices[7]], longstims[sample_choices[8]], longstims[sample_choices[9]])
+    sample.write(f"C:\\Users\\neurobio\\Desktop\\sounds_resampled\\tts-numbers\\10s\\sample_{s}.wav")
 
 
 longstims = sound_list_resampled.copy() * 2
