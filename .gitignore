@@ -1,5 +1,5 @@
 # pycharm metadata
-*/.idea/*
+/.idea/
 
 # Compiled python modules
 */__pycache__/*
