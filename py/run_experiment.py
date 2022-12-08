@@ -9,6 +9,7 @@ import numpy as np
 
 
 # TODO: set unused channels on processors to 99.
+# TODO: make button press recognition faster -> load next sound right after playing previous ones or downsample.
 
 # initialize FF
 DIR = pathlib.Path(os.getcwd()).absolute()
@@ -20,8 +21,11 @@ freefield.initialize(setup="dome", device=proc_list)  # initialize freefield
 # pick speakers and sounds
 speaker_list = list(x for x in range(20, 27))
 stim_dur = 10  # can be 0.3,1,5 or 10s
-filepath = pathlib.Path("E:\\projects\\multi-source-localisation\\data\\sounds\\demo\\harvard\\single\\reversed")
+filepath = pathlib.Path("E:\\projects\\multi-source-localisation\\data\\sounds\\numbers\\single\\reversed")
 sound_list = slab.Precomputed(slab.Sound.read(filepath/file) for file in os.listdir(filepath))
+starttone = slab.Sound.read(DIR / "data" / "sounds" / "bell.wav")
+# samplerate = 48828 / 2
+
 
 # set playbuflen tag
 freefield.write(tag="playbuflen", value=sound_list[0].n_samples, processors="RX81")
@@ -34,6 +38,13 @@ results = slab.ResultsFile()
 for trial in seq:
     speaker_ids = random.sample(speaker_list, trial)
     response = None
+    if seq.this_n == -1:
+        freefield.write(tag=f"data0", value=starttone.data, processors=["RX81", "RX82"])
+        freefield.write(tag=f"chan0", value=23, processors=["RX81", "RX82"])
+        freefield.play()
+        freefield.wait_to_finish_playing()
+        while not freefield.read(tag="response", processor="RP2"):
+            time.sleep(0.01)
     for i, speaker_id in enumerate(speaker_ids):
         speaker = freefield.pick_speakers(picks=speaker_id)[0]
         signal = random.choice(sound_list)
