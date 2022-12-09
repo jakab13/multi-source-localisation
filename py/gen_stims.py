@@ -2,10 +2,12 @@ import slab
 import pathlib
 import os
 import random
+import r
+random.seed = 50
 
 # TODO: aling sounds by talker
 
-def load_sounds(dir):
+def load(DIR):
     """
     Given a non-empty directory, load all sound files (.wav) within that directory.
 
@@ -16,10 +18,10 @@ def load_sounds(dir):
         sound_list: list of sounds within the specified directory.
     """
     sound_list = list()
-    if len(fp) == 0:
+    if len(os.listdir(DIR)) == 0:
         print("Empty directory")
-    for file in dir:
-        sound_list.append(slab.Sound.read(dir/file))
+    for file in os.listdir(DIR):
+        sound_list.append(slab.Sound.read(DIR/file))
     return sound_list
 
 def resample(sound, samplerate):
@@ -88,9 +90,24 @@ def align_sound_duration(sound_list, sound_duration, samplerate=48828):
     return sound_list
 
 
-for s in range(5):
-    talker = random.randint(1, 108)
-    medstims = sound_list_resampled[talker*5:(talker+1)*5].copy()
-    random.shuffle(medstims)
-    sample = slab.Sound.sequence(medstims[0], medstims[1], medstims[2], medstims[3], medstims[4])
-    sample.write(f"E:\\projects\\multi-source-localisation\\data\\sounds\\demo\\numbers\\5_reps\\normal\\sample_{s}.wav")
+if __name__ == "__main__":
+    DIR = pathlib.Path("D:\Projects\multi-source-localisation\data\sounds\\tts-numbers")
+    sounds_data = load(DIR)
+    sound_names = os.listdir(DIR)
+    talker_id = "p225"
+    talker_files = []
+    for i, sound_name in enumerate(sound_names):
+        if talker_id in sound_name:
+            talker_files.append(sounds_data[i])
+    random.shuffle(talker_files)
+    sample = slab.Sound.sequence(talker_files[0], talker_files[1], talker_files[2], talker_files[3], talker_files[4])
+    sample = slab.Precomputed(sound for sound in talker_files)
+    talker_files = [talker_id for x in sounds_data if talker_id in sound_names]
+
+
+    for s in range(5):
+        talker = random.randint(1, 108)
+        stims = sounds_data[talker*5:(talker+1)*5].copy()
+        random.shuffle(stims)
+        sample = slab.Sound.sequence(stims[0], stims[1], stims[2], stims[3], stims[4])
+        sample.write(f"E:\\projects\\multi-source-localisation\\data\\sounds\\demo\\numbers\\5_reps\\normal\\sample_{s}.wav")
