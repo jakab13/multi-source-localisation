@@ -18,7 +18,7 @@ freefield.initialize(setup="dome", device=proc_list)  # initialize freefield
 samplerate = 48828
 
 # load sound files for target sounds
-sound_fp = pathlib.Path(os.getcwd()) / "data" / "sounds" / "demo" / "numbers" / "single" / "normal"# example file path
+sound_fp = pathlib.Path(os.getcwd()) / "data" / "sounds" / "numbers" / "single" / "normal"  # example file path
 target_sounds = slab.Precomputed(slab.Sound.read(sound_fp / file) for file in os.listdir(sound_fp))
 
 # pick target speaker (ele: 0, azi: 0)

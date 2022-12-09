@@ -8,8 +8,7 @@ import numpy as np
 # import head_tracking.meta_motion.mm_pose as motion_sensor
 
 
-# TODO: set unused channels on processors to 99.
-# TODO: make button press recognition faster -> load next sound right after playing previous ones or downsample.
+# TODO: Downsample the stimuli we want to use
 
 # initialize FF
 DIR = pathlib.Path(os.getcwd()).absolute()
@@ -21,14 +20,14 @@ freefield.initialize(setup="dome", device=proc_list)  # initialize freefield
 # pick speakers and sounds
 speaker_list = list(x for x in range(20, 27))
 stim_dur = 10  # can be 0.3,1,5 or 10s
-filepath = pathlib.Path("E:\\projects\\multi-source-localisation\\data\\sounds\\numbers\\single\\reversed")
+filepath = pathlib.Path("E:\\projects\\multi-source-localisation\\data\\sounds\\numbers\\single\\normal")
 sound_list = slab.Precomputed(slab.Sound.read(filepath/file) for file in os.listdir(filepath))
 starttone = slab.Sound.read(DIR / "data" / "sounds" / "bell.wav")
 # samplerate = 48828 / 2
 
 
 # set playbuflen tag
-freefield.write(tag="playbuflen", value=sound_list[0].n_samples, processors="RX81")
+freefield.write(tag="playbuflen", value=sound_list[0].n_samples, processors=["RX81", "RX82"])
 
 # initialize sequence and response object
 seq = slab.Trialsequence(conditions=3, n_reps=3)
@@ -80,8 +79,8 @@ for trial in seq:
     results.write(solution, "solution")
     results.write(reaction_time, "rc")
     results.write(correct_response, "is_correct")
-    while freefield.read(tag="playback", n_samples=1, processor="RP2"):
-        time.sleep(0.01)
+    # while freefield.read(tag="playback", n_samples=1, processor="RP2"):
+        # time.sleep(0.01)
 
 for channel in range(5):
     freefield.write(tag=f"data{channel}", value=np.zeros(500000), processors=speaker.analog_proc)
