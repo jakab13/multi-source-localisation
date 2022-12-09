@@ -2,69 +2,90 @@ import slab
 import pathlib
 import os
 import random
-import numpy as np
+
+# TODO: aling sounds by talker
+
+def load_sounds(dir):
+    """
+    Given a non-empty directory, load all sound files (.wav) within that directory.
+
+    Args:
+        dir: the directory containing sound files.
+
+    Returns:
+        sound_list: list of sounds within the specified directory.
+    """
+    sound_list = list()
+    if len(fp) == 0:
+        print("Empty directory")
+    for file in dir:
+        sound_list.append(slab.Sound.read(dir/file))
+    return sound_list
+
+def resample(sound, samplerate):
+    """
+    Resample sound.
+
+    Args:
+        sound: slab.sound.Sound instance or a list of the instance
+        samplerate: Desired samplerate
+
+    Returns:
+        slab.sound.Sound instance
+    """
+    if type(sound) == list:
+        sound_list_resamp = list()
+        for e in sound_list:
+            s = e.resample(samplerate)
+            sound_list_resamp.append(s)
+        return sound_list_resamp
+    if type(sound) == slab.sound.Sound:
+        sound_resamp = sound.resample(samplerate)
+        return sound_resamp
+    else:
+        raise TypeError("Only single instances of slab.sound.Sound or a list of these objects are allowed as input!")
 
 
-gender = "M"  # F or M
-talker = "max"  # number of talker
-nums_rec = 5
+def reverse(sound):
+    """
+    Reverse time course of sounds in a given slab.sound.Sound object or a list of this instance.
 
-root = pathlib.Path.cwd()/"data"
-if not os.path.exists(root):
-    os.mkdir(root)
-duration = 1.0
-samplerate = 48828
-for number in range(nums_rec):  # record sound files
-    filename = pathlib.Path(f"talker-{talker}_number-{number}_gender-{gender}.wav")
-    filepath = pathlib.Path(root/f"{talker}")
-    input(f"Press any key to start recording number {number}")
-    sound = slab.Sound.record(duration=duration, samplerate=samplerate)
-    if not os.path.exists(filepath):
-        os.mkdir(filepath)
-    sound.write(filepath/filename)
-    print(f"Successfully saved sound {number} from talker {talker}!")
+    Args:
+        sound: slab.sound.Sounde instance of a list of it.
 
-# Alternatively, use google TTS API to generate stimuli.
+    Returns:
+        Single or list of slab.sound.Sound instance.
+    """
+    if type(sound) == list:
+        sound_list_reversed = list()
+        for s in sound:
+            s.data = s.data[::-1]
+            sound_list_reversed.append(s)
+        return sound_list_reversed
+    if type(sound) == slab.sound.Sound:
+        sound.data = sound.data[::-1]
+        return sound
 
-gender = "F"  # F or M
-talker = "gTTS-de"  # number of talker
-nums_rec = 5
-root = pathlib.Path.cwd() / "data" / "sounds"
-language = "de"
 
-if not os.path.exists(root):
-    os.mkdir(root)
+def align_sound_duration(sound_list, sound_duration, samplerate=48828):
+    """
+    Align the duration of sounds in a given list of slab.sound.Sound instances.
 
-for number in range(1, nums_rec+1):  # record sound files
-    filename = pathlib.Path(f"talker-{talker}_number-{number}_gender-{gender}")
-    filepath = pathlib.Path(root/f"{talker}")
-    if not os.path.exists(filepath):
-        os.mkdir(filepath)
-    tts = gtts.gTTS(str(number), lang=language)
-    tts.save(str(filepath/filename) + ".wav")
-    print(f"Successfully saved sound {number} from talker {talker}!")
+    Args:
+        sound_list: list of slab.sound.Sound instances to be aligned.
+        sound_duration: desired sound_duration (float).
+        samplerate: samplerate of the sounds in sound_list. Has to be equal among all instances in the list.
 
-# generate and save different lengths of stimuli
-samplerate = 48828
-root = pathlib.Path("E:\\projects\\multi-source-localisation\\data\\sounds\\demo\\harvard\\single\\normal")
-sound_list = list()
-sound_list_resampled = list()
-fp = os.listdir(f"{root}")
-for file in fp:
-    sound_list.append(slab.Sound.read(root/file))
-
-# resample
-for sound in sound_list:
-    sound = sound.resample(samplerate)
-    sound_list_resampled.append(sound)
-
-for i, sound in enumerate(sound_list_resampled):
-    slab.Sound.write(sound, filename=f"E:\\projects\\multi-source-localisation\\data\\sounds\\demo\\numbers\\single\\normal\\{fp[i]}")
-
-shortstims = list(x.resize(duration=0.3) for x in sound_list_resampled.copy())
-
-for i, stim in enumerate(shortstims):
-    slab.Sound.write(stim, filename=f"C:\\Users\\neurobio\\Desktop\\sounds_resampled\\tts-numbers\\0.3s\\{fp[i]}")
+    Returns:
+        Duration-aligned list of slab.sound.Sound instances.
+    """
+    trial_duration = slab.Signal.in_samples(sound_duration, samplerate)
+    for sound in sound_list:
+        silence_duration = trial_duration - sound_list[sound].n_samples
+        if silence_duration > 0:
+            silence = slab.Sound.silence(duration=silence_duration, samplerate=samplerate)
+            sound_list[sound] = slab.Sound.sequence(sound_list[sound], silence)
+    return sound_list
 
 
 for s in range(5):
@@ -73,48 +94,3 @@ for s in range(5):
     random.shuffle(medstims)
     sample = slab.Sound.sequence(medstims[0], medstims[1], medstims[2], medstims[3], medstims[4])
     sample.write(f"E:\\projects\\multi-source-localisation\\data\\sounds\\demo\\numbers\\5_reps\\normal\\sample_{s}.wav")
-
-trial_duration = slab.Signal.in_samples(1.5, samplerate)
-
-sound_list_reversed = list()
-for sound in sound_list_resampled:
-    sound.data = sound.data[::-1]
-    sound_list_reversed.append(sound)
-
-# 10 s stimuli
-for s in range(5):
-    talker = random.randint(1, 108)
-    longstims = sound_list_reversed[talker*5:(talker+1)*5].copy()
-    random.shuffle(longstims)
-    sample_choices = [random.randint(0, 4) for i in range(3)]
-    for sample_choice in sample_choices:
-        silence_duration = trial_duration - longstims[sample_choice].n_samples
-        if silence_duration > 0:
-            silence = slab.Sound.silence(duration=silence_duration, samplerate=samplerate)
-            longstims[sample_choice] = slab.Sound.sequence(longstims[sample_choice], silence)
-    sample = slab.Sound.sequence(longstims[sample_choices[0]], longstims[sample_choices[1]], longstims[sample_choices[2]])
-    sample.write(f"E:\\projects\\multi-source-localisation\\data\\sounds\\demo\\harvard\\3_reps\\reversed\\sample_{s}.wav")
-
-
-longstims = sound_list_resampled.copy() * 2
-
-random.shuffle(longstims)
-sample = slab.Sound.sequence(longstims[0], longstims[1], longstims[2], longstims[3], longstims[4], longstims[5], longstims[6], longstims[7], longstims[8], longstims[9])
-sample.write(f"C:\\Users\\neurobio\\Desktop\\sounds_resampled\\tts-numbers\\10s\\sample_5.wav")
-
-# load stimuli
-root = pathlib.Path("C:\\Users\\neurobio\\Desktop\\sounds_resampled\\tts-numbers\\10s")
-sound_list = list()
-sound_list_reversed = list()
-fp = os.listdir(f"{root}")
-for file in fp:
-    sound_list.append(slab.Sound.read(root/file))
-
-# reverse stimuli
-for sound in sound_list:
-    sound.data = sound.data[::-1]
-    sound_list_reversed.append(sound)
-
-# save reversed stimuli
-for i, sound in enumerate(sound_list_reversed):
-    slab.Sound.write(sound, filename=f"E:\\projects\\multi-source-localisation\\data\\sounds\\demo\\numbers\\single\\reversed\\{fp[i]}")
