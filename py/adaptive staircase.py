@@ -50,7 +50,7 @@ solution_converter = {
 for trial in seq:
     masker_speaker = freefield.pick_speakers(picks=seq.this_trial)[0]
     ele = masker_speaker.elevation
-    stairs = slab.Staircase(start_val=70, n_reversals=2, step_sizes=[4, 1])
+    stairs = slab.Staircase(start_val=70, n_reversals=2, step_sizes=[4, 1], n_up=1, n_down=1)
     talker = random.randint(1, 108)
     selected_target_sounds = target_sounds[talker*5:(talker+1)*5]
     for level in stairs:
