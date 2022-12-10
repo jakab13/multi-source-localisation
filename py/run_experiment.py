@@ -25,7 +25,6 @@ sound_list = slab.Precomputed(slab.Sound.read(filepath/file) for file in os.list
 starttone = slab.Sound.read(DIR / "data" / "sounds" / "bell.wav")
 # samplerate = 48828 / 2
 
-
 # set playbuflen tag
 freefield.write(tag="playbuflen", value=sound_list[0].n_samples, processors=["RX81", "RX82"])
 
