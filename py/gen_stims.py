@@ -2,7 +2,6 @@ import slab
 import pathlib
 import os
 import random
-import r
 random.seed = 50
 
 # TODO: aling sounds by talker
@@ -17,14 +16,16 @@ def load(DIR):
     Returns:
         sound_list: list of sounds within the specified directory.
     """
+    DIR = pathlib.Path(DIR)
     sound_list = list()
     if len(os.listdir(DIR)) == 0:
         print("Empty directory")
     for file in os.listdir(DIR):
-        sound_list.append(slab.Sound.read(DIR/file))
+        file = pathlib.Path(file)
+        sound_list.append(slab.Sound.read(pathlib.Path(DIR/file)))
     return sound_list
 
-def resample(sound, samplerate):
+def resample(sounds, samplerate):
     """
     Resample sound.
 
@@ -35,14 +36,14 @@ def resample(sound, samplerate):
     Returns:
         slab.sound.Sound instance
     """
-    if type(sound) == list:
+    if type(sounds) == list:
         sound_list_resamp = list()
-        for e in sound_list:
+        for e in sounds:
             s = e.resample(samplerate)
             sound_list_resamp.append(s)
         return sound_list_resamp
-    if type(sound) == slab.sound.Sound:
-        sound_resamp = sound.resample(samplerate)
+    if type(sounds) == slab.sound.Sound:
+        sound_resamp = sounds.resample(samplerate)
         return sound_resamp
     else:
         raise TypeError("Only single instances of slab.sound.Sound or a list of these objects are allowed as input!")
@@ -90,24 +91,45 @@ def align_sound_duration(sound_list, sound_duration, samplerate=48828):
     return sound_list
 
 
+def talker_data(data, DIR, pattern):
+    """
+    Searches for a pattern in a list of sound names and sound data and retrieves the data which matches the pattern.
+
+    Args:
+        data: list of slab.sound.Sound data.
+        pattern: searching pattern, talker id for instance.
+        DIR: sound file directory, has to match data list.
+
+    Returns:
+        sound data matching the searching pattern.
+
+    """
+    talker_files = list()
+    for i, sound_name in enumerate(os.listdir(DIR)):
+        if pattern in sound_name:
+            talker_files.append(data[i])
+    return talker_files
+
+def concatenate(sounds, n_concatenate=5):
+    """
+    Randomly concatenates sounds from a list into a slab.Sound.sequence object without permutation.
+
+    Args:
+        sounds: list of sounds to concatenate
+        n_concatenate: number of total sounds in a sequence
+
+    Returns:
+        slab.Sound.sequence
+    """
+    sample = random.sample(sounds, k=n_concatenate)
+    sequence = slab.Sound.sequence(*sample)
+    return sequence
+
+
 if __name__ == "__main__":
-    DIR = pathlib.Path("D:\Projects\multi-source-localisation\data\sounds\\tts-numbers")
+    DIR = pathlib.Path("D:\Projects\multi-source-localisation\data\sounds\\tts-harvard-5")
     sounds_data = load(DIR)
-    sound_names = os.listdir(DIR)
-    talker_id = "p225"
-    talker_files = []
-    for i, sound_name in enumerate(sound_names):
-        if talker_id in sound_name:
-            talker_files.append(sounds_data[i])
-    random.shuffle(talker_files)
-    sample = slab.Sound.sequence(talker_files[0], talker_files[1], talker_files[2], talker_files[3], talker_files[4])
-    sample = slab.Precomputed(sound for sound in talker_files)
-    talker_files = [talker_id for x in sounds_data if talker_id in sound_names]
+    pattern = "p227"
+    talker_files = talker_data(data=sounds_data, pattern=pattern, DIR=DIR)
+    sequence = concatenate(talker_files, n_concatenate=len(talker_files))
 
-
-    for s in range(5):
-        talker = random.randint(1, 108)
-        stims = sounds_data[talker*5:(talker+1)*5].copy()
-        random.shuffle(stims)
-        sample = slab.Sound.sequence(stims[0], stims[1], stims[2], stims[3], stims[4])
-        sample.write(f"E:\\projects\\multi-source-localisation\\data\\sounds\\demo\\numbers\\5_reps\\normal\\sample_{s}.wav")
