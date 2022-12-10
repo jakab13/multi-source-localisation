@@ -4,7 +4,6 @@ import os
 import random
 random.seed = 50
 
-# TODO: aling sounds by talker
 
 def load(DIR):
     """
