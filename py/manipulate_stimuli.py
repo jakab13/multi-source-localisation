@@ -17,8 +17,9 @@ def load(DIR):
     """
     DIR = pathlib.Path(DIR)
     sound_list = list()
-    if os.listdir(DIR).__len__():
+    if not os.listdir(DIR).__len__():
         print("Empty directory")
+        exit()
     for file in os.listdir(DIR):
         file = pathlib.Path(file)
         sound_list.append(slab.Sound.read(pathlib.Path(DIR/file)))
@@ -90,7 +91,7 @@ def align_sound_duration(sound_list, sound_duration, samplerate=48828):
     return sound_list
 
 
-def talker_data(data, DIR, pattern):
+def pick_talker(data, DIR, pattern):
     """
     Searches for a pattern in a list of sound names and sound data and retrieves the data which matches the pattern.
 
@@ -126,9 +127,12 @@ def concatenate(sounds, n_concatenate=5):
 
 
 if __name__ == "__main__":
-    DIR = pathlib.Path("D:\Projects\multi-source-localisation\data\sounds\\tts-harvard-5")
+    DIR = pathlib.Path("E:\projects\multi-source-localisation\data\sounds\\tts-numbers_resamp")
     sounds_data = load(DIR)
-    pattern = "p227"
-    talker_files = talker_data(data=sounds_data, pattern=pattern, DIR=DIR)
-    sequence = concatenate(talker_files, n_concatenate=len(talker_files))
+    # pattern = "p227"
+    # talker_files = pick_talker(data=sounds_data, pattern=pattern, DIR=DIR)
+    # sequence = concatenate(talker_files, n_concatenate=len(talker_files))
+    sound_list_resamp = resample(sounds_data, samplerate=int(48828/2))
+    for i, sound in enumerate(sound_list_resamp):
+        slab.Sound.write(sound, filename=DIR/dir_names[i])
 
