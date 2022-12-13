@@ -17,7 +17,7 @@ def load(DIR):
     """
     DIR = pathlib.Path(DIR)
     sound_list = list()
-    if len(os.listdir(DIR)) == 0:
+    if os.listdir(DIR).__len__():
         print("Empty directory")
     for file in os.listdir(DIR):
         file = pathlib.Path(file)
