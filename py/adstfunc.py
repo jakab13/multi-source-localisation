@@ -22,6 +22,11 @@ def randId():
         exit(1)
 
 def init(projectName):
+     """
+
+    :param projectName: only parameter is the project name
+    :return: creates foldersystem with resultsdirectory and soundsamples, Furthermore documentation is set up
+    """
     os.mkdir(os.getcwd()+"/"+projectName)  # creating Projectfolder
     os.chdir(os.getcwd()+"/"+projectName)  # changing Location to Project
 
@@ -40,9 +45,18 @@ def init(projectName):
     
 # not yet functioning
 # adding participant to file
-def adding(name, projectName, age, sex, hearing="", currentSession = 1):
+def rFile(name, projectName, age='', sex='', hearing=''):
+    """
 
-    vorhanden = False
+    :param name: Name of the subject
+    :param projectName: name of the project
+    :param age: age of the subject
+    :param sex: sex of the subject
+    :param hearing: anything hearing related that needs to be known about subject
+    :return: tries to find valid subject "targets" with given parameters and prepare slab.resultFile() method,
+    if none exist it will try to create given participant with an random Id ,
+    if unable to single out one participant manuell input is required.
+    """
     count = 0
 
     #failsafe
@@ -55,21 +69,24 @@ def adding(name, projectName, age, sex, hearing="", currentSession = 1):
         print("pls enter an proper age. For example: 23")
         exit(2)
 
-    with open("mastersheet.txt", "r") as master:
+    os.chdir(os.getcwd()+"/results")
+    with open("mastersheet.txt", "r") as master:    # checking if the participant is in the mastersheet
         for line in master:
-            if line.__contains__(name):
-                print ("found: "+line)
-                count =+ 1
+            if line.__contains__(name):             # checks if given name is in file
+                print("found: "+line)               # prints valid targets
+                count += 1                          # counts valid targets for desicion based on amount of targets
 
     if count == 0:
         #TODO
         # point of breaking -> while writing this function seperated from adstfunc.py
         # if later on added to adsfunc change adstfunc.randId() to just randId()
-        
 
-        id = adstfunc.randId()
-        with open("mastersheet.txt", "w") as file:
+        id = adstfunc.randId()  #creates new id
+        with open("mastersheet.txt", "w") as file:  # fills database with new participant
             file.write(name + " "+id)
+
+        # TODO
+        # possible point of break "writer" not found
 
         with open("particpants.csv", "w", newline='') as csv:
             writer = csv.writer(csv,
@@ -78,13 +95,45 @@ def adding(name, projectName, age, sex, hearing="", currentSession = 1):
                                 quoting=csv.QUOTE_MINIMAL
                                 )
 
-            writer.writerow([id, age, sex, hearing])
+            writer.writerow([id,
+                             age,
+                             sex,
+                             hearing]
+                            )
+        os.chdir(os.getcwd())
+        print("returned Resultsfile you are now able to add or read")
+        return slab.ResultsFile(id, os.getcwd()+"/results")
 
-    if count == 1:
+    if count == 1:              # returns the one valid participant as resultFile
         with open("mastersheet.txt", "r") as r:
             for line in r:
                 if name == line.split(' ')[1]:
                     id = line.split(' ')[2]
+        print("returned Resultsfile you are now able to add or read")
+        return slab.ResultsFile(id, os.getcwd()+"/results")
+
+    if count > 1:  # trying to reduce amount of valid targets with bigger search
+        with open("mastersheet.txt", "r") as master:
+            for line in master:
+                if line.__contains__(name):
+                    id = line.split(" ")[2]
+                    with open ("participants.csv", mode='r') as csv:
+                        if line.__contains__(id):
+                            if age != line.split(" ")[2]:
+                                count -= 1
+
+        if count == 1:  # returns the one valid participant as resultFile
+            with open("mastersheet.txt", "r") as r:
+                for line in r:
+                    if name == line.split(' ')[1]:
+                        id = line.split(' ')[2]
+            print("returned Resultsfile you are now able to add or read")
+            return slab.ResultsFile(id, os.getcwd() + "/results")
+
+        else:  # if unable to reduce count, manuell input is required
+            print("unable to reduce count")
+            id = input("pls enter the wanted id\n check the csv file for the right sex and age!")
+            return slab.ResultsFile(id, os.getcwd()+"/results")
 
 if __name__ == "__main__":
     init("MSL")
