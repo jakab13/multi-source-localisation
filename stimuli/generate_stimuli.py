@@ -15,7 +15,7 @@ import subprocess
 import os
 import pathlib
 import ast
-from experiment.tts_models import models, get_from_c_arg
+from stimuli.tts_models import models, get_from_c_arg
 
 DIR = pathlib.Path(os.getcwd())
 save_directory = DIR / "samples" / "TTS"
@@ -65,10 +65,12 @@ sentences = [
     "The friendly gang left the drug store.",
     "Mesh wire keeps chicks inside."
 ]
+sentences = ["One and two and three and four and five and.",
+             "Six and eight and nine and."]
 tts_model = tts_models[16]
 tts_c_arg = tts_model["c_arg"]
 for text in sentences:
-    for speaker_id in tts_model["speaker_idxs"]:
+    for speaker_id in list(tts_model["speaker_idxs"].keys())[:10]:
         filepath = save_directory / str("talker-" + speaker_id + "_" + "text-" + "'" + text + "'" + ".wav")
         args = [
             "tts",
