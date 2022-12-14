@@ -3,7 +3,7 @@ from labplatform.core.ExperimentLogic import ExperimentLogic
 from labplatform.core.Data import ExperimentData
 from labplatform.core.Subject import Subject, SubjectList
 from labplatform.config import get_config
-from experiment.Devices import RP2
+from experiment.RP2 import RP2
 
 import os
 from traits.api import Any
