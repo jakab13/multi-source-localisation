@@ -127,12 +127,12 @@ def concatenate(sounds, n_concatenate=5):
 
 
 if __name__ == "__main__":
-    DIR = pathlib.Path("E:\projects\multi-source-localisation\data\sounds\\tts-numbers_resamp")
+    DIR = pathlib.Path("D:\Projects\multi-source-localisation\data\sounds\\tts-harvard-5")
     sounds_data = load(DIR)
     # pattern = "p227"
     # talker_files = pick_talker(data=sounds_data, pattern=pattern, DIR=DIR)
     # sequence = concatenate(talker_files, n_concatenate=len(talker_files))
+    dir_names = os.listdir(DIR)
     sound_list_resamp = resample(sounds_data, samplerate=int(48828/2))
     for i, sound in enumerate(sound_list_resamp):
         slab.Sound.write(sound, filename=DIR/dir_names[i])
-
