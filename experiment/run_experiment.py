@@ -5,8 +5,7 @@ import os
 import random
 import time
 import numpy as np
-from meta_motion import mm_pose as motion_sensor
-from meta_motion import scan_connect
+from headpose_estimation.meta_motion import mm_pose as motion_sensor
 
 # initialize FF
 DIR = pathlib.Path(os.getcwd()).absolute()
