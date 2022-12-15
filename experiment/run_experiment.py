@@ -7,6 +7,11 @@ import time
 import numpy as np
 from headpose_estimation.meta_motion import mm_pose as motion_sensor
 # from headpose_estimation.meta_motion import scan_connect
+samplerate = 24414
+
+
+# start headpose sensor and calibrate
+sensor = motion_sensor.start_sensor()
 
 # initialize FF
 DIR = pathlib.Path(os.getcwd()).absolute()
@@ -20,20 +25,19 @@ speaker_list = list(x for x in range(20, 27))
 filepath = pathlib.Path("E:\\projects\\multi-source-localisation\\data\\sounds\\tts-numbers_resamp")
 sound_list = slab.Precomputed(slab.Sound.read(filepath/file) for file in os.listdir(filepath))
 starttone = slab.Sound.read(DIR / "data" / "sounds" / "bell.wav")
-buzztone = slab.Sound.read(DIR / "data" / "sounds" / "bell.wav")
-# samplerate = 24414
+buzztone = slab.Sound.vowel(samplerate=samplerate, duration=0.5)
+
 
 # initialize sequence and response object
 seq = slab.Trialsequence(conditions=5, n_reps=3)
 results = slab.ResultsFile()
 
-# start headpose sensor and calibrate
-sensor = motion_sensor.start_sensor()
+# calibrate sensor
 offset = motion_sensor.calibrate_pose(sensor)
 
 # play starting tone
-freefield.write(tag=f"data0", value=starttone.data, processors="RX81")
-freefield.write(tag=f"chan0", value=23, processors="RX81")
+freefield.write(tag=f"data0", value=starttone.data, processors=["RX81", "RX82"])
+freefield.write(tag=f"chan0", value=23, processors=["RX81", "RX82"])
 freefield.play()
 freefield.wait_to_finish_playing()
 freefield.wait_for_button()
@@ -48,6 +52,7 @@ for trial in seq:
         # sound_list.remove(signal)
         freefield.write(tag=f"data{i}", value=signal.data, processors=speaker.analog_proc)
         freefield.write(tag=f"chan{i}", value=speaker.analog_channel, processors=speaker.analog_proc)
+    freefield.write(tag="playbuflen", value=samplerate, processors=["RX81", "RX82"])
     start_time = time.time()
     response = 0
     while not response:
@@ -57,6 +62,12 @@ for trial in seq:
             print('head pose: azimuth: %.1f, elevation: %.1f' % (pose[0], pose[1]), end="\r", flush=True)
         else:
             print('no head pose detected', end="\r", flush=True)
+        # if pose[1] > 5:  # subject head position check
+            # freefield.write(tag=f"data0", value=buzztone.data, processors=["RX81", "RX82"])
+            # freefield.write(tag=f"chan0", value=23, processors=["RX81", "RX82"])
+            # freefield.play()
+            # freefield.wait_to_finish_playing()
+            # freefield.wait_for_button()
         response = freefield.read('response', processor='RP2')
     if all(pose):
         print('Response| azimuth: %.1f, elevation: %.1f' % (pose[0], pose[1]))
@@ -76,7 +87,7 @@ for trial in seq:
     results.write(round(pose[1], 2), "elevation")
 
 for channel in range(5):
-    freefield.write(tag=f"data{channel}", value=np.zeros(500000), processors=speaker.analog_proc)
+    freefield.write(tag=f"data{channel}", value=np.zeros(500000), processors=["RX81", "RX82"])
 
 motion_sensor.disconnect(sensor)
 freefield.halt()
