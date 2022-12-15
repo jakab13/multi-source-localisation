@@ -18,7 +18,7 @@ freefield.initialize(setup="dome", device=proc_list)  # initialize freefield
 samplerate = 48828
 
 # load sound files for target sounds
-sound_fp = pathlib.Path(os.getcwd()) / "data" / "sounds" / "demo" / "numbers" / "single" / "normal"# example file path
+sound_fp = pathlib.Path(os.getcwd()) / "data" / "sounds" / "numbers" / "single" / "normal"  # example file path
 target_sounds = slab.Precomputed(slab.Sound.read(sound_fp / file) for file in os.listdir(sound_fp))
 
 # pick target speaker (ele: 0, azi: 0)
@@ -50,7 +50,7 @@ solution_converter = {
 for trial in seq:
     masker_speaker = freefield.pick_speakers(picks=seq.this_trial)[0]
     ele = masker_speaker.elevation
-    stairs = slab.Staircase(start_val=70, n_reversals=2, step_sizes=[4, 1])
+    stairs = slab.Staircase(start_val=70, n_reversals=2, step_sizes=[4, 1], n_up=1, n_down=1)
     talker = random.randint(1, 108)
     selected_target_sounds = target_sounds[talker*5:(talker+1)*5]
     for level in stairs:
