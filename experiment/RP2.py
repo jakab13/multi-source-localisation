@@ -17,7 +17,7 @@ class RP2_Setting(DeviceSetting):
     processor = Str('RP2', group='status', dsec='name of the processor')
     connection = Str('GB', group='status', dsec='')
     index = CInt(1, group='primary', dsec='index of the device to connect to')
-    stimulus = Any(group='primary', dsec='stimulus to play', reinit=False)
+    # stimulus = Any(group='primary', dsec='stimulus to play', reinit=False)
 
 class RP2_Device(Device):
     setting = RP2_Setting()
