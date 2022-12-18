@@ -12,4 +12,4 @@ image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 cam.release()
 
 est.detect_landmarks(image, plot=True)  # plot the result of landmark detection
-roll, pitch, yawn = est.pose_from_image(image)  # estimate the head pose
+roll, pitch, yaw = est.pose_from_image(image)  # estimate the head pose
