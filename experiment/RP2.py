@@ -30,7 +30,7 @@ class RP2_Device(Device):
 
         self._output_specs = {}
 
-    def _configure(self, **kargs):
+    def _configure(self, **kwargs):
         if self.setting.stimulus.__len__():
             # self.handle.WriteTagV('datain', 0, self.setting.stimulus)
             self.handle.write('playbuflen', len(self.setting.stimulus))
