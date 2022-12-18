@@ -10,10 +10,10 @@ from traits.api import Any
 import numpy as np
 import random
 
-class MSLSetting(ExperimentSetting):
+class NumerosityJudgementSetting(ExperimentSetting):
     experiment_name = "Multiple Source Localization"
 
-class MSLExperiment(ExperimentLogic):
+class NumerosityJudgementExperiment(ExperimentLogic):
 
     setting = MSLSetting()
     data = ExperimentData()
