@@ -9,7 +9,6 @@ import logging
 
 log = logging.getLogger(__name__)
 
-# TODO: What about the device connection? GB OR USB?
 class RP2_Setting(DeviceSetting):
     sampling_freq = CFloat(48288.125, group='primary', dsec='sampling frequency of the device (Hz)')
     buffer_size_max = CInt(50000, group='status', dsec='buffer size cannot be larger than this')
