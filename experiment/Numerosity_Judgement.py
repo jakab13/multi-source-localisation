@@ -15,7 +15,7 @@ class NumerosityJudgementSetting(ExperimentSetting):
 
 class NumerosityJudgementExperiment(ExperimentLogic):
 
-    setting = MSLSetting()
+    setting = NumerosityJudgementSetting()
     data = ExperimentData()
     sequence = Any()
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         sl = SubjectList(file_path=os.path.join(get_config("SUBJECT_ROOT"), "Ole_Test.h5"))
         sl.read_from_h5file()
         test_subject = sl.subjects[0]
-    experiment = MSLExperiment(subject=test_subject)
+    experiment = NumerosityJudgementExperiment(subject=test_subject)
     experiment.devices["RP2"].setting.stimulus = np.ones(50000)
     experiment.initialize()
     experiment.devices["RP2"].configure()
