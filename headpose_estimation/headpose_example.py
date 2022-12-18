@@ -1,5 +1,6 @@
 import cv2
 from headpose.detect import PoseEstimator
+from matplotlib import pyplot as plt
 
 est = PoseEstimator()  #load the model
 # take an image using the webcam (alternatively, you could load an image)
