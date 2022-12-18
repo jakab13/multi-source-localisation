@@ -52,7 +52,7 @@ class RP2_Device(Device):
 
 
 if __name__ == "__main__":
-    RP2 = RP2()
+    RP2 = RP2_Device()
     RP2.initialize()
     RP2.configure()
     RP2.start()
