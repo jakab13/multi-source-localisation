@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 from PIL import Image
 import numpy as np
 import freefield
+import PySpin
 
 # TODO: calibrate headpose
 
@@ -11,25 +12,40 @@ est = PoseEstimator()
 system = PySpin.System.GetInstance()
 cams = system.GetCameras()
 
-def init(cams=cams):
+def init(cams):
     # # initiate cameras
-    for cam in cams:  # initialize cameras
-        cam.Init()
-        cam.ExposureAuto.SetValue(PySpin.ExposureAuto_Off)  # disable auto exposure time
-        cam.ExposureTime.SetValue(10000.0)
+    if cams.__len__():
+        for cam in cams:  # initialize cameras
+            cam.Init()
+            cam.ExposureAuto.SetValue(PySpin.ExposureAuto_Off)  # disable auto exposure time
+            cam.ExposureTime.SetValue(100000.0)
+            try:
+                cam.BeginAcquisition()
+            except:
+                print('camera already streaming')
+    else:
+        cams.Init()
+        cams.ExposureAuto.SetValue(PySpin.ExposureAuto_Off)  # disable auto exposure time
+        cams.ExposureTime.SetValue(100000.0)
         try:
-            cam.BeginAcquisition()
+            cams.BeginAcquisition()
         except:
             print('camera already streaming')
 
-def halt(cams=cams):
-    for cam in cams:
-        if cam.IsInitialized():
-            cam.EndAcquisition()
-            cam.DeInit()
-        del cam
-    cams.Clear()
-    system.ReleaseInstance()
+def halt(cams):
+    if cams.__len__():
+        for cam in cams:
+            if cam.IsInitialized():
+                cam.EndAcquisition()
+                cam.DeInit()
+            del cam
+        cams.Clear()
+    else:
+        if cams.IsInitialized():
+            cams.EndAcquisition()
+            cams.DeInit()
+        del cams
+        cams.Clear()
 
 def get_image(cam, resolution=1.0):
     image_result = cam.GetNextImage()
@@ -57,15 +73,26 @@ def headpose_from_image(image):
 
 def calibrate(self, world_coordinates, camera_coordinates, plot=True):
     [led_speaker] = freefield.pick_speakers(23)  # get object for center speaker LED
+    pass
+
+def test():
+    system = PySpin.System.GetInstance()
+    cams = system.GetCameras()
+    init(cams)
+    image = get_image(cams[0], resolution=1.0)  # try lower resolution?
+    plt.imshow(image)
+    plt.show()
+    halt(cams)
+
 
 
 if __name__ == "__main__":
-    init(cams)
+    test()
     images = dict()
     pitches = list()
     offset =
     for i, cam in enumerate(cams):
-        image = get_image(cam, resolution=1.0)  # try lower resolution?
+        image = get_image(cams[0], resolution=1.0)  # try lower resolution?
         images[str(i)] = cam
         _, pitch, _ = headpose_from_image(image)
         pitches.append(pitch)
