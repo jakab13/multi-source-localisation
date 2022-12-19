@@ -3,12 +3,15 @@ from headpose.detect import PoseEstimator
 from matplotlib import pyplot as plt
 from PIL import Image
 import numpy as np
+import freefield
+
+# TODO: calibrate headpose
 
 est = PoseEstimator()
 system = PySpin.System.GetInstance()
 cams = system.GetCameras()
 
-def initialize(cams=cams):
+def init(cams=cams):
     # # initiate cameras
     for cam in cams:  # initialize cameras
         cam.Init()
@@ -19,7 +22,7 @@ def initialize(cams=cams):
         except:
             print('camera already streaming')
 
-def deinitialize(cams=cams):
+def halt(cams=cams):
     for cam in cams:
         if cam.IsInitialized():
             cam.EndAcquisition()
@@ -28,11 +31,13 @@ def deinitialize(cams=cams):
     cams.Clear()
     system.ReleaseInstance()
 
-def get_image(cam):
+def get_image(cam, resolution=1.0):
     image_result = cam.GetNextImage()
     image = image_result.Convert(PySpin.PixelFormat_Mono8, PySpin.HQ_LINEAR)
     #image = image_result.Convert(PySpin.PixelFormat_RGB8, PySpin.HQ_LINEAR)
     image = image.GetNDArray()
+    if resolution < 1.0:
+        image = change_res(image, resolution)
     image.setflags(write=1)
     image_result.Release()
     return image
@@ -44,8 +49,23 @@ def change_res(image, resolution):
     image = data.resize((width, height), Image.ANTIALIAS)
     return np.asarray(image)
 
-def pose_from_image(image):
+def headpose_from_image(image):
     gray_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     est.detect_landmarks(image, plot=True)  # plot the result of landmark detection
     roll, pitch, yaw = est.pose_from_image(image)  # estimate the head pose
     return roll, pitch, yaw
+
+def calibrate(self, world_coordinates, camera_coordinates, plot=True):
+    [led_speaker] = freefield.pick_speakers(23)  # get object for center speaker LED
+
+
+if __name__ == "__main__":
+    init(cams)
+    images = dict()
+    pitches = list()
+    offset =
+    for i, cam in enumerate(cams):
+        image = get_image(cam, resolution=1.0)  # try lower resolution?
+        images[str(i)] = cam
+        _, pitch, _ = headpose_from_image(image)
+        pitches.append(pitch)
