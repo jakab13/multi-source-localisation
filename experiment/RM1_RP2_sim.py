@@ -10,7 +10,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
-class RM1_Setting(DeviceSetting):
+class RP2_Setting(DeviceSetting):
     sampling_freq = CFloat(48288.125, group='primary', dsec='sampling frequency of the device (Hz)')
     buffer_size_max = CInt(50000, group='status', dsec='buffer size cannot be larger than this')
     file = Str('RCX\\button_rec.rcx', group='primary', dsec='name of the rcx file to load')
@@ -18,8 +18,8 @@ class RM1_Setting(DeviceSetting):
     connection = Str('USB', group='status', dsec='name of the connection between processor and computer')
     index = CInt(1, group='primary', dsec='index of the device to connect to')
 
-class RM1_Device(Device):
-    setting = RM1_Setting()
+class RP2_Device(Device):
+    setting = RP2_Setting()
     handle = Any
 
     def _initialize(self, **kwargs):
@@ -53,7 +53,7 @@ class RM1_Device(Device):
 
 if __name__ == "__main__":
     # simulate RP2 behavior
-    RM1 = RM1_Device()
-    RM1.initialize()
-    RM1.stop()
-    RM1.wait_for_button()
+    RP2 = RP2_Device()
+    RP2.initialize()
+    RP2.stop()
+    RP2.wait_for_button()
