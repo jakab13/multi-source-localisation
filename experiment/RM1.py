@@ -47,7 +47,8 @@ class RM1_Device(Device):
     def _stop(self):
         self.handle.halt()
 
-    def wait
+    def wait_to_finish_playing(self):
+
 
 if __name__ == "__main__":
     RM1 = RM1_Device()
