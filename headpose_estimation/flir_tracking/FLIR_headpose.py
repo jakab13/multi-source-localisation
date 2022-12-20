@@ -90,7 +90,6 @@ if __name__ == "__main__":
     test()
     images = dict()
     pitches = list()
-    offset =
     for i, cam in enumerate(cams):
         image = get_image(cams[0], resolution=1.0)  # try lower resolution?
         images[str(i)] = cam
