@@ -5,6 +5,7 @@ from labplatform.core import TDTblackbox as tdt
 import time
 from traits.api import CFloat, CInt, Str, Any, Instance
 import os
+import numpy as np
 
 import logging
 
@@ -27,7 +28,6 @@ class RP2_Device(Device):
         self.handle = tdt.Processors()
         self.handle.initialize(proc_list=[[self.setting.processor, self.setting.processor, os.path.join(expdir, self.setting.file)]],
                                                 zbus=False, connection="USB")
-
         self._output_specs = {}
 
     def _configure(self, **kargs):
@@ -55,5 +55,7 @@ if __name__ == "__main__":
     # simulate RP2 behavior
     RP2 = RP2_Device()
     RP2.initialize()
-    RP2.stop()
     RP2.wait_for_button()
+    digin = RP2.handle.read(tag="response", proc=RP2.setting.processor)  # digital button press input
+    response = int(np.log2(digin))  # base-2 logarithm of digital input
+    RP2.stop()
