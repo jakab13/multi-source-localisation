@@ -88,10 +88,3 @@ def test():
 
 if __name__ == "__main__":
     test()
-    images = dict()
-    pitches = list()
-    for i, cam in enumerate(cams):
-        image = get_image(cams[0], resolution=1.0)  # try lower resolution?
-        images[str(i)] = cam
-        _, pitch, _ = headpose_from_image(image)
-        pitches.append(pitch)
