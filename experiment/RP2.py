@@ -36,12 +36,14 @@ class RP2_Device(Device):
         pass
 
     def _start(self):
-        print("Running RP2 ... ")
+        print(f"Running {self.setting.processor} ... ")
 
     def _pause(self):
+        print(f"Pausing {self.setting.processor} ... ")
         pass
 
     def _stop(self):
+        print(f"Halting {self.setting.processor} ...")
         self.handle.Halt()
 
     def wait_for_button(self):
