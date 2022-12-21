@@ -6,22 +6,22 @@ import threading
 from labplatform.core import TDTblackbox as tdt
 import logging
 import os
+import time
 
 log = logging.getLogger(__name__)
 
-class RX8_Setting(DeviceSetting):
+class RX8Setting(DeviceSetting):
     sampling_freq = CFloat(48288.125, group='primary', dsec='sampling frequency of the device (Hz)')
     buffer_size_max = CInt(50000, group='status', dsec='buffer size cannot be larger than this')
-    rx8_file       = Str('RCX\\play_buf_msl.rcx', group='primary', dsec='name of the rcx file to load')
-    processor      = Str('RX8', group='status', dsec='name of the processor')
-    connection     = Str('GB', group='status', dsec='')
-    index          = CInt(1, group='primary', dsec='index of the device to connect to')
-    stimulus       = Any(group='primary', dsec='stimulus to play', context=False)
-    channel_nr     = CInt(1, group='primary', dsec='channel to play sound', context=False)
+    rx8_file = Str('MSL\\RCX\\play_buf_msl.rcx', group='primary', dsec='name of the rcx file to load')
+    processor = Str('RX8', group='status', dsec='name of the processor')
+    connection = Str('GB', group='status', dsec='')
+    index = CInt(1, group='primary', dsec='index of the device to connect to')
+    stimulus = Any(group='primary', dsec='stimulus to play', context=False)
 
 
-class RX8_Device(Device):
-    setting = RX8_Setting()
+class RX8Device(Device):
+    setting = RX8Setting()
     handle = Any
     thread = Instance(threading.Thread)
 
@@ -45,9 +45,15 @@ class RX8_Device(Device):
         log.debug('output channel change to {}'.format(self.channel_nr))
 
     def _start(self):
-        self.handle.SoftTrg(1)
+        self.handle.
+        print(f"Running {self.setting.processor} ... ")
 
-    def _terminate(self):
+    def _pause(self):
+        print(f"Pausing {self.setting.processor} ... ")
+        pass
+
+    def _stop(self):
+        print(f"Halting {self.setting.processor} ...")
         self.handle.Halt()
 
     def thread_func(self):
@@ -56,8 +62,12 @@ class RX8_Device(Device):
         self.stop()
         self.experiment._trial_stop = True
 
-    def wait_to_finish_playing(self, proc=):
-
+    def wait_to_finish_playing(self, tag="playback"):
+        proc = self.setting.processor
+        logging.info(f'Waiting for {tag} on {proc}.')
+        while any(self.handle.read(tag, proc=proc)):
+            time.sleep(0.01)
+        logging.info('Done waiting.')
 
 if __name__ == "__main__":
-    RX81 = RX8_Device()
+    RX81 = RX8Device()

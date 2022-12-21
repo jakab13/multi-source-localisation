@@ -9,7 +9,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
-class RP2_Setting(DeviceSetting):
+class RP2Setting(DeviceSetting):
     sampling_freq = CFloat(48288.125, group='primary', dsec='sampling frequency of the device (Hz)')
     buffer_size_max = CInt(50000, group='status', dsec='buffer size cannot be larger than this')
     file = Str('RCX\\button_rec.rcx', group='primary', dsec='name of the rcx file to load')
@@ -18,8 +18,9 @@ class RP2_Setting(DeviceSetting):
     index = CInt(1, group='primary', dsec='index of the device to connect to')
     # stimulus = Any(group='primary', dsec='stimulus to play', reinit=False)
 
-class RP2_Device(Device):
-    setting = RP2_Setting()
+
+class RP2Device(Device):
+    setting = RP2Setting()
     handle = Any
 
     def _initialize(self, **kwargs):
@@ -54,11 +55,10 @@ class RP2_Device(Device):
 
 
 if __name__ == "__main__":
-    RP2 = RP2_Device()
+    RP2 = RP2Device()
     RP2.initialize()
     RP2.configure()
     RP2.start()
     RP2.wait_for_button()
     RP2.pause()
     RP2.stop()
-    RP2.pause()
