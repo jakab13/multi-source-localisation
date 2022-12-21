@@ -3,26 +3,35 @@ from labplatform.core.ExperimentLogic import ExperimentLogic
 from labplatform.core.Data import ExperimentData
 from labplatform.core.Subject import Subject, SubjectList
 from labplatform.config import get_config
-from experiment.RP2 import RP2
+from experiment.RP2 import RP2Device
+from experiment.RX8 import RX81Device
 
 import os
-from traits.api import Any
+from traits.api import Any, List, CInt
 import numpy as np
 import random
+import slab
 
 class NumerosityJudgementSetting(ExperimentSetting):
-    experiment_name = "Multiple Source Localization"
+    experiment_name = "Numerosity Judgement"
+    speakers = List(group="primary", dsec="list of speakers")
+    stimuli = List(group="primary", dsec="Set to choose stimuli from")
+    n_blocks = CInt(1, group="primary", dsec="Number of total blocks per session")
+    n_trials = CInt(20, group="primary", dsec="Number of total trials per block")
+    conditions = CInt(4, group="primary", dsex="Number of conditions in the experiment")
 
 class NumerosityJudgementExperiment(ExperimentLogic):
 
     setting = NumerosityJudgementSetting()
     data = ExperimentData()
-    sequence = Any()
+    sequence = List()
+    RX81 = RX81Device()
+    RP2 = RP2Device()
 
     def _initialize(self, **kargs):
-        if 'RP2' not in self.devices:
-            self.devices['RP2'] = RP2()
-            self.devices['RP2'].experiment = self
+        self.RX81.initialize()
+        self.RP2.initialize()
+        self.sequence = slab.Trialsequence
 
     def setup_experiment(self, info=None):
         self.sequence = np.repeat(range(4), self.setting.trial_number)
