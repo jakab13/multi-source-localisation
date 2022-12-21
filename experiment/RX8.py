@@ -1,18 +1,18 @@
-from Config import get_config
-from Core.Device import Device
-from Core.Setting import DeviceSetting
+from labplatform.config import get_config
+from labplatform.core.Device import Device
+from labplatform.core.Setting import DeviceSetting
 from traits.api import CFloat, CInt, Str, Any, Instance
 import threading
-
-from Devices import TDTblackbox as tdt
+from labplatform.core import TDTblackbox as tdt
 import logging
+import os
 
 log = logging.getLogger(__name__)
 
-class RX8_Ole_Setting(DeviceSetting):
+class RX8_Setting(DeviceSetting):
     sampling_freq = CFloat(48288.125, group='primary', dsec='sampling frequency of the device (Hz)')
     buffer_size_max = CInt(50000, group='status', dsec='buffer size cannot be larger than this')
-    rx8_file       = Str('RCX\\play_mono.rcx', group='primary', dsec='name of the rcx file to load')
+    rx8_file       = Str('RCX\\play_buf_msl.rcx', group='primary', dsec='name of the rcx file to load')
     processor      = Str('RX8', group='status', dsec='name of the processor')
     connection     = Str('GB', group='status', dsec='')
     index          = CInt(1, group='primary', dsec='index of the device to connect to')
@@ -20,14 +20,14 @@ class RX8_Ole_Setting(DeviceSetting):
     channel_nr     = CInt(1, group='primary', dsec='channel to play sound', context=False)
 
 
-class RX8_Ole_Device(Device):
-    setting = RX8_Ole_Setting()
+class RX8_Device(Device):
+    setting = RX8_Setting()
     handle = Any
     thread = Instance(threading.Thread)
 
     def _initialize(self, **kwargs):
         expdir = get_config('DEVICE_ROOT')
-        self.handle = tdt.initialize_processor(processor="RX8", connection="GB", index=1, path=expdir + "rpvdsx/play_mono.rcx")
+        self.handle = tdt.initialize_processor(processor="RX8", connection="GB", index=1, path=os.path.join(expdir, self.setting.rx8_file))
         self.handle.Run()
 
         # create thread to monitoring hardware
@@ -38,7 +38,7 @@ class RX8_Ole_Device(Device):
 
     def _configure(self, **kargs):
         if self.stimulus.__len__():
-            self.handle.WriteTagV('datain', 0, self.stimulus)
+            # self.handle.WriteTagV('datain', 0, self.stimulus)
             self.handle.SetTagVal('playbuflen', len(self.stimulus))
 
         self.handle.SetTagVal('channelnr', self.channel_nr)
@@ -55,3 +55,9 @@ class RX8_Ole_Device(Device):
             pass
         self.stop()
         self.experiment._trial_stop = True
+
+    def wait_to_finish_playing(self, proc=):
+
+
+if __name__ == "__main__":
+    RX81 = RX8_Device()

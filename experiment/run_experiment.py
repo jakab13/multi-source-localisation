@@ -8,6 +8,7 @@ import numpy as np
 from meta_motion import mm_pose as motion_sensor
 import from meta_motion import scan_connect
 
+# TODO: transform this file into slab.platform Experiment and Device classes
 
 # initialize FF
 DIR = pathlib.Path(os.getcwd()).absolute()
