@@ -39,7 +39,7 @@ class RX8Device(Device):
             self.thread.start()
 
     def _configure(self, **kwargs):
-        self.set_signal_and_speaker(**kwargs)
+        self.set_signals_and_speakers(**kwargs)
         if self.stimulus.__len__():
             self.handle.write('playbuflen', len(self.stimulus))
 
@@ -69,13 +69,6 @@ class RX8Device(Device):
         while any(self.handle.read(tag, proc=proc)):
             time.sleep(0.01)
         logging.info('Done waiting.')
-
-    def set_signal_and_speaker(self, data, speaker):
-        self.setting.stimulus = data
-        self.handle.write(tag=f"data{speaker}", value=self.setting.stimulus, procs=f"{self.setting.processor}{self.setting.index}")
-        self.handle.write(tag=f"chan{speaker}", value=speaker, procs=f"{self.setting.processor}{self.setting.index}")
-        print(f"Set signal to speaker {speaker}")
-
 
 
 if __name__ == "__main__":
