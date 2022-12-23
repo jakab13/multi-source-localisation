@@ -42,6 +42,7 @@ class RX8Device(Device):
         self.set_signal_and_speaker(**kwargs)
         if self.stimulus.__len__():
             self.handle.write('playbuflen', len(self.stimulus))
+        self.set_signal_and_speaker(**kwargs)
 
         log.debug('output channel changed to {}'.format(self.channel_nr))
 
@@ -72,6 +73,7 @@ class RX8Device(Device):
 
     def set_signal_and_speaker(self, data, speaker):
         self.setting.stimulus = data
+
         self.handle.write(tag=f"data{speaker}", value=self.setting.stimulus, procs=f"{self.setting.processor}{self.setting.index}")
         self.handle.write(tag=f"chan{speaker}", value=speaker, procs=f"{self.setting.processor}{self.setting.index}")
         print(f"Set signal to speaker {speaker}")
@@ -80,14 +82,21 @@ class RX8Device(Device):
 
 if __name__ == "__main__":
     import slab
-    from Speakers.
+    from Speakers.speaker_config import SpeakerArray
+
+    basedir = get_config(setting="BASE_DIRECTORY")
+    filename = "dome_speakers.txt"
+    file = os.path.join(basedir, filename)
+    spk_array = SpeakerArray(file=file)
+    spk_array.load_speaker_table()
+
     # initialize RX81 by setting index to 1 and RX82 by setting index to 2
     RX81 = RX8Device()
     RX81.setting.index = 1
     RX81.initialize()
-    stimulus = slab.Sound.tone().data
-    chan = 23
-    RX81.configure(data=stimulus, speaker=chan)
+    data = slab.Sound.tone().data
+    chan = spk_array.pick_speakers(23)[0]
+    RX81.configure(data=data, speaker=chan)
     RX81.start()
     RX81.wait_to_finish_playing()
 
