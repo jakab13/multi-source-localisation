@@ -29,20 +29,19 @@ class RX8Device(Device):
     def _initialize(self, **kwargs):
         expdir = get_config('DEVICE_ROOT')
         self.handle = tdt.Processors()
-        self.handle.initialize(proc_list=[[self.setting.processor, self.setting.processor,os.path.join(expdir, self.setting.file)]],
+        self.handle.initialize(proc_list=[[self.setting.processor, self.setting.processor, os.path.join(expdir, self.setting.file)]],
                                connection=self.setting.connection)
 
         # create thread to monitoring hardware
-        if not self.thread or not self.thread.isAlive():
-            log.debug('creating thread...')
-            self.thread = threading.Thread(target=self.thread_func, daemon=True)
-            self.thread.start()
+        #if not self.thread or not self.thread.isAlive():
+            #log.debug('creating thread...')
+            #self.thread = threading.Thread(target=self.thread_func, daemon=True)
+            #self.thread.start()
 
     def _configure(self, **kwargs):
-        self.set_signal_and_speaker(**kwargs)
         if self.stimulus.__len__():
             self.handle.write('playbuflen', len(self.stimulus))
-        self.set_signal_and_speaker(**kwargs)
+        self.set_signal_and_speaker(kwargs)
 
         log.debug('output channel changed to {}'.format(self.channel_nr))
 
@@ -64,19 +63,22 @@ class RX8Device(Device):
         #self.stop()
         #self.experiment._stop_trial = True
 
-    def wait_to_finish_playing(self, tag="playback"):
-        proc = self.setting.processor
+    def wait_to_finish_playing(self, proc="all", tag="playback"):
+        if proc == "all":
+            proc = list(self.handle.procs.keys())
+        elif isinstance(proc, str):
+            proc = [proc]
         logging.info(f'Waiting for {tag} on {proc}.')
-        while any(self.handle.read(tag, proc=proc)):
+        while any(self.handle.read(tag, proc=p) for p in proc):
             time.sleep(0.01)
         logging.info('Done waiting.')
 
     def set_signal_and_speaker(self, data, speaker):
         self.setting.stimulus = data
-
-        self.handle.write(tag=f"data{speaker}", value=self.setting.stimulus, procs=f"{self.setting.processor}{self.setting.index}")
-        self.handle.write(tag=f"chan{speaker}", value=speaker, procs=f"{self.setting.processor}{self.setting.index}")
-        print(f"Set signal to speaker {speaker}")
+        for idx, spk in enumerate(speaker):
+            self.handle.write(tag=f"data{idx}", value=self.setting.stimulus, procs=f"{self.setting.processor}")
+            self.handle.write(tag=f"chan{idx}", value=spk.channel_analog, procs=f"{self.setting.processor}")
+        print(f"Set signal to speaker {idx}")
 
 
 
@@ -92,10 +94,10 @@ if __name__ == "__main__":
 
     # initialize RX81 by setting index to 1 and RX82 by setting index to 2
     RX81 = RX8Device()
-    RX81.setting.index = 1
     RX81.initialize()
     data = slab.Sound.tone().data
-    chan = spk_array.pick_speakers(23)[0]
+    chan = spk_array.pick_speakers(23)
+    RX81.set_signal_and_speaker(data=data, speaker=chan)
     RX81.configure(data=data, speaker=chan)
     RX81.start()
     RX81.wait_to_finish_playing()
