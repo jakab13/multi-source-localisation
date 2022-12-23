@@ -70,6 +70,12 @@ class RX8Device(Device):
             time.sleep(0.01)
         logging.info('Done waiting.')
 
+    def set_signal_and_speaker(self, data, speaker):
+        self.setting.data = data
+        for idx, spk in enumerate(speaker):
+            self.handle.write(tag=f"data{idx}", value=self.setting.data, procs=self.setting.processor)
+            self.handle.write(tag=f"chan{idx}", value=spk.channel_analog, procs=self.setting.processor)
+            print(f"Set signal to chan tag {idx}")
 
 
 if __name__ == "__main__":
