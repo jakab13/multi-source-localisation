@@ -58,7 +58,7 @@ class RX8Device(Device):
         self.handle.halt()
 
     #def thread_func(self):
-        #while self.handle.GetTagVal('playback'):
+        #while self.handle.read('playback', proc=f"{self.setting.processor}{self.setting.index}"):
             #pass
         #self.stop()
         #self.experiment._stop_trial = True
