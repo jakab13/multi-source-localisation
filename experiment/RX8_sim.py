@@ -21,9 +21,6 @@ class RX8Setting(DeviceSetting):
     data = Any(group='primary', dsec='stimulus to play', context=False)
     speaker = Any(group="primary", dsex="speaker to pick")
 
-
-
-
 class RX8Device(Device):
     setting = RX8Setting()
     handle = Any

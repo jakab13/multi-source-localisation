@@ -25,13 +25,10 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     setting = NumerosityJudgementSetting()
     data = ExperimentData()
     sequence = Any
-    RX81 = RX8Device()
-    #devices = dict(RX81=RX8Device(), RX82=RX8Device(), RP2=RP2Device())
-    #RX82 = RX8Device()
-    #RP2 = RP2Device()
+    devices = dict(RX81=RX8Device(), RX82=RX8Device(), RP2=RP2Device())
 
     def _initialize(self, **kwargs):
-        self.RX81.initialize()
+        #self.RX81.initialize()
         #self.sequence = slab.Trialsequence()
 
     def setup_experiment(self, info=None):
