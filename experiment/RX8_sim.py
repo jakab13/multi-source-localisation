@@ -80,11 +80,12 @@ class RX8Device(Device):
 
 if __name__ == "__main__":
     import slab
+    from Speakers.
     # initialize RX81 by setting index to 1 and RX82 by setting index to 2
     RX81 = RX8Device()
     RX81.setting.index = 1
     RX81.initialize()
-    stimulus = slab.Sound.tone()
+    stimulus = slab.Sound.tone().data
     chan = 23
     RX81.configure(data=stimulus, speaker=chan)
     RX81.start()

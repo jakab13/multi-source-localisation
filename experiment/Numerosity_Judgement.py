@@ -3,8 +3,8 @@ from labplatform.core.ExperimentLogic import ExperimentLogic
 from labplatform.core.Data import ExperimentData
 from labplatform.core.Subject import Subject, SubjectList
 from labplatform.config import get_config
-from experiment.RP2 import RP2Device
-from experiment.RX8 import RX8Device
+from experiment.RM1_RP2_sim import RP2Device
+from experiment.RX8_sim import RX8Device
 
 import os
 from traits.api import Any, List, CInt
@@ -24,7 +24,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     setting = NumerosityJudgementSetting()
     data = ExperimentData()
-    sequence = Any()
+    sequence = Any
     RX81 = RX8Device()
     RX82 = RX8Device()
     RP2 = RP2Device()
