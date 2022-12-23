@@ -18,7 +18,10 @@ class RX8Setting(DeviceSetting):
     processor = Str('RM1', group='status', dsec='name of the processor')
     connection = Str('USB', group='status', dsec='')
     index = Any(group='primary', dsec='index of the device to connect to')
-    stimulus = Any(group='primary', dsec='stimulus to play', context=False)
+    data = Any(group='primary', dsec='stimulus to play', context=False)
+    speaker = Any(group="primary", dsex="speaker to pick")
+
+
 
 
 class RX8Device(Device):
@@ -39,10 +42,8 @@ class RX8Device(Device):
             #self.thread.start()
 
     def _configure(self, **kwargs):
-        if self.stimulus.__len__():
-            self.handle.write('playbuflen', len(self.stimulus))
-        self.set_signal_and_speaker(kwargs)
-
+        self.set_signal_and_speaker()
+        self.handle.write('playbuflen', len(self.setting.data))
         log.debug('output channel changed to {}'.format(self.channel_nr))
 
     def _start(self):
@@ -74,11 +75,11 @@ class RX8Device(Device):
         logging.info('Done waiting.')
 
     def set_signal_and_speaker(self, data, speaker):
-        self.setting.stimulus = data
+        self.setting.data = data
         for idx, spk in enumerate(speaker):
-            self.handle.write(tag=f"data{idx}", value=self.setting.stimulus, procs=f"{self.setting.processor}")
-            self.handle.write(tag=f"chan{idx}", value=spk.channel_analog, procs=f"{self.setting.processor}")
-        print(f"Set signal to speaker {idx}")
+            self.handle.write(tag=f"data{idx}", value=self.setting.data, procs=self.setting.processor)
+            self.handle.write(tag=f"chan{idx}", value=spk.channel_analog, procs=self.setting.processor)
+            print(f"Set signal to chan tag {idx}")
 
 
 
@@ -96,11 +97,13 @@ if __name__ == "__main__":
     RX81 = RX8Device()
     RX81.initialize()
     data = slab.Sound.tone().data
-    chan = spk_array.pick_speakers(23)
+    chan = spk_array.pick_speakers(list(x for x in range(19, 24)))
+    RX81.handle.write(tag="data0", value=chan[0].channel_analog, procs="RM1")
     RX81.set_signal_and_speaker(data=data, speaker=chan)
     RX81.configure(data=data, speaker=chan)
     RX81.start()
     RX81.wait_to_finish_playing()
+    RX81.stop()
 
 
 
