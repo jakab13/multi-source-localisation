@@ -15,7 +15,7 @@ class RX8Setting(DeviceSetting):
     sampling_freq = CFloat(24144.0625, group='primary', dsec='sampling frequency of the device (Hz)')
     buffer_size_max = CInt(50000, group='status', dsec='buffer size cannot be larger than this')
     file = Str('MSL\\RCX\\play_buf_msl.rcx', group='primary', dsec='name of the rcx file to load')
-    processor = Str('RX8', group='status', dsec='name of the processor')
+    processor = Str('RM1', group='status', dsec='name of the processor')
     connection = Str('USB', group='status', dsec='')
     index = Any(group='primary', dsec='index of the device to connect to')
     stimulus = Any(group='primary', dsec='stimulus to play', context=False)
