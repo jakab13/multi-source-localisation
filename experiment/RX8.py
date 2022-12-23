@@ -18,8 +18,8 @@ class RX8Setting(DeviceSetting):
     processor = Str('RX8', group='status', dsec='name of the processor')
     connection = Str('GB', group='status', dsec='')
     index = Any(group='primary', dsec='index of the device to connect to')
-    stimulus = Any(group='primary', dsec='stimulus to play', context=False)
-
+    data = Any(group='primary', dsec='stimulus to play', context=False)
+    speaker = Any(group="primary", dsex="speaker to pick")
 
 class RX8Device(Device):
     setting = RX8Setting()
@@ -39,11 +39,8 @@ class RX8Device(Device):
             self.thread.start()
 
     def _configure(self, **kwargs):
-        self.set_signals_and_speakers(**kwargs)
-        if self.stimulus.__len__():
-            self.handle.write('playbuflen', len(self.stimulus))
-
-        log.debug('output channel changed to {}'.format(self.channel_nr))
+        self.set_signal_and_speaker(kwargs)
+        self.handle.write('playbuflen', len(self.setting.data))
 
     def _start(self):
         self.handle.trigger(1, proc=self.setting.processor)

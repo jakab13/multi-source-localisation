@@ -42,9 +42,8 @@ class RX8Device(Device):
             #self.thread.start()
 
     def _configure(self, **kwargs):
-        self.set_signal_and_speaker()
+        self.set_signal_and_speaker(kwargs)
         self.handle.write('playbuflen', len(self.setting.data))
-        log.debug('output channel changed to {}'.format(self.channel_nr))
 
     def _start(self):
         self.handle.trigger(1, proc=self.setting.processor)
