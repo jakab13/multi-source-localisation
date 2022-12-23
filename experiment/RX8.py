@@ -63,25 +63,39 @@ class RX8Device(Device):
         #self.stop()
         #self.experiment._stop_trial = True
 
-    def wait_to_finish_playing(self, tag="playback"):
-        proc = self.setting.processor
+    def wait_to_finish_playing(self, proc="all", tag="playback"):
+        if proc == "all":
+            proc = list(self.handle.procs.keys())
+        elif isinstance(proc, str):
+            proc = [proc]
         logging.info(f'Waiting for {tag} on {proc}.')
-        while any(self.handle.read(tag, proc=proc)):
+        while any(self.handle.read(tag, proc=p) for p in proc):
             time.sleep(0.01)
         logging.info('Done waiting.')
 
 
+
 if __name__ == "__main__":
     import slab
+    from Speakers.speaker_config import SpeakerArray
+
+    basedir = get_config(setting="BASE_DIRECTORY")
+    filename = "dome_speakers.txt"
+    file = os.path.join(basedir, filename)
+    spk_array = SpeakerArray(file=file)
+    spk_array.load_speaker_table()
+
     # initialize RX81 by setting index to 1 and RX82 by setting index to 2
     RX81 = RX8Device()
-    RX81.setting.index = 1
     RX81.initialize()
-    stimulus = slab.Sound.tone()
-    chan = 23
-    RX81.configure(data=stimulus, speaker=chan)
+    data = slab.Sound.tone().data
+    chan = spk_array.pick_speakers(list(x for x in range(19, 24)))
+    RX81.handle.write(tag="data0", value=chan[0].channel_analog, procs="RM1")
+    RX81.set_signal_and_speaker(data=data, speaker=chan)
+    RX81.configure(data=data, speaker=chan)
     RX81.start()
     RX81.wait_to_finish_playing()
+    RX81.stop()
 
 
 
