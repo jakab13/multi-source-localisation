@@ -32,7 +32,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     def _initialize(self, **kwargs):
         self.RX81.initialize()
         self.RP2.initialize()
-        self.sequence = slab.Trialsequence
+        #self.sequence = slab.Trialsequence()
 
     def setup_experiment(self, info=None):
         self.sequence = slab.Trialsequence(conditions=self.setting.conditions, n_reps=self.setting.n_trials)
