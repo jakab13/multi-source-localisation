@@ -5,7 +5,7 @@ from labplatform.core.Subject import Subject, SubjectList
 from labplatform.config import get_config
 from experiment.RM1_RP2_sim import RP2Device
 from experiment.RX8_sim import RX8Device
-
+from Speakers.speaker_config import SpeakerArray
 import os
 from traits.api import Any, List, CInt
 import numpy as np
@@ -26,12 +26,12 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     data = ExperimentData()
     sequence = Any
     RX81 = RX8Device()
-    RX82 = RX8Device()
-    RP2 = RP2Device()
+    #devices = dict(RX81=RX8Device(), RX82=RX8Device(), RP2=RP2Device())
+    #RX82 = RX8Device()
+    #RP2 = RP2Device()
 
     def _initialize(self, **kwargs):
         self.RX81.initialize()
-        self.RP2.initialize()
         #self.sequence = slab.Trialsequence()
 
     def setup_experiment(self, info=None):
@@ -40,11 +40,11 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     def generate_stimulus(self):
         pass
 
-    def _prepare_trial(self):
-        self.devices["RP2"].handle.SetTagVal("Bit", self.sequence[self.setting.current_trial])
+    def _prepare_trial(self, **kwargs):
+        self.set_signals_and_speakers(self, kwargs)
 
     def _start_trial(self):
-        self.devices['RP2'].start()
+        self.devices['RM1'].start()
 
     def _stop_trial(self):
         pass
@@ -56,14 +56,15 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         pass
 
     def set_signals_and_speakers(self, signals, speakers):
+        self.setting.signals = signals
+        self.setting.speakers = speakers
         for idx, speaker in enumerate(speakers):
-            self.setting.stimulus = signals[idx]
             self.handle.write(tag=f"data{idx}",
-                              value=self.setting.stimulus,
-                              procs=f"{self.setting.processor}{self.setting.index}")
+                              value=self.setting.signals[idx],
+                              procs=self.RX81.setting.processor)
             self.handle.write(tag=f"chan{idx}",
-                              value=speaker,
-                              procs=f"{self.setting.processor}{self.setting.index}")
+                              value=speaker.channel_analog,
+                              procs=self.RX81.setting.processor)
             print(f"Set signal to speaker {speaker}")
 
 
@@ -81,6 +82,13 @@ if __name__ == "__main__":
         sl.read_from_h5file()
         test_subject = sl.subjects[0]
     experiment = NumerosityJudgementExperiment(subject=test_subject)
-    experiment.initialize()
-    experiment.devices["RP2"].configure()
+
+    basedir = get_config(setting="BASE_DIRECTORY")
+    filename = "dome_speakers.txt"
+    file = os.path.join(basedir, filename)
+    spk_array = SpeakerArray(file=file)
+    spk_array.load_speaker_table()
+    spks = spk_array.pick_speakers(picks=[x for x in range(20, 23)])
+    signals = [slab.Sound.vowel()] * len(spks)
+    experiment.set_signals_and_speakers(signals, spks)
     experiment.start()
