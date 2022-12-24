@@ -23,7 +23,7 @@ class RX8Setting(DeviceSetting):
 
 class RX8Device(Device):
     setting = RX8Setting()
-    handle = Any
+    handle = Any()
     thread = Instance(threading.Thread)
 
     def _initialize(self, **kwargs):
@@ -90,10 +90,11 @@ if __name__ == "__main__":
 
     # initialize RX81 by setting index to 1 and RX82 by setting index to 2
     RX81 = RX8Device()
+    RX81.setting.index = 1
     RX81.initialize()
     data = slab.Sound.tone().data
     chan = spk_array.pick_speakers(list(x for x in range(19, 24)))
-    RX81.handle.write(tag="data0", value=chan[0].channel_analog, procs="RM1")
+    RX81.handle.write(tag="data0", value=chan[0].channel_analog, procs="RX81")
     RX81.set_signal_and_speaker(data=data, speaker=chan)
     RX81.configure(data=data, speaker=chan)
     RX81.start()
