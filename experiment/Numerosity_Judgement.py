@@ -7,32 +7,40 @@ from experiment.RM1_RP2_sim import RP2Device
 from experiment.RX8_sim import RX8Device
 from Speakers.speaker_config import SpeakerArray
 import os
-from traits.api import Any, List, CInt
+from traits.api import Any, List, CInt, CFloat, Str, Property, Instance, Int, Float
 import numpy as np
 import random
 import slab
+import datetime
 
 class NumerosityJudgementSetting(ExperimentSetting):
-    experiment_name = "Numerosity Judgement"
+    experiment_name = Str('Numerosity Judgement',group='status', dsec='name of the experiment', noshow=True)
     speakers = List(group="primary", dsec="list of speakers")
     signals = List(group="primary", dsec="Set to choose stimuli from")
-    n_blocks = CInt(1, group="primary", dsec="Number of total blocks per session")
-    n_trials = CInt(20, group="primary", dsec="Number of total trials per block")
-    conditions = CInt(4, group="primary", dsex="Number of conditions in the experiment")
+    n_blocks = CInt(1, group="status", dsec="Number of total blocks per session")
+    n_trials = CInt(20, group="status", dsec="Number of total trials per block")
+    n_conditions = CInt(4, group="status", dsex="Number of conditions in the experiment")
+    trial_number = CInt(0, group='primary', dsec='Number of trials in each condition', reinit=False)
+    total_trial = Property(Int(n_blocks*n_trials*n_conditions), group='status', depends_on=[''],
+                           dsec='Total number of trials')
+
 
 class NumerosityJudgementExperiment(ExperimentLogic):
 
     setting = NumerosityJudgementSetting()
     data = ExperimentData()
-    sequence = Any
-    devices = dict(RX81=RX8Device(), RX82=RX8Device(), RP2=RP2Device())
+    sequence = Any()
 
     def _initialize(self, **kwargs):
-        #self.RX81.initialize()
+        keys = self.devices.keys()
+        for device in keys:
+            self.devices[device].initialize()
+
         #self.sequence = slab.Trialsequence()
 
     def setup_experiment(self, info=None):
         self.sequence = slab.Trialsequence(conditions=self.setting.conditions, n_reps=self.setting.n_trials)
+        self.initialize()
 
     def generate_stimulus(self):
         pass
@@ -66,19 +74,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
 
 if __name__ == "__main__":
-
-    try:
-        test_subject = Subject()
-        test_subject.name ="Ole"
-        test_subject.group ="Test"
-        test_subject.add_subject_to_h5file(os.path.join(get_config("SUBJECT_ROOT"), "Ole_Test.h5"))
-        #test_subject.file_path
-    except ValueError:
-        # read the subject information
-        sl = SubjectList(file_path=os.path.join(get_config("SUBJECT_ROOT"), "Ole_Test.h5"))
-        sl.read_from_h5file()
-        test_subject = sl.subjects[0]
-    experiment = NumerosityJudgementExperiment(subject=test_subject)
+    subject = Subject()
+    experiment = NumerosityJudgementExperiment(subject=subject)
 
     basedir = get_config(setting="BASE_DIRECTORY")
     filename = "dome_speakers.txt"
@@ -86,6 +83,8 @@ if __name__ == "__main__":
     spk_array = SpeakerArray(file=file)
     spk_array.load_speaker_table()
     spks = spk_array.pick_speakers(picks=[x for x in range(20, 23)])
+
     signals = [slab.Sound.vowel()] * len(spks)
+
     experiment.set_signals_and_speakers(signals, spks)
     experiment.start()

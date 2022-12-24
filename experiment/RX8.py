@@ -1,7 +1,7 @@
 from labplatform.config import get_config
 from labplatform.core.Device import Device
 from labplatform.core.Setting import DeviceSetting
-from traits.api import CFloat, CInt, Str, Any, Instance
+from traits.api import CFloat, CInt, Str, Any, Instance, Property
 import threading
 from labplatform.core import TDTblackbox as tdt
 import logging
@@ -20,6 +20,10 @@ class RX8Setting(DeviceSetting):
     index = Any(group='primary', dsec='index of the device to connect to')
     data = Any(group='primary', dsec='stimulus to play', context=False)
     speaker = Any(group="primary", dsex="speaker to pick")
+    device_type = Str(processor, group='status', dsec='type of the device')
+    device_ID = CInt(index, group='status', dsec='ID of the device')
+    device_name = Property(Str, group='status', dsec='name of the device',
+                           depends_on=['device_type', 'device_ID'])
 
 class RX8Device(Device):
     setting = RX8Setting()
