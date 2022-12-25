@@ -3,7 +3,7 @@ from labplatform.core.Device import Device
 from labplatform.core.Setting import DeviceSetting
 from labplatform.core import TDTblackbox as tdt
 import time
-from traits.api import CFloat, CInt, Str, Any, Instance
+from traits.api import CFloat, CInt, Str, Any, Property
 import os
 import logging
 

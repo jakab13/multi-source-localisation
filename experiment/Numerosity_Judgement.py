@@ -7,22 +7,19 @@ from experiment.RM1_RP2_sim import RP2Device
 from experiment.RX8_sim import RX8Device
 from Speakers.speaker_config import SpeakerArray
 import os
-from traits.api import Any, List, CInt, CFloat, Str, Property, Instance, Int, Float
+from traits.api import Any, List, CInt, Str, Property, Int
 import numpy as np
 import random
 import slab
-import datetime
+
 
 class NumerosityJudgementSetting(ExperimentSetting):
-    experiment_name = Str('Numerosity Judgement',group='status', dsec='name of the experiment', noshow=True)
+    experiment_name = Str('Numerosity Judgement', group='status', dsec='name of the experiment', noshow=True)
     speakers = List(group="primary", dsec="list of speakers")
     signals = List(group="primary", dsec="Set to choose stimuli from")
-    n_blocks = CInt(1, group="status", dsec="Number of total blocks per session")
-    n_trials = CInt(20, group="status", dsec="Number of total trials per block")
-    n_conditions = CInt(4, group="status", dsex="Number of conditions in the experiment")
-    trial_number = CInt(0, group='primary', dsec='Number of trials in each condition', reinit=False)
-    total_trial = Property(Int(n_blocks*n_trials*n_conditions), group='status', depends_on=[''],
-                           dsec='Total number of trials')
+    n_blocks = CInt(1, group="primary", dsec="Number of total blocks per session")
+    n_trials = CInt(20, group="primary", dsec="Number of total trials per block")
+    n_conditions = CInt(4, group="primary", dsec="Number of conditions in the experiment")
 
 
 class NumerosityJudgementExperiment(ExperimentLogic):
@@ -42,7 +39,10 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.sequence = slab.Trialsequence(conditions=self.setting.conditions, n_reps=self.setting.n_trials)
         self.initialize()
 
-    def generate_stimulus(self):
+    def configure_experiment(self):
+        pass
+
+    def _configure(self, **kargs):
         pass
 
     def _prepare_trial(self, **kwargs):
@@ -86,5 +86,7 @@ if __name__ == "__main__":
 
     signals = [slab.Sound.vowel()] * len(spks)
 
-    experiment.set_signals_and_speakers(signals, spks)
+    experiment.initialize()
     experiment.start()
+    experiment.pause()
+    experiment.stop()

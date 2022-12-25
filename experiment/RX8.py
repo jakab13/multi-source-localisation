@@ -20,10 +20,6 @@ class RX8Setting(DeviceSetting):
     index = Any(group='primary', dsec='index of the device to connect to')
     data = Any(group='primary', dsec='stimulus to play', context=False)
     speaker = Any(group="primary", dsex="speaker to pick")
-    device_type = Str(processor, group='status', dsec='type of the device')
-    device_ID = CInt(index, group='status', dsec='ID of the device')
-    device_name = Property(Str, group='status', dsec='name of the device',
-                           depends_on=['device_type', 'device_ID'])
 
 class RX8Device(Device):
     setting = RX8Setting()
