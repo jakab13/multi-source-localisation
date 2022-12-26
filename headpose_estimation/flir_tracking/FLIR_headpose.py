@@ -5,6 +5,7 @@ from PIL import Image
 import numpy as np
 import freefield
 import PySpin
+from Speakers.speaker_config import SpeakerArray
 
 # TODO: calibrate headpose
 
@@ -14,7 +15,7 @@ cams = system.GetCameras()
 
 def init(cams):
     # # initiate cameras
-    if cams.__len__():
+    if cams.__len__():  # check if there is more than one cam
         for cam in cams:  # initialize cameras
             cam.Init()
             cam.ExposureAuto.SetValue(PySpin.ExposureAuto_Off)  # disable auto exposure time
@@ -65,24 +66,39 @@ def change_res(image, resolution):
     image = data.resize((width, height), Image.ANTIALIAS)
     return np.asarray(image)
 
-def headpose_from_image(image):
+def headpose_from_image(image, plot=True):
     gray_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    est.detect_landmarks(image, plot=True)  # plot the result of landmark detection
-    roll, pitch, yaw = est.pose_from_image(image)  # estimate the head pose
+    est.detect_landmarks(gray_img, plot=plot)  # plot the result of landmark detection
+    roll, pitch, yaw = est.pose_from_image(gray_img)  # estimate the head pose
     return roll, pitch, yaw
 
-def calibrate(self, world_coordinates, camera_coordinates, plot=True):
-    [led_speaker] = freefield.pick_speakers(23)  # get object for center speaker LED
-    pass
+def calibrate(plot=True):
+    led_speaker = freefield.pick_speakers(23)  # get object for center speaker LED
+    freefield.write(tag='bitmask', value=led_speaker.digital_channel,
+                    processors=led_speaker.digital_proc)  # illuminate LED
+    roll, pitch, yaw = get_pose()
+    offset = pitch
+    return offset
+
+def get_pose(resolution=1.0):
+    system = PySpin.System.GetInstance()
+    cams = system.GetCameras()
+    init(cams)
+    image = get_image(cams[0], resolution=resolution)  # try lower resolution?
+    roll, pitch, yaw = headpose_from_image(image)
+    return roll, pitch, yaw
 
 def test():
     system = PySpin.System.GetInstance()
     cams = system.GetCameras()
     init(cams)
     image = get_image(cams[0], resolution=1.0)  # try lower resolution?
+    roll, pitch, yaw = headpose_from_image(image)
     plt.imshow(image)
+    plt.title(f"roll:{roll}, pitch:{pitch}, yaw:{yaw}")
     plt.show()
     halt(cams)
+    print(roll, pitch, yaw)
 
 
 
