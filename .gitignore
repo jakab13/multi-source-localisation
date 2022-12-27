@@ -10,5 +10,6 @@
 # Results
 /Results
 
-# more cache
-/Speakers/__pycache__
+# trash
+/tobedeleted
+/headpose_estimation/meta_motion/.metawear/
