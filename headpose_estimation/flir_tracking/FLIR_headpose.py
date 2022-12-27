@@ -6,12 +6,16 @@ import numpy as np
 import freefield
 import PySpin
 from Speakers.speaker_config import SpeakerArray
+from experiment.RX8 import RX8Device
 
 # TODO: calibrate headpose
 
 est = PoseEstimator()
 system = PySpin.System.GetInstance()
 cams = system.GetCameras()
+led_spk = SpeakerArray().pick_speakers(23)[0]
+RX81 = RX8Device(index=1).initialize()
+
 
 def init(cams):
     # # initiate cameras
@@ -72,10 +76,9 @@ def headpose_from_image(image, plot=True):
     roll, pitch, yaw = est.pose_from_image(gray_img)  # estimate the head pose
     return roll, pitch, yaw
 
-def calibrate(plot=True):
-    led_speaker = freefield.pick_speakers(23)  # get object for center speaker LED
-    freefield.write(tag='bitmask', value=led_speaker.digital_channel,
-                    processors=led_speaker.digital_proc)  # illuminate LED
+def calibrate():
+    RX8.write(tag='bitmask', value=led_spk.digital_channel,
+                    processors=led_spk.digital_proc)  # illuminate LED
     roll, pitch, yaw = get_pose()
     offset = pitch
     return offset
@@ -84,8 +87,9 @@ def get_pose(resolution=1.0):
     system = PySpin.System.GetInstance()
     cams = system.GetCameras()
     init(cams)
-    image = get_image(cams[0], resolution=resolution)  # try lower resolution?
+    image = get_image(cams, resolution=resolution)  # try lower resolution?
     roll, pitch, yaw = headpose_from_image(image)
+    halt(cams)
     return roll, pitch, yaw
 
 def test():
