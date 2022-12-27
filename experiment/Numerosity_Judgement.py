@@ -72,6 +72,9 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                               procs=self.RX81.setting.processor)
             print(f"Set signal to speaker {speaker}")
 
+    def load_sounds(self):
+        pass
+
 
 if __name__ == "__main__":
     subject = Subject()
