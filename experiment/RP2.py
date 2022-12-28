@@ -48,7 +48,7 @@ class RP2Device(Device):
         self.handle.halt()
 
     def wait_for_button(self):
-        while not self.handle.read(tag="response", proc=self.settings.processor):
+        while not self.handle.read(tag="response", proc=self.setting.processor):
             time.sleep(0.1)
 
 
@@ -59,5 +59,6 @@ if __name__ == "__main__":
     RP2.configure()
     RP2.start()
     RP2.wait_for_button()
+    response = RP2.handle.read("response", RP2.setting.processor)
     RP2.pause()
     RP2.stop()
