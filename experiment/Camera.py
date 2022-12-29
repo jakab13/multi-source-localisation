@@ -5,7 +5,6 @@ from traits.api import Instance, Float, Any, Str, List, Tuple, Bool
 
 from headpose.detect import PoseEstimator
 from matplotlib import pyplot as plt
-from PIL import Image
 import numpy as np
 from Speakers.speaker_config import SpeakerArray
 import os
