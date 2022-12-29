@@ -10,6 +10,7 @@ import time
 
 log = logging.getLogger(__name__)
 
+# TODO: configure() method is buggy. Fix it: It is only supposed to change setting parameters, nothing else
 
 class RX8Setting(DeviceSetting):
     sampling_freq = CFloat(24144.0625, group='primary', dsec='sampling frequency of the device (Hz)')
@@ -40,8 +41,8 @@ class RX8Device(Device):
             #self.thread.start()
 
     def _configure(self, **kwargs):
-        for idx, spk in enumerate(speakers):
-            self.handle.write(tag=f"data{idx}", value=signals[idx].data.flatten(), procs=self.handle.procs)
+        for idx, spk in enumerate(kwargs.get("speakers")):
+            self.handle.write(tag=f"data{idx}", value=kwargs.get("signals")[idx].data.flatten(), procs=self.handle.procs)
             self.handle.write(tag=f"chan{idx}", value=spk.channel_analog, procs=self.handle.procs)
             print(f"Set signal to chan {idx}")
         self.handle.write("playbuflen", self.setting.sampling_freq, procs=self.handle.procs)
