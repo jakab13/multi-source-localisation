@@ -10,6 +10,7 @@ from Speakers.speaker_config import SpeakerArray
 import os
 from simple_pyspin import Camera
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+from PIL import ImageEnhance, Image
 
 import logging
 log = logging.getLogger(__name__)
@@ -86,3 +87,20 @@ if __name__ == "__main__":
     cam = FlirCam()
     cam.configure(_is_ready=True)
     cam.start()
+
+    import time
+    time.sleep(10)
+    est = PoseEstimator()
+    cam = Camera()
+    cam.init()
+    cam.start()
+    img = cam.get_array()
+    cam.stop()
+    img = Image.fromarray(img)
+    brightness = ImageEnhance.Brightness(img)
+    bright = brightness.enhance(2.0)
+    array = np.asarray(bright)
+    roll, pitch, yaw = est.pose_from_image(array)  # estimate the head pose
+
+
+
