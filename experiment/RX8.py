@@ -13,14 +13,14 @@ log = logging.getLogger(__name__)
 # TODO: configure() method is buggy. Fix it: It is only supposed to change setting parameters, nothing else
 
 class RX8Setting(DeviceSetting):
-    sampling_freq = CFloat(24144.0625, group='primary', dsec='sampling frequency of the device (Hz)')
+    sampling_freq = CFloat(24144.0625, group='primary', dsec='sampling frequency of the device (Hz)', reinit=False)
     buffer_size_max = CInt(50000, group='status', dsec='buffer size cannot be larger than this')
-    file = Str('MSL\\RCX\\play_buf_msl.rcx', group='primary', dsec='name of the rcx file to load')
+    file = Str('MSL\\RCX\\play_buf_msl.rcx', group='primary', dsec='name of the rcx file to load', reinit=False)
     processor = Str('RX8', group='status', dsec='name of the processor')
     connection = Str('GB', group='status', dsec='')
-    index = Any(group='primary', dsec='index of the device to connect to')
-    signals = Any(group='primary', dsec='stimulus to play', context=False)
-    speakers = Any(group="primary", dsex="speaker to pick")
+    index = Any(group='primary', dsec='index of the device to connect to', reinit=False)
+    signals = Any(group='primary', dsec='stimulus to play', reinit=False)
+    speakers = Any(group="primary", dsex="speaker to pick", reinit=False)
 
 class RX8Device(Device):
     setting = RX8Setting()
@@ -41,8 +41,8 @@ class RX8Device(Device):
             #self.thread.start()
 
     def _configure(self, **kwargs):
-        for idx, spk in enumerate(kwargs.get("speakers")):
-            self.handle.write(tag=f"data{idx}", value=kwargs.get("signals")[idx].data.flatten(), procs=self.handle.procs)
+        for idx, spk in enumerate(self.setting.speakers):
+            self.handle.write(tag=f"data{idx}", value=self.setting.signals[idx].data.flatten(), procs=self.handle.procs)
             self.handle.write(tag=f"chan{idx}", value=spk.channel_analog, procs=self.handle.procs)
             print(f"Set signal to chan {idx}")
         self.handle.write("playbuflen", self.setting.sampling_freq, procs=self.handle.procs)
@@ -106,9 +106,8 @@ if __name__ == "__main__":
     RX81.setting.signals = signals
     RX81.setting.speakers = speakers
 
-    RX81.configure(signals=signals, speakers=speakers)
+    RX81.configure()
     RX81.start()
     RX81.pause()
-    RX81.stop()
 
 

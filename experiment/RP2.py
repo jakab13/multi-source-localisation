@@ -26,7 +26,7 @@ class RP2Device(Device):
     def _initialize(self, **kwargs):
         expdir = get_config('DEVICE_ROOT')
         self.handle = tdt.Processors()
-        self.handle.initialize(proc_list=[[self.setting.processor, self.setting.processor,os.path.join(expdir, self.setting.file)]],
+        self.handle.initialize(proc_list=[[self.setting.processor, self.setting.processor, os.path.join(expdir, self.setting.file)]],
                                connection=self.setting.connection)
 
 
@@ -50,8 +50,6 @@ class RP2Device(Device):
     def wait_for_button(self):
         while not self.handle.read(tag="response", proc=self.setting.processor):
             time.sleep(0.1)
-
-
 
 
 if __name__ == "__main__":

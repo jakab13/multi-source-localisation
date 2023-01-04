@@ -20,21 +20,20 @@ log = logging.getLogger(__name__)
 
 class FlirCamSetting(DeviceSetting):
     name = Str("FireFly", group="status", dsec="")
-    type = Str("image", group="primary", dsec="nature of the signal")
-    dtype = Instance(np.uint8)
-    shape = Tuple(1080, 1440, group="primary", dsec="default shape of the image")
+    type = Str("image", group="primary", dsec="nature of the signal", reinit=False)
+    dtype = Instance(np.uint8, group="status", dsec="data type")
+    shape = Tuple(1080, 1440, group="primary", dsec="default shape of the image", reinit=False)
     sampling_freq = Float()
     root = Str(get_config(setting="BASE_DIRECTORY"), group="status", dsec="labplatform root directory")
     setup = Str("dome", group="status", dsec="experiment setup")
     file = Str(f"{setup.default_value}_speakers.txt")
     led = Any()
-    _is_ready = Bool(False, group="primary", dsec="True if running, False if not running")
 
 
 class FlirCam(Device):
     setting = FlirCamSetting()
     pose = List()
-    offset = List()
+    offset = Float()
     est = PoseEstimator()
     cam = Any()
 
@@ -56,7 +55,10 @@ class FlirCam(Device):
         try:
             img = self.cam.get_array()  # Get 10 frames
             roll, pitch, yaw = self.est.pose_from_image(img)  # estimate the head pose
-            self.pose.append([roll, pitch, yaw])
+            if self.offset:
+                self.pose.append([roll-self.offset[0], pitch-self.offset[1], yaw-self.offset[2]])
+            else:
+                self.pose.append([roll, pitch, yaw])
             print("Acquired pose")
         except ValueError:
             print("Could not recognize face, make sure that camera can see the face!")
@@ -73,7 +75,7 @@ class FlirCam(Device):
         kwargs.get("RX81").write(tag='bitmask', value=self.setting.led_spk.digital_channel,
                   processors=self.setting.led_spk.digital_proc)  # illuminate LED
         roll, pitch, yaw = self.get_pose()
-        offset = pitch
+        self.offset = [roll, pitch, yaw]
         kwargs.get("RX81").write(tag='bitmask', value=0, processors=self.setting.led_spk.digital_proc)  # turn off LED
 
     def snapshot(self, cmap="gray"):
@@ -83,11 +85,17 @@ class FlirCam(Device):
 
 
 if __name__ == "__main__":
+    from matplotlib import pyplot as plt
 
+    # see if the logic works
     cam = FlirCam()
-    cam.configure(_is_ready=True)
+    cam.initialize()
+    cam.configure()
     cam.start()
+    cam.snapshot()
+    cam.pause()
 
+    # headpose estimation
     import time
     time.sleep(10)
     est = PoseEstimator()
@@ -98,7 +106,7 @@ if __name__ == "__main__":
     cam.stop()
     img = Image.fromarray(img)
     brightness = ImageEnhance.Brightness(img)
-    bright = brightness.enhance(2.0)
+    bright = brightness.enhance(6.0)
     array = np.asarray(bright)
     roll, pitch, yaw = est.pose_from_image(array)  # estimate the head pose
 
