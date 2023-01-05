@@ -126,7 +126,6 @@ class FlirCam(Device):
 
     def snapshot(self, cmap="gray"):
         """
-
         Args:
             cmap: matplotlib colormap
 
@@ -161,13 +160,13 @@ class FlirCam(Device):
 
         Args:
             image: image to be sharpened, must be in the form of an array.
-            factor: factor by which the image gets brightened.
+            factor: factor by which the image gets sharpened.
 
         Returns:
             sharpened image array.
         """
         img = Image.fromarray(image)  # transform array to PIL.Image object
-        filter = ImageEnhance.Sharpness(img)  # create brightness filter
+        filter = ImageEnhance.Sharpness(img)  # create sharpness filter
         sharpimg = filter.enhance(factor)  # enhance image
         array = np.asarray(sharpimg)  # transform back to array
         return array
