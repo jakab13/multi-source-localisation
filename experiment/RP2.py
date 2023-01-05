@@ -6,6 +6,7 @@ import time
 from traits.api import CFloat, CInt, Str, Any, Property
 import os
 import logging
+import numpy as np
 
 log = logging.getLogger(__name__)
 
@@ -29,10 +30,6 @@ class RP2Device(Device):
         self.handle.initialize(proc_list=[[self.setting.processor, self.setting.processor, os.path.join(expdir, self.setting.file)]],
                                connection=self.setting.connection)
 
-
-
-        self._output_specs = {}
-
     def _configure(self, **kwargs):
         pass
 
@@ -51,12 +48,17 @@ class RP2Device(Device):
         while not self.handle.read(tag="response", proc=self.setting.processor):
             time.sleep(0.1)
 
+    def get_response(self):
+        response = self.handle.read("response", self.setting.processor)
+        return int(np.log2(response))
+
+
 
 if __name__ == "__main__":
     RP2 = RP2Device()
     RP2.configure()
     RP2.start()
     RP2.wait_for_button()
-    response = RP2.handle.read("response", RP2.setting.processor)
+    response = RP2.get_response()
     RP2.pause()
     RP2.stop()
