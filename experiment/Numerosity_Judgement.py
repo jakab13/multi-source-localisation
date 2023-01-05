@@ -27,14 +27,18 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     setting = NumerosityJudgementSetting()
     data = ExperimentData()
     sequence = Any()
-    devices = dict()
+    devices = Any()
 
     def _initialize(self, **kwargs):
+        self.device["RP2"] = RP2Device()
+        self.decive["RX81"] = RX8Device()
+        self.device["RX81"].setting.index = 1
+        self.device["RX82"] = RX8Device()
+        self.device["RX82"].setting.index = 2
+
         keys = self.devices.keys()
         for device in keys:
             self.devices[device].initialize()
-
-        #self.sequence = slab.Trialsequence()
 
     def setup_experiment(self, info=None):
         self.sequence = slab.Trialsequence(conditions=self.setting.conditions, n_reps=self.setting.n_trials)
@@ -60,18 +64,6 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def _pause(self):
         pass
-
-    def set_signals_and_speakers(self, signals, speakers):
-        self.setting.signals = signals
-        self.setting.speakers = speakers
-        for idx, speaker in enumerate(speakers):
-            self.handle.write(tag=f"data{idx}",
-                              value=self.setting.signals[idx],
-                              procs=self.RX81.setting.processor)
-            self.handle.write(tag=f"chan{idx}",
-                              value=speaker.channel_analog,
-                              procs=self.RX81.setting.processor)
-            print(f"Set signal to speaker {speaker}")
 
     def load_sounds(self):
         pass
