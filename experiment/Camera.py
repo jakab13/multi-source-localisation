@@ -123,6 +123,8 @@ class FlirCam(Device):
             print("Successfully calibrated camera!")
         except ValueError:
             print("Could not see the face, make sure that the camera is seeing the face!")
+        if self.setting.calibrated:
+            self.handle.halt()
 
     def snapshot(self, cmap="gray"):
         """
