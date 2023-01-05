@@ -12,12 +12,12 @@ log = logging.getLogger(__name__)
 
 
 class RP2Setting(DeviceSetting):
-    sampling_freq = CFloat(48288.125, group='primary', dsec='sampling frequency of the device (Hz)')
+    sampling_freq = CFloat(48288.125, group='status', dsec='sampling frequency of the device (Hz)')
     buffer_size_max = CInt(50000, group='status', dsec='buffer size cannot be larger than this')
-    file = Str('MSL\\RCX\\button_rec.rcx', group='primary', dsec='name of the rcx file to load')
+    file = Str('MSL\\RCX\\button_rec.rcx', group='status', dsec='name of the rcx file to load')
     processor = Str('RP2', group='status', dsec='name of the processor')
     connection = Str('GB', group='status', dsec='')
-    index = CInt(1, group='primary', dsec='index of the device to connect to')
+    index = CInt(1, group='status', dsec='index of the device to connect to')
 
 
 class RP2Device(Device):
@@ -29,8 +29,11 @@ class RP2Device(Device):
         self.handle = tdt.Processors()
         self.handle.initialize(proc_list=[[self.setting.processor, self.setting.processor, os.path.join(expdir, self.setting.file)]],
                                connection=self.setting.connection)
+        print(f"Initialized {self.setting.processor}{self.setting.index}.")
 
     def _configure(self, **kwargs):
+        print(f"Configuring {self.setting.processor} ... ")
+
         pass
 
     def _start(self):
@@ -45,10 +48,12 @@ class RP2Device(Device):
         self.handle.halt()
 
     def wait_for_button(self):
+        print("Waiting for button press ...")
         while not self.handle.read(tag="response", proc=self.setting.processor):
             time.sleep(0.1)
 
     def get_response(self):
+        print("Acquiring response ... ")
         response = self.handle.read("response", self.setting.processor)
         return int(np.log2(response))
 

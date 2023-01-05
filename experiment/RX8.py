@@ -10,14 +10,13 @@ import time
 
 log = logging.getLogger(__name__)
 
-# TODO: configure() method is buggy. Fix it: It is only supposed to change setting parameters, nothing else
 
 class RX8Setting(DeviceSetting):
-    sampling_freq = CFloat(24144.0625, group='primary', dsec='sampling frequency of the device (Hz)', reinit=False)
+    sampling_freq = CFloat(24144.0625, group='status', dsec='sampling frequency of the device (Hz)')
     buffer_size_max = CInt(50000, group='status', dsec='buffer size cannot be larger than this')
-    file = Str('MSL\\RCX\\play_buf_msl.rcx', group='primary', dsec='name of the rcx file to load', reinit=False)
+    file = Str('MSL\\RCX\\play_buf_msl.rcx', group='status', dsec='name of the rcx file to load')
     processor = Str('RX8', group='status', dsec='name of the processor')
-    connection = Str('GB', group='status', dsec='')
+    connection = Str('GB', group='status', dsec='connection type of the processor')
     index = Any(group='primary', dsec='index of the device to connect to', reinit=False)
     signals = Any(group='primary', dsec='stimulus to play', reinit=False)
     speakers = Any(group="primary", dsex="speaker to pick", reinit=False)
