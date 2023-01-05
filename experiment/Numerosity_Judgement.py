@@ -27,6 +27,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     setting = NumerosityJudgementSetting()
     data = ExperimentData()
     sequence = Any()
+    devices = dict()
 
     def _initialize(self, **kwargs):
         keys = self.devices.keys()
