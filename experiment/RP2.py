@@ -33,7 +33,6 @@ class RP2Device(Device):
 
     def _configure(self, **kwargs):
         print(f"Configuring {self.setting.processor} ... ")
-
         pass
 
     def _start(self):

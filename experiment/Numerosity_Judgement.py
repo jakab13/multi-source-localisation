@@ -5,13 +5,16 @@ from labplatform.core.Subject import Subject, SubjectList
 from labplatform.config import get_config
 from experiment.RM1_RP2_sim import RP2Device
 from experiment.RX8_sim import RX8Device
+from experiment.Camera import FlirCam
 from Speakers.speaker_config import SpeakerArray
 import os
 from traits.api import Any, List, CInt, Str, Property, Int
 import numpy as np
 import random
 import slab
+import pathlib
 
+#TODO: implement speakers and signals
 
 class NumerosityJudgementSetting(ExperimentSetting):
     experiment_name = Str('Numerosity Judgement', group='status', dsec='name of the experiment', noshow=True)
@@ -28,6 +31,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     data = ExperimentData()
     sequence = Any()
     devices = Any()
+    speakers = Any()
+    signals = Any()
 
     def _initialize(self, **kwargs):
         self.device["RP2"] = RP2Device()
@@ -35,42 +40,61 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.device["RX81"].setting.index = 1
         self.device["RX82"] = RX8Device()
         self.device["RX82"].setting.index = 2
+        self.device["FlirCam"] = FlirCam()
 
-        keys = self.devices.keys()
-        for device in keys:
+        for device in self.devices.keys:
             self.devices[device].initialize()
+
+        self.load_speakers()
+        self.load_signals()
+
+    def _configure(self, **kwargs):
+        for device in self.devices.keys:
+            self.devices[device].configure()
+
+    def _start(self, **kwargs):
+        pass
+
+    def _pause(self, **kwargs):
+        pass
+
+    def _stop(self, **kwargs):
+        pass
+
+    def _prepare_trial(self, **kwargs):
+        pass
+
+    def _start_trial(self):
+        pass
+
+    def _stop_trial(self):
+        pass
 
     def setup_experiment(self, info=None):
         self.sequence = slab.Trialsequence(conditions=self.setting.conditions, n_reps=self.setting.n_trials)
         self.initialize()
 
     def configure_experiment(self):
-        pass
+        self.configure()
 
-    def _configure(self, **kargs):
-        pass
+    def load_signals(self, sound_type="tts_numbers_24414"):
+        sound_root = get_config(setting="SOUND_ROOT")
+        sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
+        sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
+        self.signals = sound_list
 
-    def _prepare_trial(self, **kwargs):
-        self.set_signals_and_speakers(self, kwargs)
-
-    def _start_trial(self):
-        self.devices['RM1'].start()
-
-    def _stop_trial(self):
-        pass
-
-    def _stop(self):
-        pass
-
-    def _pause(self):
-        pass
-
-    def load_sounds(self):
-        pass
+    def load_speakers(self, filename="dome_speakers.txt"):
+        basedir = get_config(setting="BASE_DIRECTORY")
+        filename = filename
+        file = os.path.join(basedir, filename)
+        spk_array = SpeakerArray(file=file)
+        spk_array.load_speaker_table()
+        self.speakers = spk_array
 
 
 if __name__ == "__main__":
     subject = Subject()
+    subject.name = "test"
     experiment = NumerosityJudgementExperiment(subject=subject)
 
     basedir = get_config(setting="BASE_DIRECTORY")

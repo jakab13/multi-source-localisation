@@ -130,9 +130,6 @@ class FlirCam(Device):
         """
         Args:
             cmap: matplotlib colormap
-
-        Returns:
-
         """
         print("Acquiring snapshot ...")
         image = self.cam.get_array()  # get image as np array
@@ -159,7 +156,6 @@ class FlirCam(Device):
     @staticmethod
     def sharpen(image, factor):
         """
-
         Args:
             image: image to be sharpened, must be in the form of an array.
             factor: factor by which the image gets sharpened.
