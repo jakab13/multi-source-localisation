@@ -14,7 +14,7 @@ import random
 import slab
 import pathlib
 
-#TODO: implement speakers and signals
+#TODO: what are all the methods supposed to do? What is the basic workflow of the experiment logic?
 
 class NumerosityJudgementSetting(ExperimentSetting):
     experiment_name = Str('Numerosity Judgement', group='status', dsec='name of the experiment', noshow=True)
@@ -33,6 +33,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     devices = Any()
     speakers = Any()
     signals = Any()
+    sample = Any()
 
     def _initialize(self, **kwargs):
         self.device["RP2"] = RP2Device()
@@ -44,9 +45,6 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
         for device in self.devices.keys:
             self.devices[device].initialize()
-
-        self.load_speakers()
-        self.load_signals()
 
     def _configure(self, **kwargs):
         for device in self.devices.keys:
@@ -73,9 +71,17 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     def setup_experiment(self, info=None):
         self.sequence = slab.Trialsequence(conditions=self.setting.conditions, n_reps=self.setting.n_trials)
         self.initialize()
+        self.load_speakers()
+        self.pick_speakers()
+        self.load_signals()
 
-    def configure_experiment(self):
+    def configure_experiment(self, condition):
+        self.pick_signals(condition=condition)
         self.configure()
+
+    def start_experiment(self, info=None):
+        for device in self.devices.keys:
+            self.devices[device].start()
 
     def load_signals(self, sound_type="tts_numbers_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
@@ -83,28 +89,26 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
         self.signals = sound_list
 
+    def pick_signals(self, condition):
+        self.sample = random.sample(self.signals, condition)
+
     def load_speakers(self, filename="dome_speakers.txt"):
         basedir = get_config(setting="BASE_DIRECTORY")
         filename = filename
         file = os.path.join(basedir, filename)
         spk_array = SpeakerArray(file=file)
         spk_array.load_speaker_table()
-        self.speakers = spk_array
+        speakers = spk_array.pick_speakers([x for x in range(19, 28)])
+        self.speakers = speakers
+
 
 
 if __name__ == "__main__":
     subject = Subject()
-    subject.name = "test"
+    subject.name = "Max"
+    subject.group = "pilot"
+    subject.species = "Human"
     experiment = NumerosityJudgementExperiment(subject=subject)
-
-    basedir = get_config(setting="BASE_DIRECTORY")
-    filename = "dome_speakers.txt"
-    file = os.path.join(basedir, filename)
-    spk_array = SpeakerArray(file=file)
-    spk_array.load_speaker_table()
-    spks = spk_array.pick_speakers(picks=[x for x in range(20, 23)])
-
-    signals = [slab.Sound.vowel()] * len(spks)
 
     experiment.initialize()
     experiment.start()

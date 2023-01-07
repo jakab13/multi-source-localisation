@@ -31,6 +31,7 @@ class RX8Device(Device):
         self.handle = tdt.Processors()
         self.handle.initialize(proc_list=[[self.setting.processor, self.setting.processor, os.path.join(expdir, self.setting.file)]],
                                connection=self.setting.connection)
+        self.handle.write("playbuflen", self.setting.sampling_freq, procs=self.handle.procs)
         print(f"Initialized {self.setting.processor}{self.setting.index}.")
 
         # create thread to monitoring hardware
@@ -44,7 +45,6 @@ class RX8Device(Device):
             self.handle.write(tag=f"data{idx}", value=self.setting.signals[idx].data.flatten(), procs=self.handle.procs)
             self.handle.write(tag=f"chan{idx}", value=spk.channel_analog, procs=self.handle.procs)
             print(f"Set signal to chan {idx}")
-        self.handle.write("playbuflen", self.setting.sampling_freq, procs=self.handle.procs)
         print(f"Configured {self.setting.processor}{self.setting.index}.")
 
     def _start(self):
