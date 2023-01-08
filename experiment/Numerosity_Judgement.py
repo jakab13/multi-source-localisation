@@ -26,6 +26,7 @@ class NumerosityJudgementSetting(ExperimentSetting):
     n_trials = CInt(20, group="primary", dsec="Number of total trials per block", reinit=False)
     n_conditions = List([2, 3, 4, 5], group="primary",
                         dsec="Number of simultaneous talkers in the experiment", reinit=False)
+    signal_log = Any(group="primary", dsec="Logs of the speakers and signals used in previous trials", reinit=False)
 
 
 class NumerosityJudgementExperiment(ExperimentLogic):
@@ -82,10 +83,11 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def configure_experiment(self):
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
-        self.pick_signals_this_trial()
+        self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
         self.configure()
 
     def start_experiment(self, info=None):
+        self.sequence.__next__()
         for device in self.devices.keys:
             self.devices[device].start()
         self.devices["RP2"].wait_for_button()
@@ -108,8 +110,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     def pick_speakers_this_trial(self, n_speakers):
         self.speakers_sample = random.sample(self.all_speakers, n_speakers)
 
-    def pick_signals_this_trial(self):
-        pass
+    def pick_signals_this_trial(self, n_signals):
+        self.signals_sample = random.sample(self.all_signals, n_signals)
 
 
 
