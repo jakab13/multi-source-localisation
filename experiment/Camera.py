@@ -2,18 +2,16 @@ from labplatform.config import get_config
 from labplatform.core.Setting import DeviceSetting
 from labplatform.core.Device import Device
 from traits.api import Instance, Float, Any, Str, List, Tuple, Bool
-
+from PIL import ImageEnhance, Image
+from labplatform.core import TDTblackbox as tdt
+import logging
 from headpose.detect import PoseEstimator
-from matplotlib import pyplot as plt
 import numpy as np
 from Speakers.speaker_config import SpeakerArray
 import os
 from simple_pyspin import Camera
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-from PIL import ImageEnhance, Image
-from labplatform.core import TDTblackbox as tdt
 
-import logging
 log = logging.getLogger(__name__)
 
 # TODO: Try camera calibration
@@ -80,6 +78,7 @@ class FlirCam(Device):
                 if self.offset:
                     self.pose.append([roll-self.offset[0], pitch-self.offset[1], yaw-self.offset[2]])  # subtract offset
                 else:
+                    print("WARNING: Camera not calibrated, head pose might be unreliable ...")
                     self.pose.append([roll, pitch, yaw])
                 print("Acquired pose!")
         except ValueError:

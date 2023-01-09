@@ -16,17 +16,18 @@ import time
 
 #TODO: what are all the methods supposed to do? What is the basic workflow of the experiment logic?
 #TODO: stimuli names do not include gender --> sort stimuli by gender
-#TODO: how to write responses to ExperimentData?
+#TODO: test experiment data class (write/read data from file)
 
 class NumerosityJudgementSetting(ExperimentSetting):
     experiment_name = Str('Numerosity Judgement', group='status', dsec='name of the experiment', noshow=True)
-    speakers = List(group="primary", dsec="list of speakers", reinit=False)
+    speakers = List(group="primary", dsec="List of speakers", reinit=False)
     signals = List(group="primary", dsec="Set to choose stimuli from", reinit=False)
-    n_blocks = CInt(1, group="primary", dsec="Number of total blocks per session", reinit=False)
-    n_trials = CInt(20, group="primary", dsec="Number of total trials per block", reinit=False)
-    conditions = List([2, 3, 4, 5], group="primary",
-                        dsec="Number of simultaneous talkers in the experiment", reinit=False)
-    signal_log = Any(group="primary", dsec="Logs of the speakers and signals used in previous trials", reinit=False)
+    n_blocks = CInt(1, group="status", dsec="Number of total blocks per session")
+    n_trials = CInt(20, group="status", dsec="Number of total trials per block")
+    conditions = List([2, 3, 4, 5], group="status",
+                        dsec="Number of simultaneous talkers in the experiment")
+    signal_log = Any(group="primary", dsec="Logs of the signals used in previous trials", reinit=False)
+    speaker_log = Any(group="primary", dsec="Logs of the speakers used in previous trials", reinit=False)
 
 
 class NumerosityJudgementExperiment(ExperimentLogic):
@@ -35,8 +36,6 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     data = ExperimentData()
     sequence = Any()
     devices = Any()
-    all_speakers = Any()
-    all_signals = Any()
     speakers_sample = Any()
     signals_sample = Any()
     response = Any()
@@ -110,7 +109,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
-        self.all_signals = sound_list
+        self.setting.signals = sound_list
 
     def load_speakers(self, filename="dome_speakers.txt"):
         basedir = get_config(setting="BASE_DIRECTORY")
@@ -118,13 +117,23 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         spk_array = SpeakerArray(file=filepath)
         spk_array.load_speaker_table()
         speakers = spk_array.pick_speakers([x for x in range(19, 28)])
-        self.all_speakers = speakers
+        self.setting.speakers = speakers
+
+    def get_idx_val(self, iterable, k):
+        indices = list()
+        values = list()
+        index_value = random.sample(enumerate(iterable), k)
+        for idx, val in index_value:
+            indices.append(idx)
+            values.append(val)
+        return indices, values
 
     def pick_speakers_this_trial(self, n_speakers):
-        self.speakers_sample = random.sample(self.all_speakers, n_speakers)
+        self.setting.speaker_log, self.speakers_sample = self.get_idx_val(self.speakers, k=n_speakers)
 
     def pick_signals_this_trial(self, n_signals):
-        self.signals_sample = random.sample(self.all_signals, n_signals)
+        self.setting.signal_log, self.signals_sample = self.get_idx_val(self.setting.signals, k=n_signals)
+
 
 
 

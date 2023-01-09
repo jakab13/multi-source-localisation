@@ -11,7 +11,7 @@ import time
 log = logging.getLogger(__name__)
 
 
-class RX8Setting(DeviceSetting):
+class RX8Setting(DeviceSetting):  # this class contains settings for the device and sits in self.setting
     sampling_freq = CFloat(24144.0625, group='status', dsec='sampling frequency of the device (Hz)')
     buffer_size_max = CInt(50000, group='status', dsec='buffer size cannot be larger than this')
     file = Str('MSL\\RCX\\play_buf_msl.rcx', group='status', dsec='name of the rcx file to load')
@@ -22,9 +22,9 @@ class RX8Setting(DeviceSetting):
     speakers = Any(group="primary", dsex="speaker to pick", reinit=False)
 
 class RX8Device(Device):
-    setting = RX8Setting()
-    handle = Any()
-    thread = Instance(threading.Thread)
+    setting = RX8Setting()  # device setting
+    handle = Any()  # device handle
+    thread = Instance(threading.Thread)  # important for threading
 
     def _initialize(self, **kwargs):
         expdir = get_config('DEVICE_ROOT')
