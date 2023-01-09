@@ -8,7 +8,7 @@ from experiment.RX8_sim import RX8Device
 from experiment.Camera import FlirCam
 from Speakers.speaker_config import SpeakerArray
 import os
-from traits.api import Any, List, CInt, Str
+from traits.api import Any, List, CInt, Str, Int, Float
 import random
 import slab
 import pathlib
@@ -36,10 +36,10 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     data = ExperimentData()
     sequence = Any()
     devices = Any()
-    speakers_sample = Any()
-    signals_sample = Any()
-    response = Any()
-    reaction_time = Any()
+    speakers_sample = List()
+    signals_sample = List()
+    response = Int()
+    reaction_time = Int()
     time_0 = time.time()
 
     def _initialize(self, **kwargs):
@@ -129,7 +129,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         return indices, values
 
     def pick_speakers_this_trial(self, n_speakers):
-        self.setting.speaker_log, self.speakers_sample = self.get_idx_val(self.speakers, k=n_speakers)
+        self.setting.speaker_log, self.speakers_sample = self.get_idx_val(self.setting.speakers, k=n_speakers)
 
     def pick_signals_this_trial(self, n_signals):
         self.setting.signal_log, self.signals_sample = self.get_idx_val(self.setting.signals, k=n_signals)
