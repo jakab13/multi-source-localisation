@@ -9,10 +9,10 @@ from experiment.Camera import FlirCam
 from Speakers.speaker_config import SpeakerArray
 import os
 from traits.api import Any, List, CInt, Str
-import numpy as np
 import random
 import slab
 import pathlib
+import time
 
 #TODO: what are all the methods supposed to do? What is the basic workflow of the experiment logic?
 #TODO: stimuli names do not include gender --> sort stimuli by gender
@@ -24,7 +24,7 @@ class NumerosityJudgementSetting(ExperimentSetting):
     signals = List(group="primary", dsec="Set to choose stimuli from", reinit=False)
     n_blocks = CInt(1, group="primary", dsec="Number of total blocks per session", reinit=False)
     n_trials = CInt(20, group="primary", dsec="Number of total trials per block", reinit=False)
-    n_conditions = List([2, 3, 4, 5], group="primary",
+    conditions = List([2, 3, 4, 5], group="primary",
                         dsec="Number of simultaneous talkers in the experiment", reinit=False)
     signal_log = Any(group="primary", dsec="Logs of the speakers and signals used in previous trials", reinit=False)
 
@@ -39,14 +39,17 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     all_signals = Any()
     speakers_sample = Any()
     signals_sample = Any()
+    response = Any()
+    reaction_time = Any()
+    time_0 = time.time()
 
     def _initialize(self, **kwargs):
-        self.device["RP2"] = RP2Device()
-        self.decive["RX81"] = RX8Device()
-        self.device["RX81"].setting.index = 1
-        self.device["RX82"] = RX8Device()
-        self.device["RX82"].setting.index = 2
-        self.device["FlirCam"] = FlirCam()
+        self.devices["RP2"] = RP2Device()
+        self.decives["RX81"] = RX8Device()
+        self.devices["RX81"].setting.index = 1
+        self.devices["RX82"] = RX8Device()
+        self.devices["RX82"].setting.index = 2
+        self.devices["FlirCam"] = FlirCam()
 
         for device in self.devices.keys:
             self.devices[device].initialize()
@@ -73,7 +76,15 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         pass
 
     def _stop_trial(self):
-        pass
+        current_trial = self.sequence.this_n
+        is_correct = True if self.sequence.this_trialtrial / self.response == 1 else False
+        self.data.write(key="response", data=self.response, current_trial=current_trial)
+        self.data.write(key="solution", data=self.sequence.this_trial, current_trial=current_trial)
+        self.data.write(key="reaction_time", data=self.reaction_time, current_trial=current_trial)
+        self.data.write(key="is_correct", data=is_correct, current_trial=current_trial)
+        self.data.save()
+        print(f"Trial {current_trial} end {time.time()-self.time_0}")
+        self.time_0 = time.time()
 
     def setup_experiment(self, info=None):
         self.sequence = slab.Trialsequence(conditions=self.setting.conditions, n_reps=self.setting.n_trials)
@@ -90,8 +101,10 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.sequence.__next__()
         for device in self.devices.keys:
             self.devices[device].start()
+        start_time = time.time()
         self.devices["RP2"].wait_for_button()
-        response = self.devices["RP2"].get_response()
+        self.response = self.devices["RP2"].get_response()
+        self.reaction_time = int(round(time.time() - start_time, 3) * 1000)
 
     def load_signals(self, sound_type="tts-numbers_24414"):
         sound_root = get_config(setting="SOUND_ROOT")

@@ -21,8 +21,8 @@ class RP2Setting(DeviceSetting):
 
 
 class RP2Device(Device):
-    setting = RP2Setting()
-    handle = Any()
+    setting = RP2Setting()  # define setting for the device
+    handle = Any()  # handle for TDT method execution like handle.write, handle.read, ...
 
     def _initialize(self, **kwargs):
         expdir = get_config('DEVICE_ROOT')
