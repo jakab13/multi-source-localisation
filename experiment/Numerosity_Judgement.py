@@ -17,6 +17,7 @@ import time
 #TODO: what are all the methods supposed to do? What is the basic workflow of the experiment logic?
 #TODO: stimuli names do not include gender --> sort stimuli by gender
 #TODO: test experiment data class (write/read data from file)
+#TODO: check signal and speaker log before trial
 
 class NumerosityJudgementSetting(ExperimentSetting):
     experiment_name = Str('Numerosity Judgement', group='status', dsec='name of the experiment', noshow=True)
