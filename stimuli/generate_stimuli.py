@@ -18,7 +18,7 @@ import ast
 from stimuli.tts_models import models, get_from_c_arg
 
 DIR = pathlib.Path(os.getcwd())
-save_directory = DIR / "samples" / "TTS"
+save_directory = DIR / "samples" / "TTS" / "countries"
 
 tts_models = models["tts_models"]  # Between 1-58
 vocoder_models = models["vocoder_models"]  # Between 1-16
@@ -67,11 +67,41 @@ sentences = [
 ]
 sentences = ["One and two and three and four and five and.",
              "Six and eight and nine and."]
+sentences = [
+    "Belgium",
+    "Britain",
+    "Burma",
+    "China",
+    "Congo",
+    "Cuba",
+    "Haiti",
+    "Japan",
+    "Korea",
+    "Libya",
+    "Mali",
+    "Mexico",
+    "Nauru",
+    "Norway",
+    "Oman",
+    "Peru",
+    "Russia",
+    "Sudan",
+    "Syria",
+    "Togo",
+    "Tonga",
+    "Turkey",
+    "Yemen",
+    "Zambia"
+]
+
 tts_model = tts_models[16]
 tts_c_arg = tts_model["c_arg"]
 for text in sentences:
     for speaker_id in list(tts_model["speaker_idxs"].keys())[:10]:
-        filepath = save_directory / str("talker-" + speaker_id + "_" + "text-" + "'" + text + "'" + ".wav")
+        sex = tts_model["speaker_genders"][speaker_id]
+        filepath = save_directory / str("talker-" + speaker_id + "_" +
+                                        "sex-" + sex + "_" +
+                                        "text-" + "'" + text + "'" + ".wav")
         args = [
             "tts",
             "--text", text,
