@@ -5,14 +5,17 @@ from traits.api import Instance, Float, Any, Str, List, Tuple, Bool
 from PIL import ImageEnhance, Image
 from labplatform.core import TDTblackbox as tdt
 import logging
-from headpose.detect import PoseEstimator
+try:
+    from headpose.detect import PoseEstimator
+except ModuleNotFoundError:
+    print("WARNING: headpose package not found, maybe try reinstalling: pip install headpose")
 import numpy as np
 from Speakers.speaker_config import SpeakerArray
 import os
 from simple_pyspin import Camera
 import cv2
 import PySpin
-import Pillow as PIL
+import PIL
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 log = logging.getLogger(__name__)
@@ -38,6 +41,7 @@ class ArUcoCamSetting(DeviceSetting):
     offset = Float(group="primary", dsec="Camera offset, estimated during camera calibration and subtracted from pose",
                    reinit=False)
 
+
 class ArUcoCam(Device):
     """
     Class for controlling the device. We set the setting class as this classes attribute (.setting). Also we have
@@ -46,8 +50,8 @@ class ArUcoCam(Device):
     """
     setting = ArUcoCamSetting()
     handle = Any()
-    aruco_dicts = [cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_100),
-                   cv2.aruco.Dictionary_get(cv2.aruco.DICT_5X5_100)]
+    aruco_dicts = [cv2.aruco.Dictionary.get(cv2.aruco.DICT_4X4_100),
+                   cv2.aruco.Dictionary.get(cv2.aruco.DICT_5X5_100)]
     params = cv2.aruco.DetectorParameters_create()
     system = PySpin.System.GetInstance()
     cams = system.GetCameras()

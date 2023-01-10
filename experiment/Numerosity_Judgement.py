@@ -5,7 +5,7 @@ from labplatform.core.Subject import Subject, SubjectList
 from labplatform.config import get_config
 from experiment.RM1_RP2_sim import RP2Device
 from experiment.RX8_sim import RX8Device
-from experiment.Camera import FlirCam
+from experiment.Camera import ArUcoCam
 from Speakers.speaker_config import SpeakerArray
 import os
 from traits.api import Any, List, CInt, Str, Int, Float
@@ -49,7 +49,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.devices["RX81"].setting.index = 1
         self.devices["RX82"] = RX8Device()
         self.devices["RX82"].setting.index = 2
-        self.devices["FlirCam"] = FlirCam()
+        self.devices["FlirCam"] = ArUcoCam()
 
         for device in self.devices.keys:
             self.devices[device].initialize()
