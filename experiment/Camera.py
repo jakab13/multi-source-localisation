@@ -12,13 +12,14 @@ import os
 from simple_pyspin import Camera
 import cv2
 import PySpin
+import Pillow as PIL
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 log = logging.getLogger(__name__)
 
 # TODO: Implement aruco headpose estimation
 
-class ArucoCamSetting(DeviceSetting):
+class ArUcoCamSetting(DeviceSetting):
     """
     Class for defining the camera settings. primary group parameters are supposed to be changed and sometimes
     reinitialized, whereas status group parameters are not.
@@ -37,14 +38,13 @@ class ArucoCamSetting(DeviceSetting):
     offset = Float(group="primary", dsec="Camera offset, estimated during camera calibration and subtracted from pose",
                    reinit=False)
 
-class FlirCam(Device):
+class ArUcoCam(Device):
     """
     Class for controlling the device. We set the setting class as this classes attribute (.setting). Also we have
     placeholders for the offset of the camera, the pose for each trial, the PoseEstimator (CNN), the cam itself and the
     tdt handle, mainly for calibration.
     """
-    setting = ArucoCamSetting()
-    cam = Any()
+    setting = ArUcoCamSetting()
     handle = Any()
     aruco_dicts = [cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_100),
                    cv2.aruco.Dictionary_get(cv2.aruco.DICT_5X5_100)]
@@ -64,16 +64,17 @@ class FlirCam(Device):
             cam.Init()
             cam.ExposureAuto.SetValue(PySpin.ExposureAuto_Off)  # disable auto exposure time
             cam.ExposureTime.SetValue(10000.0)  # ???
-            try:
-                cam.BeginAcquisition()
-            except:
-                print('camera already streaming')
 
     def _configure(self, **kwargs):
         """
         Manipulates the setting parameters of the class and sets the state to "ready. Needs to be called in each trial.
         """
-        print("Configuring camera settings ...")
+        print("Configuring camera ...")
+        try:
+            cam.BeginAcquisition()
+            print("Begin streaming ...")
+        except:
+            print('Camera already streaming')
         pass
 
     def _start(self, **kwargs):
@@ -81,18 +82,15 @@ class FlirCam(Device):
         Runs the device and sets the state to "running". Here lie all the important steps the camera has to do in each
         trial, such as acquiring and writing the head pose.
         """
-        self.cam.start()  # start recording images into the camera buffer
+          # start recording images into the camera buffer
         print("Acquiring image ... ")
         try:
             if self.setting.calibrated:
-                img = self.cam.get_array()  # Get image as numpy array
-                roll, pitch, yaw = self.est.pose_from_image(img)  # estimate the head pose from the np array
-                if self.offset:
-                    self.pose.append([roll-self.offset[0], pitch-self.offset[1], yaw-self.offset[2]])  # subtract offset
-                else:
-                    print("WARNING: Camera not calibrated, head pose might be unreliable ...")
-                    self.pose.append([roll, pitch, yaw])
-                print("Acquired pose!")
+                try:
+                    self.get_pose()
+                except:
+                    print('Camera already streaming')
+
         except ValueError:
             print("Could not recognize face, make sure that camera can see the face!")
 
@@ -104,7 +102,6 @@ class FlirCam(Device):
         for cam in self.cams:
             if cam.IsInitialized():
                 cam.EndAcquisition()
-                cam.DeInit()
 
     def _stop(self):
         """
@@ -147,15 +144,92 @@ class FlirCam(Device):
         if self.setting.calibrated:
             self.handle.halt()
 
-    def snapshot(self, cmap="gray"):
-        """
-        Args:
-            cmap: matplotlib colormap
-        """
-        print("Acquiring snapshot ...")
-        image = self.cam.get_array()  # get image as np array
-        plt.imshow(image, cmap=cmap)  # show image
-        plt.show()
+    def get_pose(self, show=False, scale=False):
+        pose = [None, None]
+        for i, cam in enumerate(self.cams):
+            image = self.get_image(cam)
+            if scale:
+                image = self.change_res(image, 0.5)
+            _pose, info = self.pose_from_image(image, self.aruco_dicts[i])
+            if show:
+                if _pose != None:
+                    image = self.draw_markers(image, _pose, self.aruco_dicts[i], info)
+                cv2.imshow('camera %s' % cam.DeviceID(), image)
+                cv2.waitKey(1) & 0xFF
+            else:
+                cv2.waitKey(0)
+            if _pose:
+                _pose = np.asarray(_pose)[:, 2].astype('float16')
+                # remove outliers
+                d = np.abs(_pose - np.median(_pose))  # deviation from median
+                mdev = np.median(d)  # mean deviation
+                s = d / mdev if mdev else 0.  # factorized mean deviation of each element in pose
+                _pose = _pose[s < 2]  # remove outliers
+                _pose = np.mean(_pose)
+                pose[i] = _pose
+        return pose
+
+    def get_image(self, plot=False):
+        image_result = cam.GetNextImage()
+        image = image_result.Convert(PySpin.PixelFormat_Mono8, PySpin.HQ_LINEAR)
+        # image = image_result.Convert(PySpin.PixelFormat_RGB8, PySpin.HQ_LINEAR)
+        image = image.GetNDArray()
+        image.setflags(write=1)
+        image_result.Release()
+        if plot:
+            plt.imshow(image)
+            plt.show()
+        return image
+
+    def pose_from_image(self, image):  # get pose
+        (corners, ids, rejected) = cv2.aruco.detectMarkers(image, dictionary=self.aruco_dict, parameters=self.params)
+        if len(corners) == 0:
+            return None, [0, 0, 0, 0]
+        else:
+            size = image.shape
+            focal_length = size[1]
+            center = (size[1] / 2, size[0] / 2)
+            camera_matrix = np.array([[focal_length, 0, center[0]],
+                                         [0, focal_length, center[1]],
+                                         [0, 0, 1]], dtype="double")
+            dist_coeffs = np.zeros((4, 1))  # Assuming no lens distortion
+            # camera_matrix = numpy.loadtxt('mtx.txt')
+            # dist_coeffs = numpy.loadtxt('dist.txt')
+            rotation_vec, translation_vec, _objPoints = \
+                cv2.aruco.estimatePoseSingleMarkers(corners, .05, camera_matrix, dist_coeffs)
+            pose = []  # numpy.zeros([len(translation_vec), 2])
+            info = []  # numpy.zeros([len(translation_vec), 4])
+            for i in range(len(translation_vec)):
+                rotation_mat = -cv2.Rodrigues(rotation_vec[i])[0]
+                pose_mat = cv2.hconcat((rotation_mat, translation_vec[i].T))
+                _, _, _, _, _, _, angles = cv2.decomposeProjectionMatrix(pose_mat)
+                angles[1, 0] = np.radians(angles[1, 0])
+                angles[1, 0] = np.degrees(np.arcsin(np.sin(np.radians(angles[1, 0]))))
+                angles[0, 0] = -angles[0, 0]
+                info.append([camera_matrix, dist_coeffs, rotation_vec[i], translation_vec[i]])
+                pose.append([angles[1, 0], angles[0, 0], angles[2, 0]])
+            return pose, info
+
+    def draw_markers(self, image, pose, aruco_dict, info):
+        marker_len = .05
+        (corners, ids, rejected) = cv2.aruco.detectMarkers(image, dictionary=aruco_dict)
+        if len(corners) > 0:
+            for i in range(len(corners)):
+                Imaxis = cv2.aruco.drawDetectedMarkers(image.copy(), corners, ids=None)
+                image = cv2.aruco.drawAxis(Imaxis, info[i][0], info[i][1], info[i][2], info[i][3], marker_len)
+                # info: list of arrays [camera_matrix, dist_coeffs, rotation_vec, translation_vec]
+                bottomLeftCornerOfText = (20, 20 + (20 * i))
+                cv2.putText(image, 'roll: %f' % (pose[i][2]),  # display heade pose
+                            bottomLeftCornerOfText, cv2.FONT_HERSHEY_PLAIN, fontScale=1, color=(225, 225, 225),
+                            lineType=1, thickness=1)
+        return (image)
+
+    def change_res(self, image, resolution):
+        data = PIL.Image.fromarray(image)
+        width = int(data.size[0] * resolution)
+        height = int(data.size[1] * resolution)
+        image = data.resize((width, height), PIL.Image.ANTIALIAS)
+        return np.asarray(image)
 
     @staticmethod
     def brighten(image, factor):
