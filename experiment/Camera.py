@@ -20,7 +20,7 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 log = logging.getLogger(__name__)
 
-# TODO: Implement aruco headpose estimation
+# TODO: Test aruco headpose estimation
 
 class ArUcoCamSetting(DeviceSetting):
     """
@@ -34,12 +34,7 @@ class ArUcoCamSetting(DeviceSetting):
     root = Str(get_config(setting="BASE_DIRECTORY"), group="status", dsec="Labplatform root directory")
     setup = Str("dome", group="status", dsec="experiment setup")
     file = Str(f"{setup.default_value}_speakers.txt", group="status", dsec="Speaker file")
-    led = Any(Instance, group="primary", dsec="Central speaker with attached led for initial camera calibration",
-              reinit=False)
-    calibrated = Bool(group="primary", dsec="Tells whether camera is calibrated or not", reinit=False)
     pose = List(group="primary", dsec="Headpose", reinit=False)
-    offset = Float(group="primary", dsec="Camera offset, estimated during camera calibration and subtracted from pose",
-                   reinit=False)
 
 
 class ArUcoCam(Device):
@@ -49,21 +44,21 @@ class ArUcoCam(Device):
     tdt handle, mainly for calibration.
     """
     setting = ArUcoCamSetting()
-    handle = Any()
-    aruco_dicts = [cv2.aruco.Dictionary.get(cv2.aruco.DICT_4X4_100),
-                   cv2.aruco.Dictionary.get(cv2.aruco.DICT_5X5_100)]
+    devices = Any()
+    aruco_dicts = [cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_100),
+                   cv2.aruco.Dictionary_get(cv2.aruco.DICT_5X5_100)]
     params = cv2.aruco.DetectorParameters_create()
     system = PySpin.System.GetInstance()
     cams = system.GetCameras()
+    led = Any()
+    offset = Any()
+    calibrated = Bool()
 
     def _initialize(self, **kwargs):
         """
         Initializes the device and sets the state to "created". Necessary before running the device.
         """
         print("Initializing cameras ... ")
-        spks = SpeakerArray(file=os.path.join(self.setting.root, self.setting.file))  # initialize speakers.
-        spks.load_speaker_table()  # load speakertable
-        self.setting.led = spks.pick_speakers(23)[0]  # pick central speaker
         for cam in self.cams:  # initialize cameras
             cam.Init()
             cam.ExposureAuto.SetValue(PySpin.ExposureAuto_Off)  # disable auto exposure time
@@ -79,24 +74,19 @@ class ArUcoCam(Device):
             print("Begin streaming ...")
         except:
             print('Camera already streaming')
-        pass
 
     def _start(self, **kwargs):
         """
         Runs the device and sets the state to "running". Here lie all the important steps the camera has to do in each
         trial, such as acquiring and writing the head pose.
         """
-          # start recording images into the camera buffer
         print("Acquiring image ... ")
         try:
             if self.setting.calibrated:
-                try:
-                    self.get_pose()
-                except:
-                    print('Camera already streaming')
-
-        except ValueError:
-            print("Could not recognize face, make sure that camera can see the face!")
+                pose = self.get_pose()
+                self.pose.append(pose)
+        except:
+            print("Cannot get pose, make sure that markers can be seen by cameras!")
 
     def _pause(self, **kwargs):
         """
@@ -120,48 +110,17 @@ class ArUcoCam(Device):
         self.cams.Clear()
         self.system.ReleaseInstance()
 
-    def calibrate(self):
-        """
-        Calibrates the camera. Initializes the RX81 to access the central loudspeaker. Illuminates the led on ele, azi 0°,
-        then acquires the headpose and uses it as the offset. Turns the led off afterwards.
-        """
-        print("Calibrating camera ...")
-        expdir = get_config('DEVICE_ROOT')
-        self.handle = tdt.Processors()
-        self.handle.initialize(proc_list=[[self.setting.processor,
-                                           self.setting.processor,
-                                           os.path.join(expdir, self.setting.file)]],
-                                           connection=self.setting.connection)
-        print(f"Initialized {self.setting.processor}{self.setting.index}.")
-        self.handle.write(tag='bitmask',
-                          value=self.setting.led_spk.digital_channel,
-                          processors=self.setting.led_spk.digital_proc)  # illuminate LED
-        self.handle
-        try:
-            roll, pitch, yaw = self.get_pose()  # get head pose
-            self.offset = [roll, pitch, yaw]  # use head pose as offset
-            self.handle.write(tag='bitmask', value=0, processors=self.setting.led_spk.digital_proc)  # turn off LED
-            self.setting.calibrated = True
-            print("Successfully calibrated camera!")
-        except ValueError:
-            print("Could not see the face, make sure that the camera is seeing the face!")
-        if self.setting.calibrated:
-            self.handle.halt()
-
-    def get_pose(self, show=False, scale=False):
+    def get_pose(self, plot=False, resolution=1.0):
         pose = [None, None]
         for i, cam in enumerate(self.cams):
             image = self.get_image(cam)
-            if scale:
-                image = self.change_res(image, 0.5)
-            _pose, info = self.pose_from_image(image, self.aruco_dicts[i])
-            if show:
-                if _pose != None:
+            if resolution < 1.0:
+                image = self.change_res(image, resolution)
+            _pose, info = self.pose_from_image(image=image, dictionary=self.aruco_dicts[i])
+            if plot:
+                if _pose is None:
                     image = self.draw_markers(image, _pose, self.aruco_dicts[i], info)
                 cv2.imshow('camera %s' % cam.DeviceID(), image)
-                cv2.waitKey(1) & 0xFF
-            else:
-                cv2.waitKey(0)
             if _pose:
                 _pose = np.asarray(_pose)[:, 2].astype('float16')
                 # remove outliers
@@ -173,20 +132,18 @@ class ArUcoCam(Device):
                 pose[i] = _pose
         return pose
 
-    def get_image(self, plot=False):
+    @staticmethod
+    def get_image(cam):
         image_result = cam.GetNextImage()
         image = image_result.Convert(PySpin.PixelFormat_Mono8, PySpin.HQ_LINEAR)
         # image = image_result.Convert(PySpin.PixelFormat_RGB8, PySpin.HQ_LINEAR)
         image = image.GetNDArray()
         image.setflags(write=1)
         image_result.Release()
-        if plot:
-            plt.imshow(image)
-            plt.show()
         return image
 
-    def pose_from_image(self, image):  # get pose
-        (corners, ids, rejected) = cv2.aruco.detectMarkers(image, dictionary=self.aruco_dict, parameters=self.params)
+    def pose_from_image(self, image, dictionary):  # get pose
+        (corners, ids, rejected) = cv2.aruco.detectMarkers(image, dictionary=dictionary, parameters=self.params)
         if len(corners) == 0:
             return None, [0, 0, 0, 0]
         else:
@@ -226,7 +183,7 @@ class ArUcoCam(Device):
                 cv2.putText(image, 'roll: %f' % (pose[i][2]),  # display heade pose
                             bottomLeftCornerOfText, cv2.FONT_HERSHEY_PLAIN, fontScale=1, color=(225, 225, 225),
                             lineType=1, thickness=1)
-        return (image)
+        return image
 
     def change_res(self, image, resolution):
         data = PIL.Image.fromarray(image)

@@ -13,8 +13,8 @@ import random
 import slab
 import pathlib
 import time
+import numpy as np
 
-#TODO: what are all the methods supposed to do? What is the basic workflow of the experiment logic?
 #TODO: stimuli names do not include gender --> sort stimuli by gender
 #TODO: test experiment data class (write/read data from file)
 #TODO: check signal and speaker log before trial
@@ -25,8 +25,7 @@ class NumerosityJudgementSetting(ExperimentSetting):
     signals = List(group="primary", dsec="Set to choose stimuli from", reinit=False)
     n_blocks = CInt(1, group="status", dsec="Number of total blocks per session")
     n_trials = CInt(20, group="status", dsec="Number of total trials per block")
-    conditions = List([2, 3, 4, 5], group="status",
-                        dsec="Number of simultaneous talkers in the experiment")
+    conditions = List([2, 3, 4, 5], group="status", dsec="Number of simultaneous talkers in the experiment")
     signal_log = Any(group="primary", dsec="Logs of the signals used in previous trials", reinit=False)
     speaker_log = Any(group="primary", dsec="Logs of the speakers used in previous trials", reinit=False)
 
@@ -49,7 +48,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.devices["RX81"].setting.index = 1
         self.devices["RX82"] = RX8Device()
         self.devices["RX82"].setting.index = 2
-        self.devices["FlirCam"] = ArUcoCam()
+        self.devices["ArUcoCam"] = ArUcoCam()
 
         for device in self.devices.keys:
             self.devices[device].initialize()
@@ -135,9 +134,45 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     def pick_signals_this_trial(self, n_signals):
         self.setting.signal_log, self.signals_sample = self.get_idx_val(self.setting.signals, k=n_signals)
 
+    def calibrate_camera(self, report=True, limit=0.5):
+        """
+        Calibrates the camera. Initializes the RX81 to access the central loudspeaker. Illuminates the led on ele,
+        azi 0°, then acquires the headpose and uses it as the offset. Turns the led off afterwards.
+        """
+        for key in self.devices.keys:
+            if not self.devices[key].state == "Ready":
+                print("Devices not ready for camera calibration. Make sure devices are initialized!")
+        print("Calibrating camera ...")
 
+        spks = SpeakerArray(file=os.path.join(self.devices["ArUcoCam"].setting.root, self.devices["ArUcoCam"].file))  # initialize speakers.
+        spks.load_speaker_table()  # load speakertable
+        self.devices["ArUcoCam"].led = spks.pick_speakers(23)[0]  # pick central speaker
 
-
+        print(f"Initialized processors {[k for k in self.devices.keys]}.")
+        self.devices["RX81"].write(tag='bitmask',
+                                   value=self.led.channel_digital,
+                                   processors=self.led.TDT_digital)  # illuminate LED
+        print('Point towards led and press button to start calibration...')
+        self.devices["RP2"].wait_for_button()  # start calibration after button press
+        _log = np.zeros(2)
+        while True:  # wait in loop for sensor to stabilize
+            pose = self.get_pose()
+            # print(pose)
+            log = np.vstack((_log, pose))
+            if log[-1, 0] == None or log[-1, 1] == None:
+                print('No marker detected')
+            # check if orientation is stable for at least 30 data points
+            if len(log) > 30 and all(log[-20:, 0] != None) and all(log[-20:, 1] != None):
+                diff = np.mean(np.abs(np.diff(log[-20:], axis=0)), axis=0).astype('float16')
+                if report:
+                    print('az diff: %f,  ele diff: %f' % (diff[0], diff[1]), end="\r", flush=True)
+                if diff[0] < limit and diff[1] < limit:  # limit in degree
+                    break
+        self.devices["RX81"].write(tag='bitmask', value=0, processors=self.led.TDT_digital)  # turn off LED
+        pose_offset = np.around(np.mean(log[-20:].astype('float16'), axis=0), decimals=2)
+        # print('calibration complete, thank you!')
+        self.devices["ArUcoCam"].offset = pose_offset
+        self.devices["ArUcoCam"].calibrated = True
 
 
 if __name__ == "__main__":
