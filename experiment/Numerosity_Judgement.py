@@ -3,22 +3,22 @@ from labplatform.core.ExperimentLogic import ExperimentLogic
 from labplatform.core.Data import ExperimentData
 from labplatform.core.Subject import Subject, SubjectList
 from labplatform.config import get_config
-from labplatform.core.Subject import load_cohort
 from experiment.RP2 import RP2Device
-from experiment.RX8 import RX8Device
+from experiment.RX8 import RX81Device, RX82Device
 # from experiment.Camera import ArUcoCam
 from Speakers.speaker_config import SpeakerArray
 import os
-from traits.api import Any, List, CInt, Str, Int, Dict
+from traits.api import List, CInt, Str, Int, Dict
 import random
 import slab
 import pathlib
 import time
 import numpy as np
 
-#TODO: stimuli names do not include gender --> sort stimuli by gender
-#TODO: test experiment data class (write/read data from file)
-#TODO: check signal and speaker log before trial
+# TODO: stimuli names do not include gender --> sort stimuli by gender
+# TODO: test experiment data class (write/read data from file)
+# TODO: check signal and speaker log before trial
+# TODO: Implement ArUcoCam
 
 class NumerosityJudgementSetting(ExperimentSetting):
     experiment_name = Str('Numerosity Judgement', group='primary', dsec='name of the experiment', noshow=True)
@@ -27,15 +27,15 @@ class NumerosityJudgementSetting(ExperimentSetting):
     n_blocks = CInt(1, group="status", dsec="Number of total blocks per session")
     n_trials = CInt(20, group="status", dsec="Number of total trials per block")
     conditions = List([2, 3, 4, 5], group="status", dsec="Number of simultaneous talkers in the experiment")
-    signal_log = List(999, group="primary", dsec="Logs of the signals used in previous trials", reinit=False)
-    speaker_log = List(999, group="primary", dsec="Logs of the speakers used in previous trials", reinit=False)
+    signal_log = List([9999], group="primary", dsec="Logs of the signals used in previous trials", reinit=False)
+    speaker_log = List([999], group="primary", dsec="Logs of the speakers used in previous trials", reinit=False)
 
 
 class NumerosityJudgementExperiment(ExperimentLogic):
 
     setting = NumerosityJudgementSetting()
     data = ExperimentData()
-    sequence = Any()
+    sequence = slab.Trialsequence(conditions=setting.conditions, n_reps=setting.n_trials)
     devices = Dict()
     speakers_sample = List()
     signals_sample = List()
@@ -43,21 +43,22 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     reaction_time = Int()
     time_0 = time.time()
 
+
     def _initialize(self, **kwargs):
         self.devices["RP2"] = RP2Device()
-        self.devices["RX81"] = RX8Device()
-        self.devices["RX81"].setting.index = 1
-        self.devices["RX81"].initialize()
-        self.devices["RX82"] = RX8Device()
-        self.devices["RX82"].setting.index = 2
-        self.devices["RX82"].initialize()
+        self.devices["RX81"] = RX81Device()
+        #self.devices["RX81"].initialize()
+        #self.devices["RX82"] = RX82Device()
+        #self.devices["RX82"].initialize()
+        self.load_speakers()
+        self.load_signals()
         # self.devices["ArUcoCam"] = ArUcoCam()
 
     def _configure(self, **kwargs):
         self.devices["RX81"].setting.signals = self.signals_sample
         self.devices["RX81"].setting.speakers = self.speakers_sample
-        for device in self.devices.keys():
-            self.devices[device].configure()
+        #for device in self.devices.keys():
+            #self.devices[device].configure()
 
     def _start(self, **kwargs):
         pass
@@ -86,21 +87,15 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.time_0 = time.time()
 
     def setup_experiment(self, info=None):
-        self.sequence = slab.Trialsequence(conditions=self.setting.conditions, n_reps=self.setting.n_trials)
-        self.initialize()
-        self.load_speakers()
-        self.load_signals()
-        print("Set up experiment!")
-
-    def configure_experiment(self):
         self.sequence.__next__()
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
-        self.configure()
+        print("Set up experiment!")
+
+    def configure_experiment(self):
+        print("Configured experiment!")
 
     def start_experiment(self, info=None):
-        for device in self.devices.keys:
-            self.devices[device].start()
         start_time = time.time()
         self.devices["RP2"].wait_for_button()
         self.response = self.devices["RP2"].get_response()
@@ -130,7 +125,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def pick_signals_this_trial(self, n_signals):
         signals_no_rep = list(x for x in self.setting.signals if x not in self.setting.signal_log)
-        self.speakers_sample = random.sample(signals_no_rep, n_signals)
+        self.signals_sample = random.sample(signals_no_rep, n_signals)
 
     def calibrate_camera(self, report=True, limit=0.5):
         """
@@ -187,12 +182,10 @@ if __name__ == "__main__":
         sl.read_from_h5file()
         test_subject = sl.subjects[0]
     subject.data_path = os.path.join(get_config("DATA_ROOT"), subject.name)
-    experiment = NumerosityJudgementExperiment(subject=subject)
+    nje = NumerosityJudgementExperiment(subject=subject)
 
-    experiment.setup_experiment()
-    experiment.configure_experiment()
-    experiment.start()
-    experiment.pause()
-    experiment.stop()
+    nje.start()
+    nje.pause()
+    nje.stop()
 
 
