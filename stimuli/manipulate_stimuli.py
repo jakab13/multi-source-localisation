@@ -136,3 +136,29 @@ if __name__ == "__main__":
     sound_list_resamp = resample(sounds_data, samplerate=int(48828/2))
     for i, sound in enumerate(sound_list_resamp):
         slab.Sound.write(sound, filename=DIR/dir_names[i])
+
+    # sort signals
+    sound_type = "tts-numbers_24414"
+    sound_root = pathlib.Path("C:\labplatform\sound_files")
+    sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
+    sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
+
+    # sort signals by talker
+    all_talkers = dict()
+    talker_id_range = range(225, 377)
+    for talker_id in talker_id_range:
+        talker_sorted = list()
+        for i, sound in enumerate(os.listdir(sound_fp)):
+            if str(talker_id) in sound:
+                talker_sorted.append(sound_list[i])
+        all_talkers[str(talker_id)] = talker_sorted
+
+    # sort signals by number
+    number_range = ["one", "two", "three", "four", "five"]
+    all_numbers = dict()
+    for number in number_range:
+        numbers_sorted = list()
+        for i, sound in enumerate(os.listdir(sound_fp)):
+            if number in sound:
+                numbers_sorted.append(sound_list[i])
+        all_numbers[number] = numbers_sorted

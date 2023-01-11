@@ -1,7 +1,7 @@
 from labplatform.config import get_config
 from labplatform.core.Device import Device
 from labplatform.core.Setting import DeviceSetting
-from traits.api import CFloat, CInt, Str, Any, Instance, Property
+from traits.api import CFloat, CInt, Str, Any, Instance
 import threading
 from labplatform.core import TDTblackbox as tdt
 import logging
@@ -11,15 +11,16 @@ import time
 log = logging.getLogger(__name__)
 
 
-class RX8Setting(DeviceSetting):  # this class contains settings for the device and sits in self.setting
-    sampling_freq = CFloat(24144.0625, group='status', dsec='sampling frequency of the device (Hz)')
-    buffer_size_max = CInt(50000, group='status', dsec='buffer size cannot be larger than this')
-    file = Str('MSL\\RCX\\play_buf_msl.rcx', group='status', dsec='name of the rcx file to load')
-    processor = Str('RX8', group='status', dsec='name of the processor')
-    connection = Str('GB', group='status', dsec='connection type of the processor')
-    index = Any(group='primary', dsec='index of the device to connect to', reinit=False)
-    signals = Any(group='primary', dsec='stimulus to play', reinit=False)
-    speakers = Any(group="primary", dsex="speaker to pick", reinit=False)
+class RX8Setting(DeviceSetting):  # this class contains settings for the device and sits in RX8.setting
+    sampling_freq = CFloat(24144.0625, group='status', dsec='Sampling frequency of the device (Hz)')
+    buffer_size_max = CInt(50000, group='status', dsec='Max buffer size')
+    file = Str('MSL\\RCX\\play_buf_msl.rcx', group='status', dsec='Name of the rcx file to load')
+    processor = Str('RX8', group='status', dsec='Name of the processor')
+    connection = Str('GB', group='status', dsec='Connection type of the processor')
+    index = CInt(group='primary', dsec='Index of the device to connect to', reinit=False)
+    signals = Any(group='primary', dsec='Stimulus to play', reinit=False)
+    speakers = Any(group="primary", dsex="Speaker to pick", reinit=False)
+
 
 class RX8Device(Device):
     setting = RX8Setting()  # device setting
@@ -29,7 +30,7 @@ class RX8Device(Device):
     def _initialize(self, **kwargs):
         expdir = get_config('DEVICE_ROOT')
         self.handle = tdt.Processors()
-        self.handle.initialize(proc_list=[[self.setting.processor, self.setting.processor, os.path.join(expdir, self.setting.file)]],
+        self.handle.initialize(proc_list=[f"{self.setting.processor}{self.setting.index}", self.setting.processor, self.setting.index, os.path.join(expdir, self.setting.file)],
                                connection=self.setting.connection)
         self.handle.write("playbuflen", self.setting.sampling_freq, procs=self.handle.procs)
         print(f"Initialized {self.setting.processor}{self.setting.index}.")
@@ -57,7 +58,7 @@ class RX8Device(Device):
         pass
 
     def _stop(self):
-        print(f"Halting {self.setting.processor}{self.setting.index} ...")
+        print(f"Halting {self.handle.procs.keys()} ...")
         self.handle.halt()
 
     #def thread_func(self):
@@ -89,7 +90,7 @@ if __name__ == "__main__":
     spk_array = SpeakerArray(file=file)
     spk_array.load_speaker_table()
     sound_root = get_config(setting="SOUND_ROOT")
-    sound_fp = pathlib.Path(sound_root + "\\tts-numbers_resamp\\")
+    sound_fp = pathlib.Path(sound_root + "\\tts-numbers_resamp_24414\\")
     sound_list = slab.Precomputed(slab.Sound.read(sound_fp / file) for file in os.listdir(sound_fp))
 
     speakers = spk_array.pick_speakers([x for x in range(19, 24)])
@@ -99,6 +100,12 @@ if __name__ == "__main__":
     RX81 = RX8Device()
     RX81.setting.index = 1
     RX81.initialize()
+    RX81.stop()
+
+    RX82 = RX8Device()
+    RX82.setting.index = 2
+    RX82.initialize()
+    RX82.stop()
 
     signals = random.sample(sound_list, 5)
 
