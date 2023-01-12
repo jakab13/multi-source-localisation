@@ -27,7 +27,7 @@ class NumerosityJudgementSetting(ExperimentSetting):
     n_blocks = CInt(1, group="status", dsec="Number of total blocks per session")
     n_trials = CInt(20, group="status", dsec="Number of total trials per block")
     conditions = List([2, 3, 4, 5], group="status", dsec="Number of simultaneous talkers in the experiment")
-    signal_log = List([9999], group="primary", dsec="Logs of the signals used in previous trials", reinit=False)
+    signal_log = List([999], group="primary", dsec="Logs of the signals used in previous trials", reinit=False)
     speaker_log = List([999], group="primary", dsec="Logs of the speakers used in previous trials", reinit=False)
 
 
@@ -77,7 +77,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def _stop_trial(self):
         current_trial = self.sequence.this_n
-        is_correct = True if self.sequence.this_trialtrial / self.response == 1 else False
+        is_correct = True if self.sequence.this_trial / self.response == 1 else False
         self.data.write(key="response", data=self.response, current_trial=current_trial)
         self.data.write(key="solution", data=self.sequence.this_trial, current_trial=current_trial)
         self.data.write(key="reaction_time", data=self.reaction_time, current_trial=current_trial)
@@ -174,6 +174,7 @@ if __name__ == "__main__":
         subject.name = "Max"
         subject.group = "Test"
         subject.species = "Human"
+        subject.data_path = os.path.join(get_config("DATA_ROOT"), subject.name)
         subject.add_subject_to_h5file(os.path.join(get_config("SUBJECT_ROOT"), "Max_Test.h5"))
         # subject.file_path
     except ValueError:
@@ -181,7 +182,6 @@ if __name__ == "__main__":
         sl = SubjectList(file_path=os.path.join(get_config("SUBJECT_ROOT"), "Max_Test.h5"))
         sl.read_from_h5file()
         test_subject = sl.subjects[0]
-    subject.data_path = os.path.join(get_config("DATA_ROOT"), subject.name)
     nje = NumerosityJudgementExperiment(subject=subject)
 
     nje.start()
