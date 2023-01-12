@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
     # get sound files
     sound_root = get_config(setting="SOUND_ROOT")
-    sound_fp = pathlib.Path(sound_root + "\\tts-numbers_resamp_24414\\")
+    sound_fp = pathlib.Path(sound_root + "\\tts-countries_resamp_24414\\")
     sound_list = random.sample(slab.Precomputed(slab.Sound.read(sound_fp / file) for file in os.listdir(sound_fp)), k=50)
 
     # define trial sequence
