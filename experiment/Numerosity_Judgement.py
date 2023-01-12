@@ -4,7 +4,7 @@ from labplatform.core.Data import ExperimentData
 from labplatform.core.Subject import Subject, SubjectList
 from labplatform.config import get_config
 from experiment.RP2 import RP2Device
-from experiment.RX8 import RX81Device, RX82Device
+from experiment.RX8 import RX8Device
 # from experiment.Camera import ArUcoCam
 from Speakers.speaker_config import SpeakerArray
 import os
@@ -15,7 +15,6 @@ import pathlib
 import time
 import numpy as np
 
-# TODO: stimuli names do not include gender --> sort stimuli by gender
 # TODO: test experiment data class (write/read data from file)
 # TODO: check signal and speaker log before trial
 # TODO: Implement ArUcoCam
@@ -43,10 +42,9 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     reaction_time = Int()
     time_0 = time.time()
 
-
     def _initialize(self, **kwargs):
         self.devices["RP2"] = RP2Device()
-        self.devices["RX81"] = RX81Device()
+        self.devices["RX8"] = RX8Device()
         #self.devices["RX81"].initialize()
         #self.devices["RX82"] = RX82Device()
         #self.devices["RX82"].initialize()
@@ -54,11 +52,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.load_signals()
         # self.devices["ArUcoCam"] = ArUcoCam()
 
-    def _configure(self, **kwargs):
-        self.devices["RX81"].setting.signals = self.signals_sample
-        self.devices["RX81"].setting.speakers = self.speakers_sample
-        #for device in self.devices.keys():
-            #self.devices[device].configure()
+    def _prepare_trial(self):
+        self.devices["RX8"].configure()
 
     def _start(self, **kwargs):
         pass
@@ -69,11 +64,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     def _stop(self, **kwargs):
         pass
 
-    def _prepare_trial(self, **kwargs):
-        pass
-
     def _start_trial(self):
-        pass
+        self.devices["RX8"].start()
 
     def _stop_trial(self):
         current_trial = self.sequence.this_n
@@ -92,16 +84,13 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
         print("Set up experiment!")
 
-    def configure_experiment(self):
-        print("Configured experiment!")
-
     def start_experiment(self, info=None):
         start_time = time.time()
         self.devices["RP2"].wait_for_button()
         self.response = self.devices["RP2"].get_response()
         self.reaction_time = int(round(time.time() - start_time, 3) * 1000)
 
-    def load_signals(self, sound_type="tts-numbers_resamp_24414"):
+    def load_signals(self, sound_type="tts-countries_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
@@ -161,7 +150,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                     print('az diff: %f,  ele diff: %f' % (diff[0], diff[1]), end="\r", flush=True)
                 if diff[0] < limit and diff[1] < limit:  # limit in degree
                     break
-        self.devices["RX81"].write(tag='bitmask', value=0, processors=self.led.TDT_digital)  # turn off LED
+        self.devices["RX8"].write(tag='bitmask', value=0, processors=self.led.TDT_digital)  # turn off LED
         pose_offset = np.around(np.mean(log[-20:].astype('float16'), axis=0), decimals=2)
         # print('calibration complete, thank you!')
         self.devices["ArUcoCam"].offset = pose_offset
