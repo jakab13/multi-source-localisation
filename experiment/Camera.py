@@ -12,9 +12,11 @@ except ModuleNotFoundError:
 import numpy as np
 from Speakers.speaker_config import SpeakerArray
 import os
-from simple_pyspin import Camera
+try:
+    from simple_pyspin import Camera
+except ModuleNotFoundError:
+    PySpin = False
 import cv2
-import PySpin
 import PIL
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 

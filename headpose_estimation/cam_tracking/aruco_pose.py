@@ -1,11 +1,13 @@
-import numpy
+import numpy as np
 import cv2
 import freefield
 import PIL
 from PIL import Image
 import PySpin
-aruco_dicts = [cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_100) ,
-               cv2.aruco.Dictionary_get(cv2.aruco.DICT_5X5_100)]
+
+
+aruco_dicts = [cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100),
+               cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_5X5_100)]
 params = cv2.aruco.DetectorParameters_create()
 system = PySpin.System.GetInstance()
 cams = system.GetCameras()
@@ -46,13 +48,13 @@ def get_pose(cams=cams, aruco_dicts=aruco_dicts, show=False, scale=False):
         else:
             cv2.waitKey(0)
         if _pose:
-            _pose = numpy.asarray(_pose)[:, 2].astype('float16')
+            _pose = np.asarray(_pose)[:, 2].astype('float16')
             # remove outliers
-            d = numpy.abs(_pose - numpy.median(_pose))  # deviation from median
-            mdev = numpy.median(d)  # mean deviation
+            d = np.abs(_pose - np.median(_pose))  # deviation from median
+            mdev = np.median(d)  # mean deviation
             s = d / mdev if mdev else 0.  # factorized mean deviation of each element in pose
             _pose = _pose[s < 2]  # remove outliers
-            _pose = numpy.mean(_pose)
+            _pose = np.mean(_pose)
             pose[i] = _pose
     return pose
 
@@ -73,10 +75,10 @@ def pose_from_image(image, aruco_dict): # get pose
         size = image.shape
         focal_length = size[1]
         center = (size[1] / 2, size[0] / 2)
-        camera_matrix = numpy.array([[focal_length, 0, center[0]],
+        camera_matrix = np.array([[focal_length, 0, center[0]],
                                   [0, focal_length, center[1]],
                                   [0, 0, 1]], dtype="double")
-        dist_coeffs = numpy.zeros((4, 1))  # Assuming no lens distortion
+        dist_coeffs = np.zeros((4, 1))  # Assuming no lens distortion
         #camera_matrix = numpy.loadtxt('mtx.txt')
         #dist_coeffs = numpy.loadtxt('dist.txt')
         rotation_vec, translation_vec, _objPoints = \
@@ -87,8 +89,8 @@ def pose_from_image(image, aruco_dict): # get pose
             rotation_mat = -cv2.Rodrigues(rotation_vec[i])[0]
             pose_mat = cv2.hconcat((rotation_mat, translation_vec[i].T))
             _, _, _, _, _, _, angles = cv2.decomposeProjectionMatrix(pose_mat)
-            angles[1, 0] = numpy.radians(angles[1, 0])
-            angles[1, 0] = numpy.degrees(numpy.arcsin(numpy.sin(numpy.radians(angles[1, 0]))))
+            angles[1, 0] = np.radians(angles[1, 0])
+            angles[1, 0] = np.degrees(np.arcsin(np.sin(np.radians(angles[1, 0]))))
             angles[0, 0] = -angles[0, 0]
             info.append([camera_matrix, dist_coeffs, rotation_vec[i], translation_vec[i]])
             pose.append([angles[1, 0], angles[0, 0], angles[2, 0]])
@@ -113,7 +115,7 @@ def change_res(image, resolution):
     width = int(data.size[0] * resolution)
     height = int(data.size[1] * resolution)
     image = data.resize((width, height), PIL.Image.ANTIALIAS)
-    return numpy.asarray(image)
+    return np.asarray(image)
 
 def calibrate_pose(limit=0.5, report=True):
     [led_speaker] = freefield.pick_speakers(23)  # get object for center speaker LED
@@ -121,22 +123,22 @@ def calibrate_pose(limit=0.5, report=True):
                     processors=led_speaker.digital_proc)  # illuminate LED
     print('rest at center speaker and press button to start calibration...')
     freefield.wait_for_button()  # start calibration after button press
-    log = numpy.zeros(2)
+    log = np.zeros(2)
     while True:  # wait in loop for sensor to stabilize
         pose = get_pose()
         # print(pose)
-        log = numpy.vstack((log, pose))
+        log = np.vstack((log, pose))
         if log[-1, 0] == None or log[-1, 1] == None:
             print('no marker detected')
         # check if orientation is stable for at least 30 data points
         if len(log) > 30 and all(log[-20:, 0] != None) and all(log[-20:, 1] != None):
-            diff = numpy.mean(numpy.abs(numpy.diff(log[-20:], axis=0)), axis=0).astype('float16')
+            diff = np.mean(np.abs(np.diff(log[-20:], axis=0)), axis=0).astype('float16')
             if report:
                 print('az diff: %f,  ele diff: %f' % (diff[0], diff[1]), end="\r", flush=True)
             if diff[0] < limit and diff[1] < limit:  # limit in degree
                 break
     freefield.write(tag='bitmask', value=0, processors=led_speaker.digital_proc)  # turn off LED
-    pose_offset = numpy.around(numpy.mean(log[-20:].astype('float16'), axis=0), decimals=2)
+    pose_offset = np.around(np.mean(log[-20:].astype('float16'), axis=0), decimals=2)
     # print('calibration complete, thank you!')
     return pose_offset
 
