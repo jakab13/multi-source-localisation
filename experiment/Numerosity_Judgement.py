@@ -77,7 +77,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def _stop_trial(self):
         current_trial = self.sequence.this_n
-        is_correct = True if self.sequence.this_trialtrial / self.response == 1 else False
+        is_correct = True if self.sequence.this_trial / self.response == 1 else False
         self.data.write(key="response", data=self.response, current_trial=current_trial)
         self.data.write(key="solution", data=self.sequence.this_trial, current_trial=current_trial)
         self.data.write(key="reaction_time", data=self.reaction_time, current_trial=current_trial)
@@ -116,7 +116,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.setting.speakers = speakers
 
     @staticmethod
-    def set_log(iterable, k):
+    def set_log():
         pass
 
     def pick_speakers_this_trial(self, n_speakers):
