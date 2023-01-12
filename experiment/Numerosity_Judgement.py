@@ -116,7 +116,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.setting.speakers = speakers
 
     @staticmethod
-    def set_log(iterable, k):
+    def set_log():
         pass
 
     def pick_speakers_this_trial(self, n_speakers):

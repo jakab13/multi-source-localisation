@@ -127,7 +127,7 @@ def concatenate(sounds, n_concatenate=5):
 
 
 if __name__ == "__main__":
-    DIR = pathlib.Path("D:\Projects\multi-source-localisation\data\sounds\\tts-harvard-5")
+    DIR = pathlib.Path("C:\labplatform\sound_files\\tts-countries_resamp_24414")
     sounds_data = load(DIR)
     # pattern = "p227"
     # talker_files = pick_talker(data=sounds_data, pattern=pattern, DIR=DIR)
@@ -138,7 +138,7 @@ if __name__ == "__main__":
         slab.Sound.write(sound, filename=DIR/dir_names[i])
 
     # sort signals
-    sound_type = "tts-numbers_24414"
+    sound_type = "tts-countries_resamp_24414"
     sound_root = pathlib.Path("C:\labplatform\sound_files")
     sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
     sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
