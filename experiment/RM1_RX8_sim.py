@@ -57,7 +57,7 @@ class RX81Device(Device):
         pass
 
     def _stop(self):
-        print(f"Halting {self.handle.procs.keys()} ...")
+        print(f"Halting {self.setting.processor} ...")
         self.handle.Halt()
 
     #def thread_func(self):
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     # get sound files
     sound_root = get_config(setting="SOUND_ROOT")
     sound_fp = pathlib.Path(sound_root + "\\tts-numbers_resamp_24414\\")
-    sound_list = random.sample(slab.Precomputed(slab.Sound.read(sound_fp / file) for file in os.listdir(sound_fp)), k=10)
+    sound_list = random.sample(slab.Precomputed(slab.Sound.read(sound_fp / file) for file in os.listdir(sound_fp)), k=50)
 
     # define trial sequence
     seq = slab.Trialsequence(conditions=[2, 3, 4, 5], n_reps=5)
@@ -118,5 +118,8 @@ if __name__ == "__main__":
     RX81.start()
     # pause device
     RX81.pause()
+
+    # stop device
+    RX81.stop()
 
 
