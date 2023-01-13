@@ -22,6 +22,7 @@ log = logging.getLogger(__name__)
 # TODO: test experiment data class (write/read data from file)
 # TODO: check signal and speaker log before trial
 # TODO: Implement ArUcoCam
+# TODO: try .configure_traits method for fun
 
 
 class NumerosityJudgementSetting(ExperimentSetting):
