@@ -1,7 +1,7 @@
 from labplatform.config import get_config
 from labplatform.core.Device import Device
 from labplatform.core.Setting import DeviceSetting
-from traits.api import CFloat, CInt, Str, Any, Instance, List
+from traits.api import CFloat, CInt, Str, Any, List
 import threading
 from labplatform.core import TDTblackbox as tdt
 import logging
@@ -23,9 +23,10 @@ class RX8Setting(DeviceSetting):  # this class contains settings for the device 
 
 
 class RX8Device(Device):
+
     setting = RX8Setting()  # device setting
     handle = Any()  # device handle
-    thread = Instance(threading.Thread)  # important for threading
+    # thread = Instance(threading.Thread)  # important for threading
 
     def _initialize(self, **kwargs):
         expdir = get_config('DEVICE_ROOT')
@@ -82,6 +83,12 @@ class RX8Device(Device):
             time.sleep(0.01)
         print('Done waiting.')
 
+    def run_normal_mode(self):
+        pass
+
+    def _deinitialize(self):
+        pass
+
 
 if __name__ == "__main__":
     import slab
@@ -102,21 +109,17 @@ if __name__ == "__main__":
 
 
     # initialize RX81 by setting index to 1 and RX82 by setting index to 2
-    RX81 = RX81Device()
-    RX81.initialize()
-    RX81.stop()
-
-    RX82 = RX82Device()
-    RX82.initialize()
-    RX82.stop()
+    RX8 = RX8Device()
+    RX8.initialize()
+    RX8.stop()
 
     signals = random.sample(sound_list, 5)
 
-    RX81.setting.signals = signals
-    RX81.setting.speakers = speakers
+    RX8.setting.signals = signals
+    RX8.setting.speakers = speakers
 
-    RX81.configure()
-    RX81.start()
-    RX81.pause()
+    RX8.configure()
+    RX8.start()
+    RX8.pause()
 
 

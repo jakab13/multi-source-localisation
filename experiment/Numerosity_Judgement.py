@@ -8,19 +8,24 @@ from experiment.RX8 import RX8Device
 # from experiment.Camera import ArUcoCam
 from Speakers.speaker_config import SpeakerArray
 import os
-from traits.api import List, CInt, Str, Int, Dict
+from traits.api import List, CInt, Str, Int, Dict, Float
 import random
 import slab
 import pathlib
 import time
 import numpy as np
+import logging
+
+log = logging.getLogger(__name__)
+
 
 # TODO: test experiment data class (write/read data from file)
 # TODO: check signal and speaker log before trial
 # TODO: Implement ArUcoCam
 
+
 class NumerosityJudgementSetting(ExperimentSetting):
-    experiment_name = Str('Numerosity Judgement', group='primary', dsec='name of the experiment', noshow=True)
+    experiment_name = Str('Numerosity Judgement', group='status', dsec='name of the experiment', noshow=True)
     speakers = List(group="primary", dsec="List of speakers", reinit=False)
     signals = List(group="primary", dsec="Set to choose stimuli from", reinit=False)
     n_blocks = CInt(1, group="status", dsec="Number of total blocks per session")
@@ -28,6 +33,7 @@ class NumerosityJudgementSetting(ExperimentSetting):
     conditions = List([2, 3, 4, 5], group="status", dsec="Number of simultaneous talkers in the experiment")
     signal_log = List([999], group="primary", dsec="Logs of the signals used in previous trials", reinit=False)
     speaker_log = List([999], group="primary", dsec="Logs of the speakers used in previous trials", reinit=False)
+    trial_duration = Float(1.0, group="status", dsec="Duration of one trial")
 
 
 class NumerosityJudgementExperiment(ExperimentLogic):
@@ -45,15 +51,9 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     def _initialize(self, **kwargs):
         self.devices["RP2"] = RP2Device()
         self.devices["RX8"] = RX8Device()
-        #self.devices["RX81"].initialize()
-        #self.devices["RX82"] = RX82Device()
-        #self.devices["RX82"].initialize()
+        # self.devices["ArUcoCam"] = ArUcoCam()
         self.load_speakers()
         self.load_signals()
-        # self.devices["ArUcoCam"] = ArUcoCam()
-
-    def _prepare_trial(self):
-        self.devices["RX8"].configure()
 
     def _start(self, **kwargs):
         pass
@@ -65,7 +65,13 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         pass
 
     def _start_trial(self):
+        start_time = time.time()
+        self.devices["RX8"].configure()
         self.devices["RX8"].start()
+        self.devices["RP2"].wait_for_button()
+        self.response = self.devices["RP2"].get_response()
+        self.reaction_time = int(round(time.time() - start_time, 3) * 1000)
+        log.info('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
 
     def _stop_trial(self):
         current_trial = self.sequence.this_n
@@ -75,20 +81,19 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.data.write(key="reaction_time", data=self.reaction_time, current_trial=current_trial)
         self.data.write(key="is_correct", data=is_correct, current_trial=current_trial)
         self.data.save()
-        print(f"Trial {current_trial} end {time.time()-self.time_0}")
+        log.info('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         self.time_0 = time.time()
 
     def setup_experiment(self, info=None):
+        # trial_length = self.devices['RX8Device'].setting.sampling_freq * self.setting.trial_duration
+        self.devices['RX8Device'].configure()
         self.sequence.__next__()
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
         print("Set up experiment!")
 
-    def start_experiment(self, info=None):
-        start_time = time.time()
-        self.devices["RP2"].wait_for_button()
-        self.response = self.devices["RP2"].get_response()
-        self.reaction_time = int(round(time.time() - start_time, 3) * 1000)
+    # def start_experiment(self, info=None):
+        # pass
 
     def load_signals(self, sound_type="tts-countries_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
@@ -156,6 +161,9 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.devices["ArUcoCam"].offset = pose_offset
         self.devices["ArUcoCam"].calibrated = True
 
+    def run_normal_mode(self):
+        pass
+
 
 if __name__ == "__main__":
     try:
@@ -171,10 +179,11 @@ if __name__ == "__main__":
         sl = SubjectList(file_path=os.path.join(get_config("SUBJECT_ROOT"), "Max_Test.h5"))
         sl.read_from_h5file()
         test_subject = sl.subjects[0]
-    nje = NumerosityJudgementExperiment(subject=subject)
+    nj = NumerosityJudgementExperiment(subject=subject)
+    nj.configure_traits()
 
-    nje.start()
-    nje.pause()
-    nje.stop()
+    nj.start()
+    nj.pause()
+    nj.stop()
 
 

@@ -3,7 +3,7 @@ from labplatform.core.Device import Device
 from labplatform.core.Setting import DeviceSetting
 from labplatform.core import TDTblackbox as tdt
 import time
-from traits.api import CFloat, CInt, Str, Any, Instance
+from traits.api import Float, Int, Str, Any
 import os
 import logging
 import numpy as np
@@ -13,19 +13,21 @@ log = logging.getLogger(__name__)
 
 # TODO: RP2 initializes automatically upon calling it
 
+
 class RP2Setting(DeviceSetting):  # this class contains important settings for the device and sits in self.setting
-    sampling_freq = CFloat(48288.125, group='status', dsec='Sampling frequency of the device (Hz)')
-    buffer_size_max = CInt(50000, group='status', dsec='Max Buffer size')
-    file = Str('MSL\\RCX\\button_rec.rcx', group='status', dsec='Name of the rcx file to load')
-    processor = Str('RM1', group='status', dsec='Name of the processor')
-    connection = Str('USB', group='status', dsec='Connection of the device')
-    index = Any(1, group='status', dsec='index of the device to connect to')
+    sampling_freq = Float(48288.125, group='primary', dsec='Sampling frequency of the device (Hz)', reinit=False)
+    buffer_size_max = Int(50000, group='primary', dsec='Max Buffer size', reinit=False)
+    file = Str('MSL\\RCX\\button_rec.rcx', group='primary', dsec='Name of the rcx file to load', reinit=False)
+    processor = Str('RM1', group='primary', dsec='Name of the processor', reinit=False)
+    connection = Str('USB', group='primary', dsec='Connection of the device', reinit=False)
+    index = Any(1, group='primary', dsec='index of the device to connect to', reinit=False)
 
 
 class RP2Device(Device):
-    setting = RP2Setting()  # define setting for the device
+
+    setting = RP2Setting()
     handle = Any()  # handle for TDT method execution like handle.write, handle.read, ...
-    thread = Instance(threading.Thread)  # important for threading
+    # thread = Instance(threading.Thread)  # important for threading
 
     def _initialize(self, **kwargs):  # this method is called upon self.initialize() execution
         expdir = get_config('DEVICE_ROOT')
@@ -57,6 +59,12 @@ class RP2Device(Device):
         print("Acquiring button response ... ")
         response = self.handle.GetTagVal("response")
         return int(np.log2(response))  # because the response is stored in bit value, we need the base 2 log
+
+    def run_normal_mode(self):
+        pass
+
+    def _deinitialize(self):
+        pass
 
 
 if __name__ == "__main__":
