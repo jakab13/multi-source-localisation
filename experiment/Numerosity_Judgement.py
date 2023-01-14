@@ -8,7 +8,7 @@ from experiment.RX8 import RX8Device
 # from experiment.Camera import ArUcoCam
 from Speakers.speaker_config import SpeakerArray
 import os
-from traits.api import List, CInt, Str, Int, Dict, Float
+from traits.api import List, CInt, CFloat, Str, Int, Dict, Float
 import random
 import slab
 import pathlib
@@ -35,14 +35,18 @@ class NumerosityJudgementSetting(ExperimentSetting):
     conditions = List([2, 3, 4, 5], group="status", dsec="Number of simultaneous talkers in the experiment")
     signal_log = List([999], group="primary", dsec="Logs of the signals used in previous trials", reinit=False)
     speaker_log = List([999], group="primary", dsec="Logs of the speakers used in previous trials", reinit=False)
-    # trial_duration = Float(1.0, group="status", dsec="Duration of one trial")
+    trial_number = CInt(20, group='primary', dsec='Number of trials in each condition', reinit=False)
+    trial_duration = CFloat(1.0, group='primary', dsec='Duration of each trial, (s)', reinit=False)
+
+    def _get_total_trial(self):
+        return self.trial_number * len(self.conditions)
 
 
 class NumerosityJudgementExperiment(ExperimentLogic):
 
     setting = NumerosityJudgementSetting()
     data = ExperimentData()
-    sequence = slab.Trialsequence(conditions=setting.conditions, n_reps=setting.n_trials)
+    sequence = slab.Trialsequence(conditions=setting.conditions, n_reps=setting.trial_number)
     devices = Dict()
     speakers_sample = List()
     signals_sample = List()
@@ -73,6 +77,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.sequence.__next__()
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
+        self.devices["RX8"].handle.write("playbuflen", self.setting.sampling_freq*self.setting.trial_duration,
+                                         procs=self.handle.procs)
         self.devices["RX8"].configure()
         print("Set up experiment!")
 
