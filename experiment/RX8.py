@@ -18,8 +18,8 @@ class RX8Setting(DeviceSetting):  # this class contains settings for the device 
     processor = Str('RX8', group='status', dsec='Name of the processor')
     connection = Str('GB', group='status', dsec='Connection type of the processor')
     index = List([1, 2], group='status', dsec='Index of the device to connect to')
-    signals = Any(group='primary', dsec='Stimulus to play', reinit=False, )
-    speakers = Any(group="primary", dsex="Speaker to pick", reinit=False)
+    signals = List(group='primary', dsec='Stimulus to play', reinit=False)
+    speakers = List(group="primary", dsex="Speaker to pick", reinit=False)
     device_name = Str("RX8", group="status", dsec="Name of the device")
 
 
