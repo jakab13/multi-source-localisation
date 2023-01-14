@@ -68,6 +68,20 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     def _stop(self, **kwargs):
         pass
 
+    def setup_experiment(self, info=None):
+        # trial_length = self.devices['RX8Device'].setting.sampling_freq * self.setting.trial_duration
+        self.sequence.__next__()
+        self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
+        self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
+        self.devices["RX8"].configure()
+        print("Set up experiment!")
+
+    def start_experiment(self, info=None):
+        pass
+
+    def _prepare_trial(self):
+        pass
+
     def _before_start_validate(self):
         for device in self.devices.keys():
             if self.devices[device].state != "Ready":
@@ -91,14 +105,6 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.data.save()
         log.info('trial {} start: {}'.format(current_trial, time.time() - self.time_0))
         self.time_0 = time.time()
-
-    def setup_experiment(self, info=None):
-        # trial_length = self.devices['RX8Device'].setting.sampling_freq * self.setting.trial_duration
-        self.sequence.__next__()
-        self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
-        self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
-        self.devices["RX8"].configure()
-        print("Set up experiment!")
 
     def load_signals(self, sound_type="tts-countries_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
@@ -172,14 +178,15 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
 if __name__ == "__main__":
     subject = Subject()
-    subject.name = "Max"
+    subject.name = "Foo"
     subject.group = "Test"
     subject.species = "Human"
     subject.birth = datetime.date(1996, 11, 18)
     subject.data_path = os.path.join(get_config("DATA_ROOT"), subject.name)
     subject.add_subject_to_h5file(os.path.join(get_config("SUBJECT_ROOT"), "Max_Test.h5"))
     # subject.file_path
-    nj = NumerosityJudgementExperiment(subject=subject)
+    experimenter = "Max"
+    nj = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
     # nj.initialize()
     # nj.configure()
     nj.start()
