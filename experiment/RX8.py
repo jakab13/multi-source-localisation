@@ -26,6 +26,7 @@ class RX8Device(Device):
 
     setting = RX8Setting()  # device setting
     handle = Any()  # device handle
+
     # thread = Instance(threading.Thread)  # important for threading
 
     def _initialize(self, **kwargs):
@@ -37,9 +38,10 @@ class RX8Device(Device):
                                           [f"{self.setting.processor}{self.setting.index[1]}",
                                            self.setting.processor,
                                            os.path.join(expdir, self.setting.file)]],
-                               connection=self.setting.connection)
+                               connection=self.setting.connection,
+                               zbus=True)
         self.handle.write("playbuflen", self.setting.sampling_freq, procs=self.handle.procs)
-        print(f"Initialized {self.handle.procs}.")
+        print(f"Initialized {self.setting.processor}.")
 
         # create thread to monitoring hardware
         #if not self.thread or not self.thread.is_alive():
@@ -49,22 +51,22 @@ class RX8Device(Device):
 
     def _configure(self, **kwargs):
         for idx, spk in enumerate(self.setting.speakers):
-            self.handle.write(tag=f"data{idx}", value=self.setting.signals[idx].data.flatten(), procs=spk.TDT_analog)
-            self.handle.write(tag=f"chan{idx}", value=spk.channel_analog, procs=spk.TDT_analog)
+            self.handle.write(tag=f"data{idx}", value=self.setting.signals[idx].data.flatten(), procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
+            self.handle.write(tag=f"chan{idx}", value=spk.channel_analog, procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
             print(f"Set signal to chan {idx}")
-        print(f"Configured {self.handle.procs}.")
+        print(f"Configured {self.setting.processor}.")
 
     def _start(self):
-        self.handle.trigger(proc=self.handle.procs[self.setting.processor])
-        print(f"Running {self.handle.procs} ... ")
+        self.handle.trigger("zBusA", proc=self.handle)
+        print(f"Running {self.setting.processor} ... ")
         self.wait_to_finish_playing()
 
     def _pause(self):
-        print(f"Pausing {self.handle.procs} ... ")
+        print(f"Pausing {self.setting.processor} ... ")
         pass
 
     def _stop(self):
-        print(f"Halting {self.handle.procs} ...")
+        print(f"Halting {self.setting.processor} ...")
         self.handle.halt()
 
     #def thread_func(self):
@@ -102,18 +104,18 @@ if __name__ == "__main__":
     spk_array = SpeakerArray(file=file)
     spk_array.load_speaker_table()
     sound_root = get_config(setting="SOUND_ROOT")
-    sound_fp = pathlib.Path(sound_root + "\\tts-numbers_resamp_24414\\")
+    sound_fp = pathlib.Path(sound_root + "\\tts-countries_resamp_24414\\")
     sound_list = slab.Precomputed(slab.Sound.read(sound_fp / file) for file in os.listdir(sound_fp))
 
-    speakers = spk_array.pick_speakers([x for x in range(19, 24)])
+    speakers = spk_array.pick_speakers([x for x in range(20, 27)])
 
 
     # initialize RX81 by setting index to 1 and RX82 by setting index to 2
     RX8 = RX8Device()
     RX8.initialize()
-    RX8.stop()
 
-    signals = random.sample(sound_list, 5)
+    signals = random.sample(sound_list, random.randint(2, 6))
+    speakers = random.sample(speakers, len(signals))
 
     RX8.setting.signals = signals
     RX8.setting.speakers = speakers
