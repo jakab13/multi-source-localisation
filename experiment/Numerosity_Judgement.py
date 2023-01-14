@@ -8,7 +8,7 @@ from experiment.RX8 import RX8Device
 # from experiment.Camera import ArUcoCam
 from Speakers.speaker_config import SpeakerArray
 import os
-from traits.api import List, CInt, CFloat, Str, Int, Dict, Float
+from traits.api import List, Str, Int, Dict, Float
 import random
 import slab
 import pathlib
