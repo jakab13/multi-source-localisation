@@ -25,6 +25,7 @@ log = logging.getLogger(__name__)
 # TODO: Implement ArUcoCam
 # TODO: try .configure_traits method for fun
 # TODO: cannot write signals and speakers to pytables because of inhomogeneous dimensions --> store_info_before_start
+# TODO: RP2 initializes automatically ???
 
 
 class NumerosityJudgementSetting(ExperimentSetting):
