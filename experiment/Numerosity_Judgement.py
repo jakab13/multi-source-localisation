@@ -31,12 +31,11 @@ log = logging.getLogger(__name__)
 class NumerosityJudgementSetting(ExperimentSetting):
     experiment_name = Str('NumJudge', group='status', dsec='name of the experiment', noshow=True)
     n_blocks = Int(1, group="status", dsec="Number of total blocks per session")
-    n_trials = Int(20, group="status", dsec="Number of total trials per block")
     conditions = List([2, 3, 4, 5], group="status", dsec="Number of simultaneous talkers in the experiment")
     signal_log = List([999], group="primary", dsec="Logs of the signals used in previous trials", reinit=False)
     speaker_log = List([999], group="primary", dsec="Logs of the speakers used in previous trials", reinit=False)
-    trial_number = CInt(20, group='primary', dsec='Number of trials in each condition', reinit=False)
-    trial_duration = CFloat(1.0, group='primary', dsec='Duration of each trial, (s)', reinit=False)
+    trial_number = Int(20, group='primary', dsec='Number of trials in each condition', reinit=False)
+    trial_duration = Float(1.0, group='primary', dsec='Duration of each trial, (s)', reinit=False)
 
     def _get_total_trial(self):
         return self.trial_number * len(self.conditions)
@@ -183,6 +182,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
 
 if __name__ == "__main__":
+
     log = logging.getLogger()
     log.setLevel(logging.DEBUG)
     # create console handler and set level to debug
@@ -194,11 +194,15 @@ if __name__ == "__main__":
     ch.setFormatter(formatter)
     # add ch to logger
     log.addHandler(ch)
-    subject = Subject()
-    subject.name = "Foo"
-    subject.group = "Test"
-    subject.species = "Human"
-    subject.birth = datetime.date(1996, 11, 18)
+
+    # Create subject
+    subject = Subject(name="Foo",
+                      group="Test",
+                      birth=datetime.date(1996, 11, 18),
+                      species="Human",
+                      sex="M",
+                      cohort="MSL")
+
     subject.data_path = os.path.join(get_config("DATA_ROOT"), subject.name)
     subject.add_subject_to_h5file(os.path.join(get_config("SUBJECT_ROOT"), "Max_Test.h5"))
     # subject.file_path
