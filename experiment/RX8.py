@@ -1,7 +1,7 @@
 from labplatform.config import get_config
 from labplatform.core.Device import Device
 from labplatform.core.Setting import DeviceSetting
-from traits.api import CFloat, CInt, Str, Any, List
+from traits.api import Float, Int, Str, Any, List
 import threading
 from labplatform.core import TDTblackbox as tdt
 import logging
@@ -12,8 +12,8 @@ log = logging.getLogger(__name__)
 
 
 class RX8Setting(DeviceSetting):  # this class contains settings for the device and sits in RX8.setting
-    sampling_freq = CFloat(24144.0625, group='status', dsec='Sampling frequency of the device (Hz)')
-    buffer_size_max = CInt(50000, group='status', dsec='Max buffer size')
+    sampling_freq = Float(24144.0625, group='status', dsec='Sampling frequency of the device (Hz)')
+    buffer_size_max = Int(50000, group='status', dsec='Max buffer size')
     file = Str('MSL\\RCX\\play_buf_msl.rcx', group='status', dsec='Name of the rcx file to load')
     processor = Str('RX8', group='status', dsec='Name of the processor')
     connection = Str('GB', group='status', dsec='Connection type of the processor')
@@ -21,7 +21,6 @@ class RX8Setting(DeviceSetting):  # this class contains settings for the device 
     signals = List(group='primary', dsec='Stimulus to play', reinit=False)
     speakers = List(group="primary", dsex="Speaker to pick", reinit=False)
     device_name = Str("RX8", group="status", dsec="Name of the device")
-
 
 
 class RX8Device(Device):
