@@ -16,12 +16,13 @@ log = logging.getLogger(__name__)
 
 class RP2Setting(DeviceSetting):  # this class contains important settings for the device and sits in self.setting
     sampling_freq = CFloat(48288.125, group='primary', dsec='Sampling frequency of the device (Hz)', reinit=False)
-    buffer_size_max = CInt(50000, group='primary', dsec='Max Buffer size', reinit=False)
+    # buffer_size_max = CInt(50000, group='primary', dsec='Max Buffer size', reinit=False)
     file = Str('MSL\\RCX\\button_rec.rcx', group='status', dsec="Name of the rcx file to load")
     processor = Str('RP2', group='status', dsec='Name of the processor')
     connection = Str('GB', group='status', dsec='Connection of the device')
     index = Any(1, group='status', dsec='index of the device to connect to')
     device_name = Str("RP2", group="status", dsec="Name of the device")
+    device_type = Str("Processor", group='status', dsec='type of the device')
 
 
 class RP2Device(Device):
