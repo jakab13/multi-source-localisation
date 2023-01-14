@@ -41,7 +41,6 @@ class RX8Device(Device):
                                            os.path.join(expdir, self.setting.file)]],
                                connection=self.setting.connection,
                                zbus=True)
-        self.handle.write("playbuflen", self.setting.sampling_freq, procs=self.handle.procs)
         print(f"Initialized {self.setting.processor}.")
 
         # create thread to monitoring hardware
