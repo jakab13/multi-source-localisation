@@ -49,7 +49,7 @@ class ArUcoCam(Device):
                    cv2.aruco.Dictionary_get(cv2.aruco.DICT_5X5_100)]
     params = cv2.aruco.DetectorParameters_create()
     cams = [Camera(index=0), Camera(index=1)]
-    led = Any()
+    # led = Any()
     offset = Any()
     calibrated = Bool()
 
