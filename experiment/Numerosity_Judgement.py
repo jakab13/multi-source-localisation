@@ -21,11 +21,12 @@ log = logging.getLogger(__name__)
 
 
 # TODO: test experiment data class (write/read data from file)
-# TODO: check signal and speaker log before trial
+# TODO: check signal and speaker log before trial --> set_log()
 # TODO: fix camera calibration
 # TODO: try .configure_traits method for fun
 # TODO: cannot write signals and speakers to pytables because of inhomogeneous dimensions --> store_info_before_start
 # TODO: RP2 initializes automatically ???
+# TODO: replace all print statements with logging infos in custom methods
 
 
 class NumerosityJudgementSetting(ExperimentSetting):
@@ -72,14 +73,14 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         pass
 
     def setup_experiment(self, info=None):
-        # trial_length = self.devices['RX8Device'].setting.sampling_freq * self.setting.trial_duration
         self.sequence.__next__()
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
-        self.devices["RX8"].handle.write("playbuflen", self.setting.sampling_freq*self.setting.trial_duration,
-                                         procs=self.handle.procs)
+        self.devices["RX8"].handle.write("playbuflen",
+                                         self.devices["RX8"].setting.sampling_freq*self.setting.trial_duration,
+                                         procs=self.devices["RX8"].handle.procs)
         self.devices["RX8"].configure()
-        print("Set up experiment!")
+        log.info("Set up experiment")
 
     def start_experiment(self, info=None):
         pass
@@ -167,7 +168,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                                          value=0,
                                          procs=f"{led.TDT_digital}{led.TDT_idx_digital}")  # turn off LED
         pose_offset = np.around(np.mean(log[-20:].astype('float16'), axis=0), decimals=2)
-        print('Calibration complete!')
+        log.info('Calibration complete!')
         self.devices["ArUcoCam"].offset = pose_offset
         self.devices["ArUcoCam"].calibrated = True
 
@@ -202,7 +203,7 @@ if __name__ == "__main__":
     # subject.file_path
     experimenter = "Max"
     nj = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
-    nj.calibrate_camera()
+    # nj.calibrate_camera()
     # nj.initialize()
     # nj.configure()
     # nj.start()
