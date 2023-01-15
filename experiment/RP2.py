@@ -35,30 +35,26 @@ class RP2Device(Device):
         expdir = get_config('DEVICE_ROOT')
         self.handle = tdt.initialize_processor(processor=self.setting.processor, connection=self.setting.connection,
                                                index=self.setting.index, path=os.path.join(expdir, self.setting.file))
-        print(f"Initialized {self.setting.processor}")
 
     def _configure(self, **kwargs):  # device needs to be configured before each trial. Sets state to "ready".
-        print(f"Configuring {self.setting.processor} ... ")
         pass
 
     def _start(self):  # starts device
-        print(f"Running {self.setting.processor} ... ")
+        pass
 
     def _pause(self):  # needs to be called after each trial
-        print(f"Pausing {self.setting.processor} ... ")
         pass
 
     def _stop(self):  # stops the device. Initialization necessary when this method is called
-        print(f"Halting {self.setting.processor} ...")
         self.handle.Halt()
 
     def wait_for_button(self):  # stops the circuit as long as no button is being pressed
-        print("Waiting for button press ...")
+        log.info("Waiting for button press ...")
         while not self.handle.GetTagVal("response"):
             time.sleep(0.1)  # sleeps while the response tag in the rcx circuit does not yield 1
 
     def get_response(self):  # collects response, preferably called right after wait_for_button
-        print("Acquiring button response ... ")
+        log.info("Acquiring button response ... ")
         response = self.handle.GetTagVal("response")
         return int(np.log2(response))  # because the response is stored in bit value, we need the base 2 log
 
@@ -70,6 +66,17 @@ class RP2Device(Device):
 
 
 if __name__ == "__main__":
+    log = logging.getLogger()
+    log.setLevel(logging.DEBUG)
+    # create console handler and set level to debug
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    # create formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # add formatter to ch
+    ch.setFormatter(formatter)
+    # add ch to logger
+    log.addHandler(ch)
     responses = list()
     RP2 = RP2Device()
     RP2.initialize()

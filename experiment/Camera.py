@@ -57,7 +57,6 @@ class ArUcoCam(Device):
         """
         Initializes the device and sets the state to "created". Necessary before running the device.
         """
-        print("Initializing cameras ... ")
         for c in self.cams:  # initialize cameras
             c.init()
 
@@ -65,14 +64,13 @@ class ArUcoCam(Device):
         """
         Manipulates the setting parameters of the class and sets the state to "ready. Needs to be called in each trial.
         """
-        print("Configuring cameras ...")
+        pass
 
     def _start(self, **kwargs):
         """
         Runs the device and sets the state to "running". Here lie all the important steps the camera has to do in each
         trial, such as acquiring and writing the head pose.
         """
-        print("Starting cameras ... ")
         for c in self.cams:
             c.start()  # start recording images into the camera buffer
         if self.calibrated:
@@ -82,7 +80,7 @@ class ArUcoCam(Device):
             else:
                 print("WARNING: Camera not calibrated, head pose might be unreliable ...")
                 self.setting.pose.append(pose)
-            print("Acquired pose!")
+            log.info("Acquired pose!")
         else:
             self.setting.pose.append(self.get_pose())
 
@@ -90,7 +88,6 @@ class ArUcoCam(Device):
         """
         Pauses the camera and sets the state to "paused".
         """
-        print("Pausing cameras ... ")
         for c in self.cams:
             c.stop()
 
@@ -98,7 +95,6 @@ class ArUcoCam(Device):
         """
         Closes the camera and cleans up and sets the state to "stopped".
         """
-        print("Halting cameras ... ")
         for c in self.cams:
             c.close()
 
@@ -107,7 +103,6 @@ class ArUcoCam(Device):
         Args:
             cmap: matplotlib colormap
         """
-        print("Acquiring snapshot ...")
         for c in self.cams:
             image = c.get_array()  # get image as np array
             plt.imshow(image, cmap=cmap)  # show image
@@ -262,7 +257,6 @@ class FlirCam(Device):
         """
         Initializes the device and sets the state to "created". Necessary before running the device.
         """
-        print("Initializing cameras ... ")
         spks = SpeakerArray(file=os.path.join(self.setting.root, self.setting.file))  # initialize speakers.
         spks.load_speaker_table()  # load speakertable
         self.setting.led = spks.pick_speakers(23)[0]  # pick central speaker
@@ -273,7 +267,6 @@ class FlirCam(Device):
         """
         Manipulates the setting parameters of the class and sets the state to "ready. Needs to be called in each trial.
         """
-        print("Configuring camera settings ...")
         pass
 
     def _start(self, **kwargs):
@@ -282,7 +275,7 @@ class FlirCam(Device):
         trial, such as acquiring and saving the head pose.
         """
         self.cam.start()  # start recording images into the camera buffer
-        print("Acquiring image ... ")
+        log.info("Acquiring image ... ")
         try:
             if self.setting.calibrated:
                 img = self.cam.get_array()  # Get image as numpy array
@@ -290,9 +283,9 @@ class FlirCam(Device):
                 if self.offset:
                     self.pose.append([roll-self.offset[0], pitch-self.offset[1], yaw-self.offset[2]])  # subtract offset
                 else:
-                    print("WARNING: Camera not calibrated, head pose might be unreliable ...")
+                    log.info("WARNING: Camera not calibrated, head pose might be unreliable ...")
                     self.pose.append([roll, pitch, yaw])
-                print("Acquired pose!")
+                log.info("Acquired pose!")
         except ValueError:
             print("Could not recognize face, make sure that camera can see the face!")
 
@@ -300,14 +293,12 @@ class FlirCam(Device):
         """
         Pauses the camera and sets the state to "paused".
         """
-        print("Pausing cameras ... ")
         self.cam.stop()
 
     def _stop(self):
         """
         Closes the camera and cleans up and sets the state to "stopped".
         """
-        print("Halting cameras ... ")
         self.cam.close()  # close camera
 
     def calibrate(self):
@@ -315,7 +306,7 @@ class FlirCam(Device):
         Calibrates the camera. Initializes the RX81 to access the central loudspeaker. Illuminates the led on ele, azi 0°,
         then acquires the headpose and uses it as the offset. Turns the led off afterwards.
         """
-        print("Calibrating camera ...")
+        log.info("Calibrating camera ...")
         expdir = get_config('DEVICE_ROOT')
         self.handle = tdt.Processors()
         self.handle.initialize(proc_list=[[self.setting.processor,
@@ -331,9 +322,9 @@ class FlirCam(Device):
             self.offset = [roll, pitch, yaw]  # use head pose as offset
             self.handle.write(tag='bitmask', value=0, processors=self.setting.led_spk.digital_proc)  # turn off LED
             self.setting.calibrated = True
-            print("Successfully calibrated camera!")
+            log.info("Successfully calibrated camera!")
         except ValueError:
-            print("Could not see the face, make sure that the camera is seeing the face!")
+            log.info("Could not see the face, make sure that the camera is seeing the face!")
         if self.setting.calibrated:
             self.handle.halt()
 
@@ -342,7 +333,7 @@ class FlirCam(Device):
         Args:
             cmap: matplotlib colormap
         """
-        print("Acquiring snapshot ...")
+        log.info("Acquiring snapshot ...")
         image = self.cam.get_array()  # get image as np array
         plt.imshow(image, cmap=cmap)  # show image
         plt.show()

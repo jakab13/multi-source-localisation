@@ -18,8 +18,8 @@ class RX8Setting(DeviceSetting):  # this class contains settings for the device 
     processor = Str('RX8', group='status', dsec='Name of the processor')
     connection = Str('GB', group='status', dsec='Connection type of the processor')
     index = List([1, 2], group='status', dsec='Index of the device to connect to')
-    signals = List(group='primary', dsec='Stimulus to play', reinit=False)
-    speakers = List(group="primary", dsex="Speaker to pick", reinit=False)
+    signals = List(group='primary', dsec='Stimuli to play', reinit=False)
+    speakers = List(group="primary", dsex="Speakers to pick", reinit=False)
     device_name = Str("RX8", group="status", dsec="Name of the device")
     device_type = Str("Processor", group='status', dsec='type of the device')
 
@@ -55,19 +55,15 @@ class RX8Device(Device):
             self.handle.write(tag=f"data{idx}", value=self.setting.signals[idx].data.flatten(), procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
             self.handle.write(tag=f"chan{idx}", value=spk.channel_analog, procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
             print(f"Set signal to chan {idx}")
-        print(f"Configured {self.setting.processor}.")
 
     def _start(self):
         self.handle.trigger("zBusA", proc=self.handle)
-        print(f"Running {self.setting.processor} ... ")
         self.wait_to_finish_playing()
 
     def _pause(self):
-        print(f"Pausing {self.setting.processor} ... ")
         pass
 
     def _stop(self):
-        print(f"Halting {self.setting.processor} ...")
         self.handle.halt()
 
     #def thread_func(self):
@@ -84,7 +80,7 @@ class RX8Device(Device):
         logging.info(f'Waiting for {tag} on {proc}.')
         while any(self.handle.read(tag, proc=p) for p in proc):
             time.sleep(0.01)
-        print('Done waiting.')
+        log.info('Done waiting.')
 
     def run_normal_mode(self):
         pass
@@ -94,6 +90,17 @@ class RX8Device(Device):
 
 
 if __name__ == "__main__":
+    log = logging.getLogger()
+    log.setLevel(logging.DEBUG)
+    # create console handler and set level to debug
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    # create formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # add formatter to ch
+    ch.setFormatter(formatter)
+    # add ch to logger
+    log.addHandler(ch)
     import slab
     from Speakers.speaker_config import SpeakerArray
     import random
