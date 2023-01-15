@@ -101,14 +101,13 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         log.info('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
 
     def _stop_trial(self):
-        current_trial = self.sequence.this_n
         is_correct = True if self.sequence.this_trial / self.response == 1 else False
-        self.data.write(key="response", data=self.response, current_trial=current_trial)
-        self.data.write(key="solution", data=self.sequence.this_trial, current_trial=current_trial)
-        self.data.write(key="reaction_time", data=self.reaction_time, current_trial=current_trial)
-        self.data.write(key="is_correct", data=is_correct, current_trial=current_trial)
+        self.data.write(key="response", data=self.response, current_trial=self.setting.current_trial)
+        self.data.write(key="solution", data=self.sequence.this_trial, current_trial=self.setting.current_trial)
+        self.data.write(key="reaction_time", data=self.reaction_time, current_trial=self.setting.current_trial)
+        self.data.write(key="is_correct", data=is_correct, current_trial=self.setting.current_trial)
         self.data.save()
-        log.info('trial {} start: {}'.format(current_trial, time.time() - self.time_0))
+        log.info('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         self.time_0 = time.time()
 
     def load_signals(self, sound_type="tts-countries_resamp_24414"):
