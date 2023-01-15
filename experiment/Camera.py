@@ -8,7 +8,7 @@ import logging
 try:
     from headpose.detect import PoseEstimator
 except ModuleNotFoundError:
-    print("WARNING: headpose package not found, maybe try reinstalling: pip install headpose")
+    logging.info("WARNING: headpose package not found, maybe try reinstalling: pip install headpose")
 import numpy as np
 from Speakers.speaker_config import SpeakerArray
 import os

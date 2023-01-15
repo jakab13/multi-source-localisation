@@ -1,7 +1,7 @@
 from labplatform.config import get_config
 from labplatform.core.Device import Device
 from labplatform.core.Setting import DeviceSetting
-from traits.api import Float, Int, Str, Any, List
+from traits.api import Float, Str, Any, List
 import threading
 from labplatform.core import TDTblackbox as tdt
 import logging
@@ -42,7 +42,6 @@ class RX8Device(Device):
                                            os.path.join(expdir, self.setting.file)]],
                                connection=self.setting.connection,
                                zbus=True)
-        print(f"Initialized {self.setting.processor}.")
 
         # create thread to monitoring hardware
         #if not self.thread or not self.thread.is_alive():
@@ -54,7 +53,6 @@ class RX8Device(Device):
         for idx, spk in enumerate(self.setting.speakers):
             self.handle.write(tag=f"data{idx}", value=self.setting.signals[idx].data.flatten(), procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
             self.handle.write(tag=f"chan{idx}", value=spk.channel_analog, procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
-            print(f"Set signal to chan {idx}")
 
     def _start(self):
         self.handle.trigger("zBusA", proc=self.handle)

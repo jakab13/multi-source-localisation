@@ -20,13 +20,14 @@ import datetime
 log = logging.getLogger(__name__)
 
 
-# TODO: test experiment data class (write/read data from file)
+# TODO: test experiment data class (write/read data from file) and subject class
 # TODO: check signal and speaker log before trial --> set_log()
 # TODO: fix camera calibration
 # TODO: try .configure_traits method for fun
 # TODO: cannot write signals and speakers to pytables because of inhomogeneous dimensions --> store_info_before_start
 # TODO: RP2 initializes automatically ???
 # TODO: replace all print statements with logging infos in custom methods
+# TODO: check out threading module
 
 
 class NumerosityJudgementSetting(ExperimentSetting):
