@@ -12,10 +12,8 @@ except ModuleNotFoundError:
 import numpy as np
 from Speakers.speaker_config import SpeakerArray
 import os
-try:
-    from simple_pyspin import Camera
-except ModuleNotFoundError:
-    PySpin = False
+import PySpin
+from simple_pyspin import Camera
 import cv2
 import PIL
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
@@ -29,7 +27,6 @@ class ArUcoCamSetting(DeviceSetting):
     Class for defining the camera settings. primary group parameters are supposed to be changed and sometimes
     reinitialized, whereas status group parameters are not.
     """
-    name = Str("FireFly", group="status", dsec="")
     type = Str("image", group="status", dsec="nature of the signal")
     dtype = Instance(np.uint8, group="status", dsec="data type")
     shape = Tuple(1080, 1440, group="primary", dsec="default shape of the image", reinit=False)
@@ -37,6 +34,8 @@ class ArUcoCamSetting(DeviceSetting):
     setup = Str("dome", group="status", dsec="experiment setup")
     file = Str(f"{setup.default_value}_speakers.txt", group="status", dsec="Speaker file")
     pose = List(group="primary", dsec="Headpose", reinit=False)
+    device_name = Str("FireFly", group="status", dsec="Name of the device")
+    device_type = Str("Camera", group='status', dsec='Type of the device')
 
 
 class ArUcoCam(Device):
@@ -49,8 +48,7 @@ class ArUcoCam(Device):
     aruco_dicts = [cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_100),
                    cv2.aruco.Dictionary_get(cv2.aruco.DICT_5X5_100)]
     params = cv2.aruco.DetectorParameters_create()
-    system = PySpin.System.GetInstance()
-    cams = system.GetCameras()
+    cams = [Camera(index=0), Camera(index=1)]
     led = Any()
     offset = Any()
     calibrated = Bool()
@@ -60,67 +58,72 @@ class ArUcoCam(Device):
         Initializes the device and sets the state to "created". Necessary before running the device.
         """
         print("Initializing cameras ... ")
-        for cam in self.cams:  # initialize cameras
-            cam.Init()
-            cam.ExposureAuto.SetValue(PySpin.ExposureAuto_Off)  # disable auto exposure time
-            cam.ExposureTime.SetValue(10000.0)  # ???
+        for c in self.cams:  # initialize cameras
+            c.init()
 
     def _configure(self, **kwargs):
         """
         Manipulates the setting parameters of the class and sets the state to "ready. Needs to be called in each trial.
         """
-        print("Configuring camera ...")
-        try:
-            cam.BeginAcquisition()
-            print("Begin streaming ...")
-        except:
-            print('Camera already streaming')
+        print("Configuring cameras ...")
 
     def _start(self, **kwargs):
         """
         Runs the device and sets the state to "running". Here lie all the important steps the camera has to do in each
         trial, such as acquiring and writing the head pose.
         """
-        print("Acquiring image ... ")
-        try:
-            if self.calibrated:
-                self.setting.pose = self.get_pose()
-        except:
-            print("Cannot get pose, make sure that markers can be seen by cameras!")
+        print("Starting cameras ... ")
+        for c in self.cams:
+            c.start()  # start recording images into the camera buffer
+        if self.calibrated:
+            pose = self.get_pose()  # Get image as numpy array
+            if self.offset:
+                self.setting.pose.append([pose[0] - self.offset[0], pose[1] - self.offset[1]])  # subtract offset
+            else:
+                print("WARNING: Camera not calibrated, head pose might be unreliable ...")
+                self.setting.pose.append(pose)
+            print("Acquired pose!")
+        else:
+            self.setting.pose.append(self.get_pose())
 
     def _pause(self, **kwargs):
         """
         Pauses the camera and sets the state to "paused".
         """
         print("Pausing cameras ... ")
-        for cam in self.cams:
-            if cam.IsInitialized():
-                cam.EndAcquisition()
+        for c in self.cams:
+            c.stop()
 
     def _stop(self):
         """
         Closes the camera and cleans up and sets the state to "stopped".
         """
         print("Halting cameras ... ")
-        for cam in self.cams:
-            if cam.IsInitialized():
-                cam.EndAcquisition()
-                cam.DeInit()
-            del cam
-        self.cams.Clear()
-        self.system.ReleaseInstance()
+        for c in self.cams:
+            c.close()
+
+    def snapshot(self, cmap="gray"):
+        """
+        Args:
+            cmap: matplotlib colormap
+        """
+        print("Acquiring snapshot ...")
+        for c in self.cams:
+            image = c.get_array()  # get image as np array
+            plt.imshow(image, cmap=cmap)  # show image
+            plt.show()
 
     def get_pose(self, plot=False, resolution=1.0):
         pose = [None, None]
-        for i, cam in enumerate(self.cams):
-            image = self.get_image(cam)
+        for i, c in enumerate(self.cams):
+            image = c.get_array()
             if resolution < 1.0:
                 image = self.change_res(image, resolution)
             _pose, info = self.pose_from_image(image=image, dictionary=self.aruco_dicts[i])
             if plot:
                 if _pose is None:
                     image = self.draw_markers(image, _pose, self.aruco_dicts[i], info)
-                cv2.imshow('camera %s' % cam.DeviceID(), image)
+                cv2.imshow('camera %s' % c.DeviceID(), image)
             if _pose:
                 _pose = np.asarray(_pose)[:, 2].astype('float16')
                 # remove outliers
@@ -133,17 +136,8 @@ class ArUcoCam(Device):
         return pose
 
     @staticmethod
-    def get_image(cam, plot=False):
-        image_result = cam.GetNextImage()
-        image = image_result.Convert(PySpin.PixelFormat_Mono8, PySpin.HQ_LINEAR)
-        # image = image_result.Convert(PySpin.PixelFormat_RGB8, PySpin.HQ_LINEAR)
-        image = image.GetNDArray()
-        image.setflags(write=1)
-        image_result.Release()
-        if plot:
-            plt.imshow(image, cmap="grey")
-            plt.show()
-        return image
+    def get_image(cam):
+        return cam.get_array()
 
     def pose_from_image(self, image, dictionary):  # get pose
         (corners, ids, rejected) = cv2.aruco.detectMarkers(image, dictionary=dictionary, parameters=self.params)
@@ -174,7 +168,8 @@ class ArUcoCam(Device):
                 pose.append([angles[1, 0], angles[0, 0], angles[2, 0]])
             return pose, info
 
-    def draw_markers(self, image, pose, aruco_dict, info):
+    @staticmethod
+    def draw_markers(image, pose, aruco_dict, info):
         marker_len = .05
         (corners, ids, rejected) = cv2.aruco.detectMarkers(image, dictionary=aruco_dict)
         if len(corners) > 0:
@@ -188,7 +183,8 @@ class ArUcoCam(Device):
                             lineType=1, thickness=1)
         return image
 
-    def change_res(self, image, resolution):
+    @staticmethod
+    def change_res(image, resolution):
         data = PIL.Image.fromarray(image)
         width = int(data.size[0] * resolution)
         height = int(data.size[1] * resolution)
@@ -243,7 +239,7 @@ class FlirCamSetting(DeviceSetting):
     setup = Str("dome", group="status", dsec="experiment setup")
     file = Str(f"{setup.default_value}_speakers.txt")
     led = Any(group="primary", dsec="central speaker with attached led for initial camera calibration", reinit=False)
-    calibrated = Bool(group="primary", dsec="tells whether camera is calibrated or not", reinit=False)
+    calibrated = Bool(False, group="primary", dsec="tells whether camera is calibrated or not", reinit=False)
 
 
 class FlirCam(Device):
@@ -255,7 +251,10 @@ class FlirCam(Device):
     setting = FlirCamSetting()
     pose = List()
     offset = Float()
-    est = PoseEstimator()
+    try:
+        est = PoseEstimator()
+    except NameError:
+        est = None
     cam = Any()
     handle = Any()
 
@@ -384,15 +383,36 @@ class FlirCam(Device):
 
 if __name__ == "__main__":
     from matplotlib import pyplot as plt
+    log = logging.getLogger()
+    log.setLevel(logging.DEBUG)
+    # create console handler and set level to debug
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    # create formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # add formatter to ch
+    ch.setFormatter(formatter)
+    # add ch to logger
+    log.addHandler(ch)
 
+    cam = ArUcoCam()
+
+    cam.start()
+    cam.snapshot()
+    cam.get_pose()
+    cam.pause()
+
+
+    # Facial landmark detection logic test
     # see if the logic works
+    """
     cam = FlirCam()
     cam.initialize()
     cam.configure()
     cam.start()
     cam.snapshot()
     cam.pause()
-
+    
     # headpose estimation
     import time
     time.sleep(10)
@@ -407,6 +427,8 @@ if __name__ == "__main__":
     bright = brightness.enhance(6.0)
     array = np.asarray(bright)
     roll, pitch, yaw = est.pose_from_image(array)  # estimate the head pose
+    """
+
 
 
 
