@@ -5,7 +5,7 @@ from labplatform.core.Subject import Subject, SubjectList
 from labplatform.config import get_config
 from experiment.RP2 import RP2Device
 from experiment.RX8 import RX8Device
-# from experiment.Camera import ArUcoCam
+from experiment.Camera import ArUcoCam
 from Speakers.speaker_config import SpeakerArray
 import os
 from traits.api import List, Str, Int, Dict, Float
@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 # TODO: test experiment data class (write/read data from file)
 # TODO: check signal and speaker log before trial
-# TODO: Implement ArUcoCam
+# TODO: fix camera calibration
 # TODO: try .configure_traits method for fun
 # TODO: cannot write signals and speakers to pytables because of inhomogeneous dimensions --> store_info_before_start
 # TODO: RP2 initializes automatically ???
@@ -60,7 +60,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.load_signals()
         self.devices["RP2"] = RP2Device()
         self.devices["RX8"] = RX8Device()
-        # self.devices["ArUcoCam"] = ArUcoCam()
+        self.devices["ArUcoCam"] = ArUcoCam()
 
     def _start(self, **kwargs):
         pass
@@ -138,30 +138,23 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def calibrate_camera(self, report=True, limit=0.5):
         """
-        Calibrates the camera. Initializes the RX81 to access the central loudspeaker. Illuminates the led on ele,
+        Calibrates the cameras. Initializes the RX81 to access the central loudspeaker. Illuminates the led on ele,
         azi 0°, then acquires the headpose and uses it as the offset. Turns the led off afterwards.
         """
-        for key in self.devices.keys():
-            if not self.devices[key].state == "Ready":
-                print("Devices not ready for camera calibration. Make sure devices are initialized!")
         print("Calibrating camera ...")
-
-        spks = SpeakerArray(file=os.path.join(self.devices["ArUcoCam"].setting.root, self.devices["ArUcoCam"].file))  # initialize speakers.
-        spks.load_speaker_table()  # load speakertable
-        self.devices["ArUcoCam"].led = spks.pick_speakers(23)[0]  # pick central speaker
-
-        print(f"Initialized processors {[k for k in self.devices.keys]}.")
-        self.devices["RX81"].write(tag='bitmask',
-                                   value=self.led.channel_digital,
-                                   processors=self.led.TDT_digital)  # illuminate LED
+        led = self.speakers[3]  # central speaker
+        self.devices["RX8"].handle.write(tag='bitmask',
+                                         value=led.channel_digital,
+                                         procs=f"{led.TDT_digital}{led.TDT_idx_digital}")  # illuminate LED
         print('Point towards led and press button to start calibration...')
         self.devices["RP2"].wait_for_button()  # start calibration after button press
         _log = np.zeros(2)
         while True:  # wait in loop for sensor to stabilize
-            pose = self.get_pose()
-            # print(pose)
+            self.devices["ArUcoCam"].start()
+            pose = self.devices["ArUcoCam"].get_pose()
+            self.devices["ArUcoCam"].pause()
             log = np.vstack((_log, pose))
-            if log[-1, 0] == None or log[-1, 1] == None:
+            if log[-1, 0] is None or log[-1, 1] is None:
                 print('No marker detected')
             # check if orientation is stable for at least 30 data points
             if len(log) > 30 and all(log[-20:, 0] != None) and all(log[-20:, 1] != None):
@@ -170,9 +163,11 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                     print('az diff: %f,  ele diff: %f' % (diff[0], diff[1]), end="\r", flush=True)
                 if diff[0] < limit and diff[1] < limit:  # limit in degree
                     break
-        self.devices["RX8"].write(tag='bitmask', value=0, processors=self.led.TDT_digital)  # turn off LED
+        self.devices["RX8"].handle.write(tag='bitmask',
+                                         value=0,
+                                         procs=f"{led.TDT_digital}{led.TDT_idx_digital}")  # turn off LED
         pose_offset = np.around(np.mean(log[-20:].astype('float16'), axis=0), decimals=2)
-        # print('calibration complete, thank you!')
+        print('Calibration complete!')
         self.devices["ArUcoCam"].offset = pose_offset
         self.devices["ArUcoCam"].calibrated = True
 
@@ -203,13 +198,14 @@ if __name__ == "__main__":
                       cohort="MSL")
 
     subject.data_path = os.path.join(get_config("DATA_ROOT"), subject.name)
-    subject.add_subject_to_h5file(os.path.join(get_config("SUBJECT_ROOT"), "Max_Test.h5"))
+    subject.add_subject_to_h5file(os.path.join(get_config("SUBJECT_ROOT"), f"{subject.name}_Test.h5"))
     # subject.file_path
     experimenter = "Max"
     nj = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
+    nj.calibrate_camera()
     # nj.initialize()
     # nj.configure()
-    nj.start()
-    nj.change_state("Paused")
+    # nj.start()
+    # nj.change_state("Paused")
 
     # nj.configure_traits()
