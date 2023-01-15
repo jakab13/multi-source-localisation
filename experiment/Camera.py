@@ -46,7 +46,6 @@ class ArUcoCam(Device):
     tdt handle, mainly for calibration.
     """
     setting = ArUcoCamSetting()
-    devices = Any()
     aruco_dicts = [cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_100),
                    cv2.aruco.Dictionary_get(cv2.aruco.DICT_5X5_100)]
     params = cv2.aruco.DetectorParameters_create()
@@ -84,9 +83,8 @@ class ArUcoCam(Device):
         """
         print("Acquiring image ... ")
         try:
-            if self.setting.calibrated:
-                pose = self.get_pose()
-                self.pose.append(pose)
+            if self.calibrated:
+                self.setting.pose = self.get_pose()
         except:
             print("Cannot get pose, make sure that markers can be seen by cameras!")
 
@@ -135,13 +133,16 @@ class ArUcoCam(Device):
         return pose
 
     @staticmethod
-    def get_image(cam):
+    def get_image(cam, plot=False):
         image_result = cam.GetNextImage()
         image = image_result.Convert(PySpin.PixelFormat_Mono8, PySpin.HQ_LINEAR)
         # image = image_result.Convert(PySpin.PixelFormat_RGB8, PySpin.HQ_LINEAR)
         image = image.GetNDArray()
         image.setflags(write=1)
         image_result.Release()
+        if plot:
+            plt.imshow(image, cmap="grey")
+            plt.show()
         return image
 
     def pose_from_image(self, image, dictionary):  # get pose
