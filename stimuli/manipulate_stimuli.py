@@ -127,7 +127,7 @@ def concatenate(sounds, n_concatenate=5):
 
 
 if __name__ == "__main__":
-    DIR = pathlib.Path("C:\labplatform\sound_files\\tts-countries_resamp_24414")
+    DIR = pathlib.Path("C:\labplatform\sound_files\\warning")
     sounds_data = load(DIR)
     # pattern = "p227"
     # talker_files = pick_talker(data=sounds_data, pattern=pattern, DIR=DIR)
