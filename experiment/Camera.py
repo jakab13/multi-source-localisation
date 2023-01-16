@@ -76,13 +76,13 @@ class ArUcoCam(Device):
         if self.calibrated:
             pose = self.get_pose()  # Get image as numpy array
             if self.offset:
-                self.setting.pose.append([pose[0] - self.offset[0], pose[1] - self.offset[1]])  # subtract offset
+                self.setting.pose = [pose[0] - self.offset[0], pose[1] - self.offset[1]]  # subtract offset
             else:
-                print("WARNING: Camera not calibrated, head pose might be unreliable ...")
-                self.setting.pose.append(pose)
+                log.info("Camera not calibrated, head pose might be unreliable ...")
+                self.setting.pose = pose
             log.info("Acquired pose!")
         else:
-            self.setting.pose.append(self.get_pose())
+            self.setting.pose = self.get_pose()
 
     def _pause(self, **kwargs):
         """
