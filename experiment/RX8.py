@@ -18,8 +18,6 @@ class RX8Setting(DeviceSetting):  # this class contains settings for the device 
     processor = Str('RX8', group='status', dsec='Name of the processor')
     connection = Str('GB', group='status', dsec='Connection type of the processor')
     index = List([1, 2], group='status', dsec='Index of the device to connect to')
-    signals = List(group='primary', dsec='Stimuli to play', reinit=False)
-    speakers = List(group="primary", dsex="Speakers to pick", reinit=False)
     device_name = Str("RX8", group="status", dsec="Name of the device")
     device_type = Str("Processor", group='status', dsec='type of the device')
 
@@ -50,9 +48,10 @@ class RX8Device(Device):
             #self.thread.start()
 
     def _configure(self, **kwargs):
-        for idx, spk in enumerate(self.setting.speakers):
-            self.handle.write(tag=f"data{idx}", value=self.setting.signals[idx].data.flatten(), procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
-            self.handle.write(tag=f"chan{idx}", value=spk.channel_analog, procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
+        # for idx, spk in enumerate(self.setting.speakers):
+            # self.handle.write(tag=f"data{idx}", value=self.setting.signals[idx].data.flatten(), procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
+            # self.handle.write(tag=f"chan{idx}", value=spk.channel_analog, procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
+        pass
 
     def _start(self):
         self.handle.trigger("zBusA", proc=self.handle)
