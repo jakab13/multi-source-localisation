@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 class NumerosityJudgementSetting(ExperimentSetting):
     experiment_name = Str('NumJudge', group='status', dsec='name of the experiment', noshow=True)
     n_blocks = Int(1, group="status", dsec="Number of total blocks per session")
-    conditions = List([2, 3, 4, 5], group="status", dsec="Number of simultaneous talkers in the experiment")
+    conditions = List([2, 3, 4], group="status", dsec="Number of simultaneous talkers in the experiment")
     signal_log = List([999], group="primary", dsec="Logs of the signals used in previous trials", reinit=False)
     speaker_log = List([999], group="primary", dsec="Logs of the speakers used in previous trials", reinit=False)
     trial_number = Int(20, group='primary', dsec='Number of trials in each condition', reinit=False)
@@ -56,7 +56,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     time_0 = Float()
     speakers = List()
     signals = List()
-    warning_tone = slab.Sound.read(get_config("SOUND_ROOT"), "\\warning\\warning_tone.wav")
+    warning_tone = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "warning\\warning_tone.wav"))
 
     def _initialize(self, **kwargs):
         self.load_speakers()
@@ -64,6 +64,9 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.devices["RP2"] = RP2Device()
         self.devices["RX8"] = RX8Device()
         self.devices["ArUcoCam"] = ArUcoCam()
+        self.devices["RX8"].handle.write("playbuflen",
+                                         self.devices["RX8"].setting.sampling_freq*self.setting.trial_duration,
+                                         procs=self.devices["RX8"].handle.procs)
 
     def _start(self, **kwargs):
         pass
@@ -75,22 +78,18 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         pass
 
     def setup_experiment(self, info=None):
-        self.sequence.__next__()
-        self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
-        self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
-        self.devices["RX8"].handle.write("playbuflen",
-                                         self.devices["RX8"].setting.sampling_freq*self.setting.trial_duration,
-                                         procs=self.devices["RX8"].handle.procs)
-        self.devices["RX8"].configure()
-        log.info("Set up experiment")
+        pass
 
     def start_experiment(self, info=None):
         pass
 
     def _prepare_trial(self):
+        self.sequence.__next__()
+        self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
+        self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
         for idx, spk in enumerate(self.speakers_sample):
             self.devices["RX8"].handle.write(tag=f"data{idx}",
-                                             value=self.signals[idx].data.flatten(),
+                                             value=self.signals_sample[idx].data.flatten(),
                                              procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
             self.devices["RX8"].handle.write(tag=f"chan{idx}",
                                              value=spk.channel_analog,
@@ -103,16 +102,18 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def _before_start(self):
         while True:
+            self.devices["ArUcoCam"].configure()
             self.devices["ArUcoCam"].start()
             self.devices["ArUcoCam"].pause()
-            if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].pose) ** 2)) > 10:
+            if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].setting.pose) ** 2)) > 10:
                 log.warning("Subject is not looking straight ahead")
                 self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
                 self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
-                for idx in range(1, 6):  # clear all speakers
+                for idx in range(1, 5):  # clear all speakers
                     self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
                     # self.devices["RX8"].handle.write(f"chan{idx}", 0, procs=["RX81", "RX82"])
                 self.devices["RX8"].start()
+                self.devices["RX8"].pause()
                 # self.devices["RP2"].wait_for_button()
             else:
                 break
@@ -149,17 +150,13 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         speakers = spk_array.pick_speakers([x for x in range(20, 27)])
         self.speakers = speakers
 
-    @staticmethod
-    def set_log():
-        pass
-
     def pick_speakers_this_trial(self, n_speakers):
-        speakers_no_rep = list(x for x in self.speakers if x not in self.setting.speaker_log)
-        self.devices["RX8"].setting.speakers = random.sample(speakers_no_rep, n_speakers)
+        speakers_no_rep = list(x for x in self.speakers if x not in self.speakers_sample)
+        self.speakers_sample = random.sample(speakers_no_rep, n_speakers)
 
     def pick_signals_this_trial(self, n_signals):
-        signals_no_rep = list(x for x in self.signals if x not in self.setting.signal_log)
-        self.devices["RX8"].setting.signals = random.sample(signals_no_rep, n_signals)
+        signals_no_rep = list(x for x in self.signals if x not in self.signals_sample)
+        self.signals_sample = random.sample(signals_no_rep, n_signals)
 
     def calibrate_camera(self, report=True, limit=0.5):
         """
@@ -227,10 +224,10 @@ if __name__ == "__main__":
     # subject.file_path
     experimenter = "Max"
     nj = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
-    # nj.calibrate_camera()
-    # nj.initialize()
-    # nj.configure()
-    # nj.start()
-    # nj.change_state("Paused")
+    for trial in range(10):
+        nj._before_start_validate()
+        nj._before_start()
+        nj.start()
+        nj.pause_experiment()
 
     # nj.configure_traits()
