@@ -16,6 +16,7 @@ import PySpin
 from simple_pyspin import Camera
 import cv2
 import PIL
+from matplotlib import pyplot as plt
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 log = logging.getLogger(__name__)
@@ -369,7 +370,6 @@ class FlirCam(Device):
 
 
 if __name__ == "__main__":
-    from matplotlib import pyplot as plt
     log = logging.getLogger()
     log.setLevel(logging.DEBUG)
     # create console handler and set level to debug
