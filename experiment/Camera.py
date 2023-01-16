@@ -20,7 +20,7 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 log = logging.getLogger(__name__)
 
-# TODO: Test aruco headpose estimation
+# TODO: where does the camera set the reference point??
 
 class ArUcoCamSetting(DeviceSetting):
     """
@@ -129,10 +129,6 @@ class ArUcoCam(Device):
                 _pose = np.mean(_pose)
                 pose[i] = _pose
         return pose
-
-    @staticmethod
-    def get_image(cam):
-        return cam.get_array()
 
     def pose_from_image(self, image, dictionary):  # get pose
         (corners, ids, rejected) = cv2.aruco.detectMarkers(image, dictionary=dictionary, parameters=self.params)
