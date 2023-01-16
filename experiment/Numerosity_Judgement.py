@@ -56,6 +56,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     time_0 = Float()
     speakers = List()
     signals = List()
+    warning_tone = slab.Sound.read(get_config("SOUND_ROOT"), "\\warning\\warning_tone.wav")
 
     def _initialize(self, **kwargs):
         self.load_speakers()
@@ -87,18 +88,40 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         pass
 
     def _prepare_trial(self):
-        pass
+        for idx, spk in enumerate(self.speakers_sample):
+            self.devices["RX8"].handle.write(tag=f"data{idx}",
+                                             value=self.signals[idx].data.flatten(),
+                                             procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
+            self.devices["RX8"].handle.write(tag=f"chan{idx}",
+                                             value=spk.channel_analog,
+                                             procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
 
     def _before_start_validate(self):
         for device in self.devices.keys():
             if self.devices[device].state != "Ready":
                 self.devices[device].change_state("Ready")
 
+    def _before_start(self):
+        self.devices["ArUcoCam"].start()
+        while True:
+            rms = np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].pose) ** 2))
+            if rms > 10:
+                log.warning("Subject is not looking straight ahead")
+                self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
+                self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
+                for idx in range(1, 6):  # clear all speakers
+                    self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
+                    # self.devices["RX8"].handle.write(f"chan{idx}", 0, procs=["RX81", "RX82"])
+                self.devices["RX8"].start()
+                self.devices["RP2"].wait_for_button()
+            else:
+                break
+
     def _start_trial(self):
         self.time_0 = time.time()
         self.devices["RX8"].start()
-        # self.devices["RP2"].wait_for_button()
-        # self.response = self.devices["RP2"].get_response()
+        self.devices["RP2"].wait_for_button()
+        self.response = self.devices["RP2"].get_response()
         self.reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         log.info('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
 
