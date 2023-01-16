@@ -102,10 +102,10 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                 self.devices[device].change_state("Ready")
 
     def _before_start(self):
-        self.devices["ArUcoCam"].start()
         while True:
-            rms = np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].pose) ** 2))
-            if rms > 10:
+            self.devices["ArUcoCam"].start()
+            self.devices["ArUcoCam"].pause()
+            if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].pose) ** 2)) > 10:
                 log.warning("Subject is not looking straight ahead")
                 self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
                 self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
@@ -113,7 +113,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                     self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
                     # self.devices["RX8"].handle.write(f"chan{idx}", 0, procs=["RX81", "RX82"])
                 self.devices["RX8"].start()
-                self.devices["RP2"].wait_for_button()
+                # self.devices["RP2"].wait_for_button()
             else:
                 break
 
