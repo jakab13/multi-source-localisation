@@ -383,12 +383,25 @@ if __name__ == "__main__":
     cam = ArUcoCam()
     cam.initialize()
 
-    cam.configure()
-    cam.start()
-    cam.snapshot()
-    cam.get_pose()
-    cam.pause()
+    interval = 10
+    poses = list()
+    azimuth = list()
+    elevation = list()
 
+    for trial in range(interval):
+        cam.configure()
+        cam.start()
+        cam.snapshot()
+        cam.pause()
+        poses.append(cam.setting.pose)
+
+    for azi, ele in poses:
+        azimuth.append(azi)
+        elevation.append(ele)
+
+    print(f"SD over {interval} trials: \
+          azimuth:{np.std(azimuth)}\
+          elevation: {np.std(elevation)}")
 
     # Facial landmark detection logic test
     # see if the logic works
