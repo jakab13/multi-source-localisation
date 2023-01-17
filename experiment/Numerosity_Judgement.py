@@ -20,13 +20,12 @@ import datetime
 log = logging.getLogger(__name__)
 
 
-# TODO: test experiment data class (write/read data from file) and subject class
-# TODO: fix checking for headpose (_before_start)
+# TODO: figure out how to save data and subjects (i.e. how data and subject modules work)
 # TODO: check out threading module
-# TODO: why is the experiment hacky? Solution: implement method to stop a trial
 
 
 class NumerosityJudgementSetting(ExperimentSetting):
+
     experiment_name = Str('NumJudge', group='status', dsec='name of the experiment', noshow=True)
     n_blocks = Int(1, group="status", dsec="Number of total blocks per session")
     conditions = List([2, 3, 4], group="status", dsec="Number of simultaneous talkers in the experiment")
@@ -34,6 +33,7 @@ class NumerosityJudgementSetting(ExperimentSetting):
     speaker_log = List([999], group="primary", dsec="Logs of the speakers used in previous trials", reinit=False)
     trial_number = Int(20, group='primary', dsec='Number of trials in each condition', reinit=False)
     trial_duration = Float(1.0, group='primary', dsec='Duration of each trial, (s)', reinit=False)
+    response = Int(group="primary", dsec="Recorded response from button box", reinit=False)
 
     def _get_total_trial(self):
         return self.trial_number * len(self.conditions)
@@ -47,7 +47,6 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     devices = Dict()
     speakers_sample = List()
     signals_sample = List()
-    response = Int()
     reaction_time = Int()
     time_0 = Float()
     speakers = List()
@@ -76,13 +75,24 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     def setup_experiment(self, info=None):
         pass
 
-    def configure_experiment(self):
-        pass
-
-    def start_experiment(self, info=None):
-        pass
-
     def _prepare_trial(self):
+        while True:
+            self.devices["ArUcoCam"].configure()
+            self.devices["ArUcoCam"].start()
+            self.devices["ArUcoCam"].pause()
+            if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].setting.pose) ** 2)) > 10:
+                log.warning("Subject is not looking straight ahead")
+                for idx in range(1, 5):  # clear all speakers before loading warning tone
+                    self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
+                    self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
+                self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
+                self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
+                    # self.devices["RX8"].handle.write(f"chan{idx}", 0, procs=["RX81", "RX82"])
+                self.devices["RX8"].start()
+                self.devices["RX8"].pause()
+                # self.devices["RP2"].wait_for_button()
+            else:
+                break
         self.sequence.__next__()
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
@@ -94,47 +104,23 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                                              value=spk.channel_analog,
                                              procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
 
-    def _before_start_validate(self):
-        while True:
-            self.devices["ArUcoCam"].configure()
-            self.devices["ArUcoCam"].start()
-            self.devices["ArUcoCam"].pause()
-            if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].setting.pose) ** 2)) > 10:
-                log.warning("Subject is not looking straight ahead")
-                self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
-                self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
-                for idx in range(1, 5):  # clear all speakers
-                    self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
-                    # self.devices["RX8"].handle.write(f"chan{idx}", 0, procs=["RX81", "RX82"])
-                self.devices["RX8"].start()
-                self.devices["RX8"].pause()
-                # self.devices["RP2"].wait_for_button()
-            else:
-                break
-
-    def _before_start(self):
-        for device in self.devices.keys():
-            if self.devices[device].state != "Ready":
-                if self.devices[device].state == "Paused" or "Created":
-                    self.devices[device].configure()
-                elif self.devices[device].state == "Stopped":
-                    log.info(f"Device {device} is stopped!")
-
     def _start_trial(self):
         self.time_0 = time.time()
         log.info('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         self.devices["RX8"].start()
         self.devices["RP2"].wait_for_button()
         self.reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
-        self.response = self.devices["RP2"].get_response()
+        self.setting.response = self.devices["RP2"].get_response()
+        self.devices["RX8"].pause()
+        self.process_event({'trial_stop': 0})
 
     def _stop_trial(self):
-        is_correct = True if self.sequence.this_trial / self.response == 1 else False
-        self.data.write(key="response", data=self.response, current_trial=self.setting.current_trial)
-        self.data.write(key="solution", data=self.sequence.this_trial, current_trial=self.setting.current_trial)
-        self.data.write(key="reaction_time", data=self.reaction_time, current_trial=self.setting.current_trial)
-        self.data.write(key="is_correct", data=is_correct, current_trial=self.setting.current_trial)
-        self.data.save()
+        is_correct = True if self.sequence.this_trial / self.setting.response == 1 else False
+        #self.data.write(key="response", data=self.setting.response, current_trial=self.setting.current_trial)
+        #self.data.write(key="solution", data=self.sequence.this_trial, current_trial=self.setting.current_trial)
+        #self.data.write(key="reaction_time", data=self.reaction_time, current_trial=self.setting.current_trial)
+        #self.data.write(key="is_correct", data=is_correct, current_trial=self.setting.current_trial)
+        #self.data.save()
         log.info('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         self.time_0 = time.time()
 
@@ -160,40 +146,29 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         signals_no_rep = list(x for x in self.signals if x not in self.signals_sample)
         self.signals_sample = random.sample(signals_no_rep, n_signals)
 
-    def calibrate_camera(self, report=True, limit=0.5):
+    def calibrate_camera(self, report=True):
         """
         Calibrates the cameras. Initializes the RX81 to access the central loudspeaker. Illuminates the led on ele,
         azi 0°, then acquires the headpose and uses it as the offset. Turns the led off afterwards.
         """
-        print("Calibrating camera ...")
+        log.info("Calibrating camera")
         led = self.speakers[3]  # central speaker
         self.devices["RX8"].handle.write(tag='bitmask',
-                                         value=led.channel_digital,
-                                         procs=f"{led.TDT_digital}{led.TDT_idx_digital}")  # illuminate LED
-        print('Point towards led and press button to start calibration...')
+                                         value=1,
+                                         procs="RX81")  # illuminate central speaker LED
+        log.info('Point towards led and press button to start calibration')
         self.devices["RP2"].wait_for_button()  # start calibration after button press
-        _log = np.zeros(2)
-        while True:  # wait in loop for sensor to stabilize
-            self.devices["ArUcoCam"].start()
-            pose = self.devices["ArUcoCam"].get_pose()
-            self.devices["ArUcoCam"].pause()
-            log = np.vstack((_log, pose))
-            if log[-1, 0] is None or log[-1, 1] is None:
-                print('No marker detected')
-            # check if orientation is stable for at least 30 data points
-            if len(log) > 30 and all(log[-20:, 0] != None) and all(log[-20:, 1] != None):
-                diff = np.mean(np.abs(np.diff(log[-20:], axis=0)), axis=0).astype('float16')
-                if report:
-                    print('az diff: %f,  ele diff: %f' % (diff[0], diff[1]), end="\r", flush=True)
-                if diff[0] < limit and diff[1] < limit:  # limit in degree
-                    break
+        self.devices["ArUcoCam"].start()
+        offset = self.devices["ArUcoCam"].get_pose()
+        self.devices["ArUcoCam"].offset = offset
+        self.devices["ArUcoCam"].pause()
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=0,
                                          procs=f"{led.TDT_digital}{led.TDT_idx_digital}")  # turn off LED
-        pose_offset = np.around(np.mean(log[-20:].astype('float16'), axis=0), decimals=2)
-        log.info('Calibration complete!')
-        self.devices["ArUcoCam"].offset = pose_offset
         self.devices["ArUcoCam"].calibrated = True
+        if report:
+            print(f"Camera offset: {offset}")
+        log.info('Calibration complete!')
 
 
 if __name__ == "__main__":
@@ -229,10 +204,13 @@ if __name__ == "__main__":
     # subject.file_path
     experimenter = "Max"
     nj = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
+    # nj.calibrate_camera()
+    # nj.start()
+    """    
     for trial in range(10):
         nj._before_start_validate()
         nj._before_start()
         nj.start()
         nj.pause_experiment()
-
+    """
     # nj.configure_traits()
