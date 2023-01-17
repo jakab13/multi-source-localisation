@@ -20,7 +20,7 @@ import datetime
 log = logging.getLogger(__name__)
 
 
-# TODO: figure out how to save data and subjects (i.e. how data and subject modules work)
+# TODO: how do I save the parameters each trial such as responses?
 # TODO: check out threading module
 
 
@@ -73,7 +73,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         pass
 
     def setup_experiment(self, info=None):
-        pass
+        self._tosave_para['sequence'] = self.sequence
 
     def _prepare_trial(self):
         while True:
