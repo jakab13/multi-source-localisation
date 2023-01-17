@@ -174,10 +174,10 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 if __name__ == "__main__":
 
     log = logging.getLogger()
-    log.setLevel(logging.DEBUG)
+    log.setLevel(logging.INFO)
     # create console handler and set level to debug
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(logging.INFO)
     # create formatter
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # add formatter to ch
@@ -188,17 +188,16 @@ if __name__ == "__main__":
     # Create subject
     try:
         subject = Subject(name="Foo",
-                          group="Test",
+                          group="Pilot",
                           birth=datetime.date(1996, 11, 18),
                           species="Human",
                           sex="M",
-                          cohort="MSL")
-        subject.data_path = os.path.join(get_config("DATA_ROOT"), subject.name)
+                          cohort="NumJudge")
         subject.add_subject_to_h5file(os.path.join(get_config("SUBJECT_ROOT"), "Foo_test.h5"))
         #test_subject.file_path
     except ValueError:
         # read the subject information
-        sl = SubjectList(file_path=os.path.join(get_config("SUBJECT_ROOT"), "Foo_Test.h5"))
+        sl = SubjectList(file_path=os.path.join(get_config("SUBJECT_ROOT"), "Foo_test.h5"))
         sl.read_from_h5file()
         subject = sl.subjects[0]
     # subject.file_path
@@ -206,11 +205,4 @@ if __name__ == "__main__":
     nj = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
     # nj.calibrate_camera()
     # nj.start()
-    """    
-    for trial in range(10):
-        nj._before_start_validate()
-        nj._before_start()
-        nj.start()
-        nj.pause_experiment()
-    """
     # nj.configure_traits()
