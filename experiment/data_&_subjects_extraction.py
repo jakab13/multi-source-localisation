@@ -12,8 +12,8 @@ data_root = get_config("DATA_ROOT")
 fp = os.path.join(data_root, "Foo_Test\\_control_Human_Foo")
 
 # define filters and fields for h5Tables.extract files
-filters = (('_v_name', 'trial_log'), ('nyu_id', lambda id: id != 0))
-fields = (('identifier', 'id'), ('sex', 'sex'))
+filters = (('_v_name', 'trial_log'), ('<+nyu_id', lambda id: id != 0))
+fields = (('<+identifier', 'id'), ('<+sex', 'sex'))
 
 # get all files from data directory
 files = glob(os.path.join(fp, '*.h5'))
