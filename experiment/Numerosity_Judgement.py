@@ -209,15 +209,21 @@ if __name__ == "__main__":
     log.addHandler(ch)
 
     # Create subject
-    subject = Subject(name="Foo",
-                      group="Test",
-                      birth=datetime.date(1996, 11, 18),
-                      species="Human",
-                      sex="M",
-                      cohort="MSL")
-
-    subject.data_path = os.path.join(get_config("DATA_ROOT"), subject.name)
-    subject.add_subject_to_h5file(os.path.join(get_config("SUBJECT_ROOT"), f"{subject.name}_Test.h5"))
+    try:
+        subject = Subject(name="Foo",
+                          group="Test",
+                          birth=datetime.date(1996, 11, 18),
+                          species="Human",
+                          sex="M",
+                          cohort="MSL")
+        subject.data_path = os.path.join(get_config("DATA_ROOT"), subject.name)
+        subject.add_subject_to_h5file(os.path.join(get_config("SUBJECT_ROOT"), "Foo_test.h5"))
+        #test_subject.file_path
+    except ValueError:
+        # read the subject information
+        sl = SubjectList(file_path=os.path.join(get_config("SUBJECT_ROOT"), "Foo_Test.h5"))
+        sl.read_from_h5file()
+        subject = sl.subjects[0]
     # subject.file_path
     experimenter = "Max"
     nj = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
