@@ -56,13 +56,7 @@ class RP2Device(Device):
     def get_response(self):  # collects response, preferably called right after wait_for_button
         log.info("Acquiring button response ... ")
         response = self.handle.GetTagVal("response")
-        self.stop_after_response()
         return int(np.log2(response))  # because the response is stored in bit value, we need the base 2 log
-
-    def stop_after_response(self):
-        self.pause()
-        if self.experiment:
-            self.experiment().process_event({'trial_stop': 0})
 
 
 if __name__ == "__main__":
@@ -79,7 +73,6 @@ if __name__ == "__main__":
     log.addHandler(ch)
     responses = list()
     RP2 = RP2Device()
-    RP2.initialize()
 
     for trial in range(10):
         RP2.configure()
