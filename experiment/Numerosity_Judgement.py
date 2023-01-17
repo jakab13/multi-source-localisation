@@ -76,6 +76,9 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     def setup_experiment(self, info=None):
         pass
 
+    def configure_experiment(self):
+        pass
+
     def start_experiment(self, info=None):
         pass
 
@@ -92,11 +95,6 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                                              procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
 
     def _before_start_validate(self):
-        for device in self.devices.keys():
-            if self.devices[device].state != "Ready":
-                self.devices[device].change_state("Ready")
-
-    def _before_start(self):
         while True:
             self.devices["ArUcoCam"].configure()
             self.devices["ArUcoCam"].start()
@@ -114,13 +112,21 @@ class NumerosityJudgementExperiment(ExperimentLogic):
             else:
                 break
 
+    def _before_start(self):
+        for device in self.devices.keys():
+            if self.devices[device].state != "Ready":
+                if self.devices[device].state == "Paused" or "Created":
+                    self.devices[device].configure()
+                elif self.devices[device].state == "Stopped":
+                    log.info(f"Device {device} is stopped!")
+
     def _start_trial(self):
         self.time_0 = time.time()
+        log.info('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         self.devices["RX8"].start()
         self.devices["RP2"].wait_for_button()
-        self.response = self.devices["RP2"].get_response()
         self.reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
-        log.info('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
+        self.response = self.devices["RP2"].get_response()
 
     def _stop_trial(self):
         is_correct = True if self.sequence.this_trial / self.response == 1 else False
