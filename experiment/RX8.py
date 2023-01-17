@@ -79,12 +79,6 @@ class RX8Device(Device):
             time.sleep(0.01)
         log.info('Done waiting.')
 
-    def run_normal_mode(self):
-        pass
-
-    def _deinitialize(self):
-        pass
-
 
 if __name__ == "__main__":
     log = logging.getLogger()

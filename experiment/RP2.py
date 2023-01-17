@@ -58,12 +58,6 @@ class RP2Device(Device):
         response = self.handle.GetTagVal("response")
         return int(np.log2(response))  # because the response is stored in bit value, we need the base 2 log
 
-    def run_normal_mode(self):
-        pass
-
-    def _deinitialize(self):
-        pass
-
 
 if __name__ == "__main__":
     log = logging.getLogger()

@@ -190,9 +190,6 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.devices["ArUcoCam"].offset = pose_offset
         self.devices["ArUcoCam"].calibrated = True
 
-    def run_normal_mode(self):
-        pass
-
 
 if __name__ == "__main__":
 
