@@ -167,7 +167,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                                          procs=f"{led.TDT_digital}{led.TDT_idx_digital}")  # turn off LED
         self.devices["ArUcoCam"].calibrated = True
         if report:
-            print(f"Camera offset: {offset}")
+            log.info(f"Camera offset: {offset}")
         log.info('Calibration complete!')
 
 
