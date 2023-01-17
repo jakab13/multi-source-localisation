@@ -23,8 +23,7 @@ log = logging.getLogger(__name__)
 # TODO: test experiment data class (write/read data from file) and subject class
 # TODO: fix checking for headpose (_before_start)
 # TODO: check out threading module
-# TODO: why is the experiment hacky?
-# TODO: why does FooExp run automatically but not NumJudge?
+# TODO: why is the experiment hacky? Solution: implement method to stop a trial
 
 
 class NumerosityJudgementSetting(ExperimentSetting):
