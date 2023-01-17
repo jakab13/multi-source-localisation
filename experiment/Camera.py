@@ -21,8 +21,6 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 log = logging.getLogger(__name__)
 
-# TODO: where does the camera set the reference point??
-
 class ArUcoCamSetting(DeviceSetting):
     """
     Class for defining the camera settings. primary group parameters are supposed to be changed and sometimes
@@ -383,7 +381,9 @@ if __name__ == "__main__":
     log.addHandler(ch)
 
     cam = ArUcoCam()
+    cam.initialize()
 
+    cam.configure()
     cam.start()
     cam.snapshot()
     cam.get_pose()
