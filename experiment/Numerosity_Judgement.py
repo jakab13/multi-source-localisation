@@ -47,6 +47,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     speakers = List()
     signals = List()
     warning_tone = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "warning\\warning_tone.wav"))
+    response = Int()
 
     def _initialize(self, **kwargs):
         self.load_speakers()
@@ -68,6 +69,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         pass
 
     def setup_experiment(self, info=None):
+        self._tosave_para["response"] = int
         self._tosave_para["sequence"] = self.sequence
         self._tosave_para["reaction_time"] = float
         self._tosave_para["solution"] = int
@@ -107,18 +109,19 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         log.info('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         self.devices["RX8"].start()
         self.devices["RP2"].wait_for_button()
+        self.response = self.devices["RP2"].get_response()
         self.reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         self.devices["RP2"].get_response()
         self.devices["RX8"].pause()
         self.process_event({'trial_stop': 0})
 
     def _stop_trial(self):
-        is_correct = True if self.sequence.this_trial / self.devices["RP2"]._output_specs["response"] == 1 else False
-        self.data.write(key="response", data=self.devices["RP2"]._output_specs["response"])
-        self.data.write(key="solution", data=self.sequence.this_trial)
-        self.data.write(key="reaction_time", data=self.reaction_time)
-        self.data.write(key="is_correct", data=is_correct)
-        self.data.save()
+        is_correct = True if self.sequence.this_trial / self.response == 1 else False
+        # self.data.write(key=nj.data.store_node_name, data=self.response)
+        #self.data.write(key="RP2", data=self.sequence.this_trial)
+        #self.data.write(key="RP2", data=self.reaction_time)
+        #self.data.write(key="RP2", data=is_correct)
+        #self.data.save()
         log.info('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
 
     def load_signals(self, sound_type="tts-countries_resamp_24414"):
@@ -190,6 +193,7 @@ if __name__ == "__main__":
                           species="Human",
                           sex="M",
                           cohort="NumJudge")
+        subject.data_path = os.path.join(get_config("DATA_ROOT"), "Foo_test.h5")
         subject.add_subject_to_h5file(os.path.join(get_config("SUBJECT_ROOT"), "Foo_test.h5"))
         #test_subject.file_path
     except ValueError:
