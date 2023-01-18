@@ -27,6 +27,7 @@ class RP2Setting(DeviceSetting):  # this class contains important settings for t
 
 class RP2Device(Device):
 
+    _output_specs = {"response": int}
     setting = RP2Setting()
     handle = Any()  # handle for TDT method execution like handle.write, handle.read, ...
     # thread = Instance(threading.Thread)  # important for threading
@@ -55,8 +56,8 @@ class RP2Device(Device):
 
     def get_response(self):  # collects response, preferably called right after wait_for_button
         log.info("Acquiring button response ... ")
-        response = self.handle.GetTagVal("response")
-        return int(np.log2(response))  # because the response is stored in bit value, we need the base 2 log
+        # because the response is stored in bit value, we need the base 2 log
+        self._output_specs["response"] = int(np.log2(self.handle.GetTagVal("response")))
 
 
 if __name__ == "__main__":
