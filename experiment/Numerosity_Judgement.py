@@ -113,8 +113,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.process_event({'trial_stop': 0})
 
     def _stop_trial(self):
-        is_correct = True if self.sequence.this_trial / self.setting.response == 1 else False
-        self.data.write(key="response", data=self.setting.response)
+        is_correct = True if self.sequence.this_trial / self.devices["RP2"]._output_specs["response"] == 1 else False
+        self.data.write(key="response", data=self.devices["RP2"]._output_specs["response"])
         self.data.write(key="solution", data=self.sequence.this_trial)
         self.data.write(key="reaction_time", data=self.reaction_time)
         self.data.write(key="is_correct", data=is_correct)
