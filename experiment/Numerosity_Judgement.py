@@ -19,8 +19,6 @@ import datetime
 
 log = logging.getLogger(__name__)
 
-
-# TODO: how do I save the parameters each trial such as responses?
 # TODO: check out threading module
 
 
@@ -29,11 +27,8 @@ class NumerosityJudgementSetting(ExperimentSetting):
     experiment_name = Str('NumJudge', group='status', dsec='name of the experiment', noshow=True)
     n_blocks = Int(1, group="status", dsec="Number of total blocks per session")
     conditions = List([2, 3, 4], group="status", dsec="Number of simultaneous talkers in the experiment")
-    signal_log = List([999], group="primary", dsec="Logs of the signals used in previous trials", reinit=False)
-    speaker_log = List([999], group="primary", dsec="Logs of the speakers used in previous trials", reinit=False)
     trial_number = Int(20, group='primary', dsec='Number of trials in each condition', reinit=False)
     trial_duration = Float(1.0, group='primary', dsec='Duration of each trial, (s)', reinit=False)
-    response = Int(group="primary", dsec="Recorded response from button box", reinit=False)
 
     def _get_total_trial(self):
         return self.trial_number * len(self.conditions)
@@ -73,7 +68,10 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         pass
 
     def setup_experiment(self, info=None):
-        self._tosave_para['sequence'] = self.sequence
+        self._tosave_para["sequence"] = self.sequence
+        self._tosave_para["reaction_time"] = float
+        self._tosave_para["solution"] = int
+        self._tosave_para["is_correct"] = bool
 
     def _prepare_trial(self):
         while True:
@@ -105,24 +103,23 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                                              procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
 
     def _start_trial(self):
-        self.time_0 = time.time()
+        self.time_0 = time.time()  # starting time of the trial
         log.info('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         self.devices["RX8"].start()
         self.devices["RP2"].wait_for_button()
         self.reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
-        self.setting.response = self.devices["RP2"].get_response()
+        self.devices["RP2"].get_response()
         self.devices["RX8"].pause()
         self.process_event({'trial_stop': 0})
 
     def _stop_trial(self):
         is_correct = True if self.sequence.this_trial / self.setting.response == 1 else False
-        #self.data.write(key="response", data=self.setting.response, current_trial=self.setting.current_trial)
-        #self.data.write(key="solution", data=self.sequence.this_trial, current_trial=self.setting.current_trial)
-        #self.data.write(key="reaction_time", data=self.reaction_time, current_trial=self.setting.current_trial)
-        #self.data.write(key="is_correct", data=is_correct, current_trial=self.setting.current_trial)
-        #self.data.save()
+        self.data.write(key="response", data=self.setting.response)
+        self.data.write(key="solution", data=self.sequence.this_trial)
+        self.data.write(key="reaction_time", data=self.reaction_time)
+        self.data.write(key="is_correct", data=is_correct)
+        self.data.save()
         log.info('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
-        self.time_0 = time.time()
 
     def load_signals(self, sound_type="tts-countries_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
