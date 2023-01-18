@@ -25,7 +25,6 @@ log = logging.getLogger(__name__)
 class NumerosityJudgementSetting(ExperimentSetting):
 
     experiment_name = Str('NumJudge', group='status', dsec='name of the experiment', noshow=True)
-    n_blocks = Int(1, group="status", dsec="Number of total blocks per session")
     conditions = List([2, 3, 4], group="status", dsec="Number of simultaneous talkers in the experiment")
     trial_number = Int(20, group='primary', dsec='Number of trials in each condition', reinit=False)
     trial_duration = Float(1.0, group='primary', dsec='Duration of each trial, (s)', reinit=False)
