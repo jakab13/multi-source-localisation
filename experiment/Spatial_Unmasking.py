@@ -20,13 +20,14 @@ import datetime
 log = logging.getLogger(__name__)
 
 # TODO: check out threading module
+# TODO: set total_trial accordingly so that after complete sequence iteration the experiment stops.
 
 
 class SpatialUnmaskingSetting(ExperimentSetting):
 
     experiment_name = Str('SpatMask', group='status', dsec='name of the experiment', noshow=True)
-    conditions = List([20, 21, 22, 24, 25, 26], group="status", dsec="Number of simultaneous talkers in the experiment")
-    trial_number = Int(20, group='primary', dsec='Number of trials in each condition', reinit=False)
+    n_conditions = Int(6, group="status", dsec="Number of masker speaker positions in the experiment")
+    trial_number = Int(1, group='primary', dsec='Number of trials in each condition', reinit=False)
     trial_duration = Float(1.0, group='primary', dsec='Duration of one trial, (s)', reinit=False)
 
     def _get_total_trial(self):
