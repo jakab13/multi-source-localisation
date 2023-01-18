@@ -125,10 +125,14 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                                              procs=f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
             self.time_0 = time.time()  # starting time of the trial
             log.info('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
-            self.devices["RX8"].start()
-            self.devices["RP2"].wait_for_button()
+            #self.devices["RX8"].start()
+            #self.devices["RP2"].wait_for_button()
             self.reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
-            self.devices["RP2"].get_response()
+            #self.devices["RP2"].get_response()
+            # simulate response
+            response = self.stairs.simulate_response(threshold=3)
+            self.stairs.add_response(response)
+            self.stairs.plot()
             self.devices["RX8"].pause()
         self.process_event({'trial_stop': 0})
 
