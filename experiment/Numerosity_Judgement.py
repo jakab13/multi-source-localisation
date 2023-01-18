@@ -19,7 +19,7 @@ import datetime
 
 log = logging.getLogger(__name__)
 
-# TODO: check out threading module
+# TODO: response very likely to be not saved
 
 
 class NumerosityJudgementSetting(ExperimentSetting):
