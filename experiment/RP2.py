@@ -11,8 +11,6 @@ import threading
 
 log = logging.getLogger(__name__)
 
-# TODO: RP2 initializes automatically upon calling it
-
 
 class RP2Setting(DeviceSetting):  # this class contains important settings for the device and sits in self.setting
     sampling_freq = CFloat(48288.125, group='primary', dsec='Sampling frequency of the device (Hz)', reinit=False)
@@ -57,7 +55,8 @@ class RP2Device(Device):
     def get_response(self):  # collects response, preferably called right after wait_for_button
         log.info("Acquiring button response ... ")
         # because the response is stored in bit value, we need the base 2 log
-        self._output_specs["response"] = int(np.log2(self.handle.GetTagVal("response")))
+        # self._output_specs["response"] = int(np.log2(self.handle.GetTagVal("response")))
+        return int(np.log2(self.handle.GetTagVal("response")))
 
 
 if __name__ == "__main__":
