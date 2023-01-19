@@ -197,6 +197,8 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             log.info(f"Camera offset: {offset}")
         log.info('Calibration complete!')
 
+    def check_headpose(self):
+        pass
 
 if __name__ == "__main__":
 
