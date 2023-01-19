@@ -103,7 +103,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                 self.devices["RX8"].pause()
             else:
                 break
-        self.stairs = slab.Staircase(start_val=70, n_reversals=10, step_sizes=[4, 1])  # renew
+        self.stairs = slab.Staircase(start_val=40, n_reversals=10, step_sizes=[4, 1])  # renew
         self.sequence.__next__()
         self.masker_speaker = self.speakers[self.sequence.this_n]
 
