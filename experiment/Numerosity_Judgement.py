@@ -19,7 +19,7 @@ import datetime
 
 log = logging.getLogger(__name__)
 
-# TODO: response very likely to be not saved
+# TODO: data saving still sucks! log_trial() maybe? set_h5_atrributes()? data.data_spec?
 
 
 class NumerosityJudgementSetting(ExperimentSetting):

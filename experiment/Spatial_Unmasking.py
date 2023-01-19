@@ -20,8 +20,7 @@ import datetime
 log = logging.getLogger(__name__)
 
 # TODO: check out threading module
-# TODO: response not plotted anymore after first staircase is done
-
+# TODO: data saving still sucks! log_trial() maybe? set_h5_atrributes()? data.data_spec?
 
 class SpatialUnmaskingSetting(ExperimentSetting):
 
