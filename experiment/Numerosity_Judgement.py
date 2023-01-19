@@ -68,30 +68,10 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         pass
 
     def setup_experiment(self, info=None):
-        self._tosave_para["response"] = int
         self._tosave_para["sequence"] = self.sequence
-        self._tosave_para["reaction_time"] = float
-        self._tosave_para["solution"] = int
-        self._tosave_para["is_correct"] = bool
 
     def _prepare_trial(self):
-        while True:
-            self.devices["ArUcoCam"].configure()
-            self.devices["ArUcoCam"].start()
-            self.devices["ArUcoCam"].pause()
-            if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].setting.pose) ** 2)) > 10:
-                log.warning("Subject is not looking straight ahead")
-                for idx in range(1, 5):  # clear all speakers before loading warning tone
-                    self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
-                    self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
-                self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
-                self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
-                    # self.devices["RX8"].handle.write(f"chan{idx}", 0, procs=["RX81", "RX82"])
-                self.devices["RX8"].start()
-                self.devices["RX8"].pause()
-                # self.devices["RP2"].wait_for_button()
-            else:
-                break
+
         self.sequence.__next__()
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
@@ -116,7 +96,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def _stop_trial(self):
         is_correct = True if self.sequence.this_trial / self.response == 1 else False
-        # self.data.write(key=nj.data.store_node_name, data=self.response)
+        self.data.write(key=nj.devices["RP2"].name, data=nj.devices["RP2"]._output_specs)
         #self.data.write(key="RP2", data=self.sequence.this_trial)
         #self.data.write(key="RP2", data=self.reaction_time)
         #self.data.write(key="RP2", data=is_correct)

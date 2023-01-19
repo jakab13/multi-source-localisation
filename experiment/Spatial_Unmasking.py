@@ -77,35 +77,15 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.masker_speaker = Any()
         self.selected_target_sounds = self.signals[talker * 5:(talker + 1) * 5]  # select numbers 1-5 for one talker
         self._tosave_para["sequence"] = self.sequence
-        self._tosave_para["reaction_time"] = float
-        self._tosave_para["solution"] = int
-        self._tosave_para["is_correct"] = bool
-        self._tosave_para["is_correct"] = bool
-        self._tosave_para["elevation"] = bool
-        self._tosave_para["threshold"] = bool
-        self._tosave_para["intensities"] = bool
-        self._tosave_para["reversal_points"] = bool
-        self._tosave_para["reversal_intensities"] = bool
 
     def _prepare_trial(self):
-        while True:
-            self.devices["ArUcoCam"].configure()
-            self.devices["ArUcoCam"].start()
-            self.devices["ArUcoCam"].pause()
-            if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].setting.pose) ** 2)) > 10:
-                log.warning("Subject is not looking straight ahead")
-                for idx in range(1, 5):  # clear all speakers before loading warning tone
-                    self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
-                    self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
-                self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
-                self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
-                self.devices["RX8"].start()
-                self.devices["RX8"].pause()
-            else:
-                break
         self.stairs = slab.Staircase(start_val=40, n_reversals=10, step_sizes=[4, 1])  # renew
-        self.sequence.__next__()
-        self.masker_speaker = self.speakers[self.sequence.this_n]
+        if not self.sequence.finished:
+            self.sequence.__next__()
+            self.masker_speaker = self.speakers[self.sequence.this_n]
+        else:
+            self.stop()
+
 
     solution_converter = {
         1: 5,
@@ -198,7 +178,23 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         log.info('Calibration complete!')
 
     def check_headpose(self):
-        pass
+        while True:
+            self.devices["ArUcoCam"].configure()
+            self.devices["ArUcoCam"].start()
+            self.devices["ArUcoCam"].pause()
+            if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].setting.pose) ** 2)) > 10:
+                log.info("Subject is not looking straight ahead")
+                for idx in range(1, 5):  # clear all speakers before loading warning tone
+                    self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
+                    self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
+                self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
+                self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
+                    # self.devices["RX8"].handle.write(f"chan{idx}", 0, procs=["RX81", "RX82"])
+                self.devices["RX8"].start()
+                self.devices["RX8"].pause()
+                # self.devices["RP2"].wait_for_button()
+            else:
+                break
 
 if __name__ == "__main__":
 
