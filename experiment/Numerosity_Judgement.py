@@ -88,15 +88,15 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         log.info('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         self.devices["RX8"].start()
         self.devices["RP2"].wait_for_button()
-        self.response = self.devices["RP2"].get_response()
-        self.reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         self.devices["RP2"].get_response()
+        self.reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
+        self.response = self.devices["RP2"].get_response()
         self.devices["RX8"].pause()
         self.process_event({'trial_stop': 0})
 
     def _stop_trial(self):
         is_correct = True if self.sequence.this_trial / self.response == 1 else False
-        self.data.write(key=nj.devices["RP2"].name, data=nj.devices["RP2"]._output_specs)
+        #self.data.write(key=nj.devices["RP2"].name, data=self.response)
         #self.data.write(key="RP2", data=self.sequence.this_trial)
         #self.data.write(key="RP2", data=self.reaction_time)
         #self.data.write(key="RP2", data=is_correct)
@@ -154,26 +154,31 @@ class NumerosityJudgementExperiment(ExperimentLogic):
             self.devices["ArUcoCam"].configure()
             self.devices["ArUcoCam"].start()
             self.devices["ArUcoCam"].pause()
-            if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].setting.pose) ** 2)) > 10:
-                log.info("Subject is not looking straight ahead")
-                for idx in range(1, 5):  # clear all speakers before loading warning tone
-                    self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
-                    self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
-                self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
-                self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
-                self.devices["RX8"].start()
-                self.devices["RX8"].pause()
-            else:
-                break
+            try:
+                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].setting.pose) ** 2)) > 10:
+                    log.info("Subject is not looking straight ahead")
+                    for idx in range(1, 5):  # clear all speakers before loading warning tone
+                        self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
+                        self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
+                    self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
+                    self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
+                    self.devices["RX8"].start()
+                    self.devices["RX8"].pause()
+                else:
+                    break
+            except TypeError:
+                log.info("Cannot detect markers, make sure cameras are set up correctly and arucomarkers can be detected.")
+                continue
+
 
 
 if __name__ == "__main__":
 
     log = logging.getLogger()
-    log.setLevel(logging.INFO)
+    log.setLevel(logging.DEBUG)
     # create console handler and set level to debug
     ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
+    ch.setLevel(logging.DEBUG)
     # create formatter
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # add formatter to ch
@@ -187,8 +192,7 @@ if __name__ == "__main__":
                           group="Pilot",
                           birth=datetime.date(1996, 11, 18),
                           species="Human",
-                          sex="M",
-                          cohort="NumJudge")
+                          sex="M")
         subject.data_path = os.path.join(get_config("DATA_ROOT"), "Foo_test.h5")
         subject.add_subject_to_h5file(os.path.join(get_config("SUBJECT_ROOT"), "Foo_test.h5"))
         #test_subject.file_path
@@ -197,6 +201,7 @@ if __name__ == "__main__":
         sl = SubjectList(file_path=os.path.join(get_config("SUBJECT_ROOT"), "Foo_test.h5"))
         sl.read_from_h5file()
         subject = sl.subjects[0]
+        subject.data_path = os.path.join(get_config("DATA_ROOT"), "Foo_test.h5")
     # subject.file_path
     experimenter = "Max"
     nj = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
