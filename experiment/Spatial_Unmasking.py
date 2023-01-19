@@ -31,7 +31,7 @@ class SpatialUnmaskingSetting(ExperimentSetting):
     trial_duration = Float(1.0, group='primary', dsec='Duration of one trial, (s)', reinit=False)
 
     def _get_total_trial(self):
-        return self.trial_number * len(self.conditions)
+        return self.trial_number * len(self.n_conditions)
 
 
 class SpatialUnmaskingExperiment(ExperimentLogic):
