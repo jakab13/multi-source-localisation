@@ -20,7 +20,7 @@ import datetime
 log = logging.getLogger(__name__)
 
 # TODO: check out threading module
-# TODO: set total_trial accordingly so that after complete sequence iteration the experiment stops.
+# TODO: response not plotted anymore after first staircase is done
 
 
 class SpatialUnmaskingSetting(ExperimentSetting):
@@ -97,6 +97,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
 
     def _start_trial(self):
         for level in self.stairs:
+            self.check_headpose()
             target_sound_i = random.choice(range(len(self.selected_target_sounds)))
             target_sound = self.selected_target_sounds[target_sound_i]  # choose random number from sound_list
             target_sound.level = level
