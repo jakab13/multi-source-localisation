@@ -71,7 +71,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self._tosave_para["sequence"] = self.sequence
 
     def _prepare_trial(self):
-
+        self.check_headpose()
         self.sequence.__next__()
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
@@ -148,6 +148,24 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         if report:
             log.info(f"Camera offset: {offset}")
         log.info('Calibration complete!')
+    def check_headpose(self):
+        while True:
+            self.devices["ArUcoCam"].configure()
+            self.devices["ArUcoCam"].start()
+            self.devices["ArUcoCam"].pause()
+            if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].setting.pose) ** 2)) > 10:
+                log.info("Subject is not looking straight ahead")
+                for idx in range(1, 5):  # clear all speakers before loading warning tone
+                    self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
+                    self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
+                self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
+                self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
+                    # self.devices["RX8"].handle.write(f"chan{idx}", 0, procs=["RX81", "RX82"])
+                self.devices["RX8"].start()
+                self.devices["RX8"].pause()
+                # self.devices["RP2"].wait_for_button()
+            else:
+                break
 
 
 if __name__ == "__main__":
