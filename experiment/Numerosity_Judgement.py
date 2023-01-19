@@ -148,6 +148,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         if report:
             log.info(f"Camera offset: {offset}")
         log.info('Calibration complete!')
+
     def check_headpose(self):
         while True:
             self.devices["ArUcoCam"].configure()
@@ -160,10 +161,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                     self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
                 self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
                 self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
-                    # self.devices["RX8"].handle.write(f"chan{idx}", 0, procs=["RX81", "RX82"])
                 self.devices["RX8"].start()
                 self.devices["RX8"].pause()
-                # self.devices["RP2"].wait_for_button()
             else:
                 break
 

@@ -72,14 +72,14 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         pass
 
     def setup_experiment(self, info=None):
-        self.sequence.__next__()
+        # self.sequence.__next__()
         talker = random.randint(1, 108)
         self.masker_speaker = Any()
         self.selected_target_sounds = self.signals[talker * 5:(talker + 1) * 5]  # select numbers 1-5 for one talker
         self._tosave_para["sequence"] = self.sequence
 
     def _prepare_trial(self):
-        self.stairs = slab.Staircase(start_val=40, n_reversals=10, step_sizes=[4, 1])  # renew
+        self.stairs = slab.Staircase(start_val=40, n_reversals=18, step_sizes=[4, 1])  # renew
         if not self.sequence.finished:
             self.sequence.__next__()
             self.masker_speaker = self.speakers[self.sequence.this_n]
@@ -132,7 +132,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
 
     def _stop_trial(self):
         #is_correct = True if self.sequence.this_trial / self.devices["RP2"]._output_specs["response"] == 1 else False
-        #self.data.write(key="response", data=self.response)
+        self.data.write(key=self.devices["RP2"].name, data=self.devices["RX8"]._output_specs)
         #self.data.write(key="solution", data=self.sequence.this_trial)
         #self.data.write(key="reaction_time", data=self.reaction_time)
         #self.data.write(key="is_correct", data=is_correct)
@@ -190,10 +190,8 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                     self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
                 self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
                 self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
-                    # self.devices["RX8"].handle.write(f"chan{idx}", 0, procs=["RX81", "RX82"])
                 self.devices["RX8"].start()
                 self.devices["RX8"].pause()
-                # self.devices["RP2"].wait_for_button()
             else:
                 break
 
