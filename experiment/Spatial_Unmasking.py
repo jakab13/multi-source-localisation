@@ -144,9 +144,9 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             #self.stairs.add_response(response)
             solution = self.solution_converter[target_sound_i + 1]
             self.stairs.add_response(1) if self.response/solution is True else self.stairs.add_response(0)
-            # self.stairs.plot()
+            self.stairs.plot()
             self.devices["RX8"].pause()
-        # self.stairs.close_plot()
+        self.stairs.close_plot()
         self.process_event({'trial_stop': 0})
 
     def _stop_trial(self):
