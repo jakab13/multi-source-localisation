@@ -31,7 +31,7 @@ class SpatialUnmaskingSetting(ExperimentSetting):
     trial_duration = Float(1.0, group='primary', dsec='Duration of one trial, (s)', reinit=False)
 
     def _get_total_trial(self):
-        return self.trial_number * len(self.n_conditions)
+        return self.trial_number * self.n_conditions
 
 
 class SpatialUnmaskingExperiment(ExperimentLogic):
@@ -40,7 +40,6 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     data = ExperimentData()
     sequence = slab.Trialsequence(conditions=6, n_reps=1, kind="random_permutation")
     devices = Dict()
-    reaction_time = Int()
     time_0 = Float()
     speakers = List()
     signals = List()
@@ -50,7 +49,6 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     selected_target_sounds = List()
     masker_speaker = Any()
     masker_sound = slab.Sound.pinknoise(duration=setting.trial_duration)
-    response = Int()
 
     def _initialize(self, **kwargs):
         self.load_speakers()
@@ -72,20 +70,15 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         pass
 
     def setup_experiment(self, info=None):
-        # self.sequence.__next__()
         talker = random.randint(1, 108)
         self.masker_speaker = Any()
         self.selected_target_sounds = self.signals[talker * 5:(talker + 1) * 5]  # select numbers 1-5 for one talker
         self._tosave_para["sequence"] = self.sequence
 
     def _prepare_trial(self):
-        self.stairs = slab.Staircase(start_val=40, n_reversals=18, step_sizes=[4, 1])  # renew
-        if not self.sequence.finished:
-            self.sequence.__next__()
-            self.masker_speaker = self.speakers[self.sequence.this_n]
-        else:
-            self.stop()
-
+        self.stairs = slab.Staircase(start_val=15, n_reversals=2, step_sizes=[4, 1])  # renew
+        self.sequence.__next__()
+        self.masker_speaker = self.speakers[self.sequence.this_n]
 
     solution_converter = {
         1: 5,
@@ -113,30 +106,36 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             self.devices["RX8"].handle.write("data1",
                                              self.masker_sound.data.flatten(),
                                              f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
-
             self.time_0 = time.time()  # starting time of the trial
             log.info('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
-            self.devices["RX8"].start()
-            self.devices["RP2"].wait_for_button()
-            self.reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
-            self.response = self.devices["RP2"].get_response()
             # simulate response
-            #response = self.stairs.simulate_response(threshold=3)
-            #self.stairs.add_response(response)
-            solution = self.solution_converter[target_sound_i + 1]
-            self.stairs.add_response(1) if self.response/solution is True else self.stairs.add_response(0)
-            self.stairs.plot()
+            response = self.stairs.simulate_response(threshold=3)
+            self.stairs.add_response(response)
+            self.devices["RX8"].start()
             self.devices["RX8"].pause()
+            # self.devices["RP2"].wait_for_button()
+            reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
+            # self.response = self.devices["RP2"].get_response()
+            solution = self.solution_converter[target_sound_i + 1]
+            is_correct = True if solution / response == 1 else False
+            # self.stairs.add_response(1) if self.response/solution is True else self.stairs.add_response(0)
+            self.stairs.plot()
+            self.data.set_h5_attrs(response=response,
+                                   solution=solution,
+                                   reaction_time=reaction_time,
+                                   is_correct=is_correct)
+            self.data.save()
         self.stairs.close_plot()
         self.process_event({'trial_stop': 0})
 
     def _stop_trial(self):
+        self.data.set_h5_attrs(threshold=self.stairs.threshold())
         #is_correct = True if self.sequence.this_trial / self.devices["RP2"]._output_specs["response"] == 1 else False
-        self.data.write(key=self.devices["RP2"].name, data=self.devices["RX8"]._output_specs)
+
         #self.data.write(key="solution", data=self.sequence.this_trial)
         #self.data.write(key="reaction_time", data=self.reaction_time)
         #self.data.write(key="is_correct", data=is_correct)
-        #self.data.save()
+        self.data.save()
         log.info('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
 
     def load_signals(self, sound_type="tts-numbers_resamp_24414"):
@@ -183,25 +182,29 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             self.devices["ArUcoCam"].configure()
             self.devices["ArUcoCam"].start()
             self.devices["ArUcoCam"].pause()
-            if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].setting.pose) ** 2)) > 10:
-                log.info("Subject is not looking straight ahead")
-                for idx in range(1, 5):  # clear all speakers before loading warning tone
-                    self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
-                    self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
-                self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
-                self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
-                self.devices["RX8"].start()
-                self.devices["RX8"].pause()
-            else:
-                break
+            try:
+                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].setting.pose) ** 2)) > 10:
+                    log.info("Subject is not looking straight ahead")
+                    for idx in range(1, 5):  # clear all speakers before loading warning tone
+                        self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
+                        self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
+                    self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
+                    self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
+                    self.devices["RX8"].start()
+                    self.devices["RX8"].pause()
+                else:
+                    break
+            except TypeError:
+                log.info("Cannot detect markers, make sure cameras are set up correctly and arucomarkers can be detected.")
+                continue
 
 if __name__ == "__main__":
 
     log = logging.getLogger()
-    log.setLevel(logging.DEBUG)
+    log.setLevel(logging.INFO)
     # create console handler and set level to debug
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(logging.INFO)
     # create formatter
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # add formatter to ch
@@ -225,6 +228,7 @@ if __name__ == "__main__":
         sl = SubjectList(file_path=os.path.join(get_config("SUBJECT_ROOT"), "Foo_test.h5"))
         sl.read_from_h5file()
         subject = sl.subjects[0]
+        subject.data_path = os.path.join(get_config("DATA_ROOT"), "Foo_test.h5")
     # subject.file_path
     experimenter = "Max"
     su = SpatialUnmaskingExperiment(subject=subject, experimenter=experimenter)
