@@ -12,7 +12,6 @@ except ModuleNotFoundError:
 import numpy as np
 from Speakers.speaker_config import SpeakerArray
 import os
-import PySpin
 from simple_pyspin import Camera
 import cv2
 import PIL
