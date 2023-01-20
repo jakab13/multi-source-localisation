@@ -127,12 +127,38 @@ def concatenate(sounds, n_concatenate=5):
 
 
 if __name__ == "__main__":
-    DIR = pathlib.Path("E:\projects\multi-source-localisation\data\sounds\\tts-numbers_resamp")
+    DIR = pathlib.Path("C:\labplatform\sound_files\\warning")
     sounds_data = load(DIR)
     # pattern = "p227"
     # talker_files = pick_talker(data=sounds_data, pattern=pattern, DIR=DIR)
     # sequence = concatenate(talker_files, n_concatenate=len(talker_files))
+    dir_names = os.listdir(DIR)
     sound_list_resamp = resample(sounds_data, samplerate=int(48828/2))
     for i, sound in enumerate(sound_list_resamp):
         slab.Sound.write(sound, filename=DIR/dir_names[i])
 
+    # sort signals
+    sound_type = "tts-countries_resamp_24414"
+    sound_root = pathlib.Path("C:\labplatform\sound_files")
+    sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
+    sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
+
+    # sort signals by talker
+    all_talkers = dict()
+    talker_id_range = range(225, 377)
+    for talker_id in talker_id_range:
+        talker_sorted = list()
+        for i, sound in enumerate(os.listdir(sound_fp)):
+            if str(talker_id) in sound:
+                talker_sorted.append(sound_list[i])
+        all_talkers[str(talker_id)] = talker_sorted
+
+    # sort signals by number
+    number_range = ["one", "two", "three", "four", "five"]
+    all_numbers = dict()
+    for number in number_range:
+        numbers_sorted = list()
+        for i, sound in enumerate(os.listdir(sound_fp)):
+            if number in sound:
+                numbers_sorted.append(sound_list[i])
+        all_numbers[number] = numbers_sorted
