@@ -23,7 +23,7 @@ def randId():
         exit(1)
 
 def init(projectName):
-     """
+    """
 
     :param projectName: only parameter is the project name
     :return: creates foldersystem with resultsdirectory and soundsamples, Furthermore documentation is set up
