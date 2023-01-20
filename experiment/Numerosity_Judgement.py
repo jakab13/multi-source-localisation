@@ -141,6 +141,10 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         offset = self.devices["ArUcoCam"].get_pose()
         self.devices["ArUcoCam"].offset = offset
         self.devices["ArUcoCam"].pause()
+        for i, v in enumerate(self.devices["ArUcoCam"].offset):  # check for NoneType in offset
+            if v is None:
+                self.devices["ArUcoCam"].offset[i] = 0
+                log.info("Calibration unsuccessful, make sure markers can be detected by cameras!")
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=0,
                                          procs=f"{led.TDT_digital}{led.TDT_idx_digital}")  # turn off LED
@@ -205,6 +209,7 @@ if __name__ == "__main__":
     # subject.file_path
     experimenter = "Max"
     nj = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
-    # nj.calibrate_camera()
-    # nj.start()
+    # STEP %%: calibrate camera
+    nj.calibrate_camera()
+    nj.start()
     # nj.configure_traits()
