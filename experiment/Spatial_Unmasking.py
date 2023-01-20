@@ -21,6 +21,8 @@ log = logging.getLogger(__name__)
 
 # TODO: check out threading module
 # TODO: data saving still sucks! log_trial() maybe? set_h5_atrributes()? data.data_spec?
+# TODO: why does the camera calibration work on NumJudge but not here??
+# TODO: clear camera buffer every once in a while
 
 class SpatialUnmaskingSetting(ExperimentSetting):
 
