@@ -75,7 +75,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self._tosave_para["sequence"] = self.sequence
 
     def _prepare_trial(self):
-        self.stairs = slab.Staircase(start_val=15, n_reversals=2, step_sizes=[4, 1])  # renew
+        self.stairs = slab.Staircase(start_val=70, n_reversals=2, step_sizes=[4, 1])  # renew
         self.sequence.__next__()
         self.masker_speaker = self.speakers[self.sequence.this_n]
 
@@ -114,10 +114,10 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             self.devices["RX8"].pause()
             # self.devices["RP2"].wait_for_button()
             reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
-            # self.response = self.devices["RP2"].get_response()
+            # response = self.devices["RP2"].get_response()
             solution = self.solution_converter[target_sound_i + 1]
             is_correct = True if solution / response == 1 else False
-            # self.stairs.add_response(1) if self.response/solution is True else self.stairs.add_response(0)
+            # self.stairs.add_response(1) if response/solution is True else self.stairs.add_response(0)
             self.stairs.plot()
             self.data.set_h5_attrs(response=response,
                                    solution=solution,
