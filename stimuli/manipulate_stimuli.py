@@ -5,32 +5,33 @@ import random
 random.seed = 50
 
 
-def load(DIR):
+def load(directory):
     """
     Given a non-empty directory, load all sound files (.wav) within that directory.
 
     Args:
-        dir: the directory containing sound files.
+        directory: the directory containing sound files.
 
     Returns:
         sound_list: list of sounds within the specified directory.
     """
-    DIR = pathlib.Path(DIR)
+    dir = pathlib.Path(directory)
     sound_list = list()
-    if not os.listdir(DIR).__len__():
+    if not os.listdir(dir).__len__():
         print("Empty directory")
         exit()
-    for file in os.listdir(DIR):
+    for file in os.listdir(dir):
         file = pathlib.Path(file)
-        sound_list.append(slab.Sound.read(pathlib.Path(DIR/file)))
+        sound_list.append(slab.Sound.read(pathlib.Path(dir/file)))
     return sound_list
+
 
 def resample(sounds, samplerate):
     """
     Resample sound.
 
     Args:
-        sound: slab.sound.Sound instance or a list of the instance
+        sounds: slab.sound.Sound instance or a list of the instance
         samplerate: Desired samplerate
 
     Returns:
@@ -91,24 +92,25 @@ def align_sound_duration(sound_list, sound_duration, samplerate=48828):
     return sound_list
 
 
-def pick_talker(data, DIR, pattern):
+def pick_talker(data, directory, pattern):
     """
     Searches for a pattern in a list of sound names and sound data and retrieves the data which matches the pattern.
 
     Args:
         data: list of slab.sound.Sound data.
         pattern: searching pattern, talker id for instance.
-        DIR: sound file directory, has to match data list.
+        directory: sound file directory, has to match data list.
 
     Returns:
         sound data matching the searching pattern.
 
     """
     talker_files = list()
-    for i, sound_name in enumerate(os.listdir(DIR)):
+    for i, sound_name in enumerate(os.listdir(directory)):
         if pattern in sound_name:
             talker_files.append(data[i])
     return talker_files
+
 
 def concatenate(sounds, n_concatenate=5):
     """
@@ -127,7 +129,7 @@ def concatenate(sounds, n_concatenate=5):
 
 
 if __name__ == "__main__":
-    DIR = pathlib.Path("C:\labplatform\sound_files\\warning")
+    DIR = pathlib.Path("C:\labplatform\sound_files\\tts-numbers")
     sounds_data = load(DIR)
     # pattern = "p227"
     # talker_files = pick_talker(data=sounds_data, pattern=pattern, DIR=DIR)
