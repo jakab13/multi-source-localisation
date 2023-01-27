@@ -26,12 +26,13 @@ class MFCCClusterer:
 
 
 if __name__ == "__main__":
-    # load soundfiles
-    root = get_config("SOUND_ROOT")
-    dirname = "tts-countries_resamp_24414"
-    soundfiles = os.listdir(os.path.join(root, dirname))
+    # kwargs important for kmeans clustering
+    kmeans_kwargs = {"init": "random",
+                     "n_init": 10,
+                     "max_iter": 300,
+                     "random_state": 42}
 
-    # sort sound files by talker
+    # load and sort sound files by talker
     sound_type = "tts-countries_resamp_24414"
     sound_root = pathlib.Path("C:\labplatform\sound_files")
     sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
@@ -45,27 +46,30 @@ if __name__ == "__main__":
                 talker_sorted.append(sound_list[i])
         all_talkers[str(talker_id)] = talker_sorted
 
-    abs_path = os.path.join(root, dirname, soundfiles)
-    sig = slab.Sound.read(abs_path)
-    mfccfeats = mfcc(sig, sig.samplerate)
-    scaler = StandardScaler()
-    scaled_features = scaler.fit_transform(mfccfeats)
-    kmeans_kwargs = {"init": "random",
-                     "n_init": 10,
-                     "max_iter": 300,
-                     "random_state": 42}
-    sse = []
-    for k in range(1, 11):
-        kmeans = KMeans(n_clusters=k, **kmeans_kwargs)
-        kmeans.fit(scaled_features)
-        sse.append(kmeans.inertia_)
+    mfccs = dict()
+    for k, v in all_talkers.items():
+        if all_talkers[k].__len__():
+            first_samp = all_talkers[k][0]  # first sample of every talker
+            mfccfeats = mfcc(first_samp, first_samp.samplerate)
+            scaler = StandardScaler()
+            scaled_features = scaler.fit_transform(mfccfeats)
+            mfccs[k] = scaled_features
+        else:
+            continue
 
-    plt.style.use("fivethirtyeight")
-    plt.plot(range(1, 11), sse)
-    plt.xticks(range(1, 11))
-    plt.xlabel("Number of Clusters")
-    plt.ylabel("SSE")
-    plt.show()
+    # sse = []
+    kmeans = KMeans(n_clusters=10, **kmeans_kwargs)
+    labels = dict()
+    for k, v in mfccs.items():
+        labels[k] = kmeans.fit_predict(mfccs[k])
+    # sse.append(kmeans.inertia_)
+
+    # plt.style.use("fivethirtyeight")
+    # plt.plot(range(1, 11), sse)
+    # plt.xticks(range(1, 11))
+    # plt.xlabel("Number of Clusters")
+    # plt.ylabel("SSE")
+    # plt.show()
 
     kl = KneeLocator(range(1, 11), sse, curve="convex", direction="decreasing")
     kl.elbow
