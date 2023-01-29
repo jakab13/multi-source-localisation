@@ -7,6 +7,7 @@ from sklearn.cluster import KMeans
 from matplotlib import pyplot as plt
 from kneed import KneeLocator
 import pathlib
+import numpy as np
 os.environ["OMP_NUM_THREADS"] = "1"
 
 
@@ -49,20 +50,29 @@ if __name__ == "__main__":
     mfccs = dict()
     for k, v in all_talkers.items():
         if all_talkers[k].__len__():
-            first_samp = all_talkers[k][0]  # first sample of every talker
-            mfccfeats = mfcc(first_samp, first_samp.samplerate)
-            scaler = StandardScaler()
+            first_samp = all_talkers[k][0]  # first sample of every talker "belgium"
+            mfccfeats = mfcc(first_samp, first_samp.samplerate, winlen=0.02, winstep=0.01,)
+            scaler = StandardScaler()  # basically z-score standardization
             scaled_features = scaler.fit_transform(mfccfeats)
-            mfccs[k] = scaled_features
+            mfccs[k] = scaled_features.mean(axis=1)
         else:
             continue
 
-    # sse = []
-    kmeans = KMeans(n_clusters=10, **kmeans_kwargs)
-    labels = dict()
+    # plot mfccs
+    fig, ax = plt.subplots(2, 1)
+    ax[0].matshow(mfccs["225"].T)  # female voice
+    ax[1].matshow(mfccs["226"].T)  # male voice
+
+    data = list()
     for k, v in mfccs.items():
-        labels[k] = kmeans.fit_predict(mfccs[k])
-    # sse.append(kmeans.inertia_)
+        data.append(v)
+    X = np.array(data)
+
+    sse = list()
+    for cluster in range(1, 10):
+        kmeans = KMeans(n_clusters=cluster, **kmeans_kwargs)
+        kmeans.fit(X)
+        sse.append(kmeans.inertia_)
 
     # plt.style.use("fivethirtyeight")
     # plt.plot(range(1, 11), sse)
