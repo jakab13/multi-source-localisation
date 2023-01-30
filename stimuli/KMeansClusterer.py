@@ -11,7 +11,7 @@ import pandas as pd
 os.environ["OMP_NUM_THREADS"] = "1"
 
 
-class MFCCClusterer:
+class KMeansClusterer:
     """
     Class for signal selection based on maximum spectral differences. First, we calculate the Mel-frequency-cepstrum-
     coefficients (MFCCs) to label the input sound files based on spectral composition. The MFCCs serve as input for
