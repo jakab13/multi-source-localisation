@@ -1,4 +1,3 @@
-from python_speech_features import mfcc
 from labplatform.config import get_config
 import os
 import slab
@@ -8,6 +7,7 @@ from matplotlib import pyplot as plt
 from kneed import KneeLocator
 import pathlib
 import numpy as np
+import pandas as pd
 os.environ["OMP_NUM_THREADS"] = "1"
 
 
@@ -30,7 +30,6 @@ if __name__ == "__main__":
     # kwargs important for kmeans clustering
     kmeans_kwargs = {"init": "random",
                      "n_init": 10,
-                     "max_iter": 300,
                      "random_state": 42}
 
     # load and sort sound files by talker
@@ -47,39 +46,59 @@ if __name__ == "__main__":
                 talker_sorted.append(sound_list[i])
         all_talkers[str(talker_id)] = talker_sorted
 
-    mfccs = dict()
+    centroids = list()
+    rolloffs = list()
     for k, v in all_talkers.items():
         if all_talkers[k].__len__():
-            first_samp = all_talkers[k][0]  # first sample of every talker "belgium"
-            mfccfeats = mfcc(first_samp, first_samp.samplerate, winlen=0.02, winstep=0.01,)
-            scaler = StandardScaler()  # basically z-score standardization
-            scaled_features = scaler.fit_transform(mfccfeats)
-            mfccs[k] = scaled_features.mean(axis=1)
+            talker = all_talkers[k]  # first sample of every talker "belgium"
+            mean_centroid = np.mean([x.spectral_feature("centroid") for x in talker])
+            mean_rolloff = np.mean([x.spectral_feature("rolloff") for x in talker])
+            centroids.append(mean_centroid)
+            rolloffs.append(mean_rolloff)
         else:
             continue
 
-    # plot mfccs
-    fig, ax = plt.subplots(2, 1)
-    ax[0].matshow(mfccs["225"].T)  # female voice
-    ax[1].matshow(mfccs["226"].T)  # male voice
+    centroids = np.reshape(centroids, (-1, 1))
+    rolloffs = np.reshape(rolloffs, (-1, 1))
+    scaler = StandardScaler()  # basically z-score standardization
+    scaled_centroids = np.array(np.round(scaler.fit_transform(centroids), 2))
+    scaled_rolloffs = np.array(np.round(scaler.fit_transform(rolloffs), 2))
 
-    data = list()
-    for k, v in mfccs.items():
-        data.append(v)
-    X = np.array(data)
+    # put features together
+    X = pd.DataFrame({"centroids": scaled_centroids.reshape(1, -1)[0],
+                      "rolloffs": scaled_rolloffs.reshape(1, -1)[0]})
 
+    # plot features
+    plt.scatter(X.centroids, X.rolloffs)
+
+    # do kmeans clustering and get elbow point
     sse = list()
-    for cluster in range(1, 10):
+    for cluster in range(1, 11):
         kmeans = KMeans(n_clusters=cluster, **kmeans_kwargs)
         kmeans.fit(X)
         sse.append(kmeans.inertia_)
 
-    # plt.style.use("fivethirtyeight")
-    # plt.plot(range(1, 11), sse)
-    # plt.xticks(range(1, 11))
-    # plt.xlabel("Number of Clusters")
-    # plt.ylabel("SSE")
-    # plt.show()
+    # plot sse
+    plt.style.use("fivethirtyeight")
+    plt.plot(range(1, 11), sse)
+    plt.xticks(range(1, 11))
+    plt.xlabel("Number of Clusters")
+    plt.ylabel("SSE")
+    plt.show()
 
     kl = KneeLocator(range(1, 11), sse, curve="convex", direction="decreasing")
-    kl.elbow
+    nclust_opt = kl.elbow  # seems 3 clusters is optimal
+
+    # plot clusters in a scatter plot
+    kmeans = KMeans(n_clusters=nclust_opt, **kmeans_kwargs)
+    kmeans.fit(X)
+    label = kmeans.fit_predict(X)
+    filtered_label0 = X[label == 0]
+    filtered_label1 = X[label == 1]
+    filtered_label2 = X[label == 2]
+
+    # plot results
+    plt.scatter(filtered_label0.centroids, filtered_label0.rolloffs, color='red')
+    plt.scatter(filtered_label1.centroids, filtered_label1.rolloffs, color='black')
+    plt.scatter(filtered_label2.centroids, filtered_label2.rolloffs, color='green')
+
