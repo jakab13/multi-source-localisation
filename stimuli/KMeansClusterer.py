@@ -8,7 +8,8 @@ from kneed import KneeLocator
 import pathlib
 import numpy as np
 import pandas as pd
-os.environ["OMP_NUM_THREADS"] = "1"
+from sklearn.decomposition import PCA
+import librosa
 
 
 class KMeansClusterer:
@@ -48,6 +49,8 @@ if __name__ == "__main__":
 
     centroids = list()
     rolloffs = list()
+    f0s = list()
+    zcrs = list()
     for k, v in all_talkers.items():
         if all_talkers[k].__len__():
             talker = all_talkers[k]  # first sample of every talker "belgium"
@@ -101,4 +104,8 @@ if __name__ == "__main__":
     plt.scatter(filtered_label0.centroids, filtered_label0.rolloffs, color='red')
     plt.scatter(filtered_label1.centroids, filtered_label1.rolloffs, color='black')
     plt.scatter(filtered_label2.centroids, filtered_label2.rolloffs, color='green')
+
+    # PCA
+    pca = PCA(2)
+    data = pca.fit_transform(X)
 
