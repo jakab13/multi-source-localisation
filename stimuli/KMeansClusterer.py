@@ -51,18 +51,23 @@ if __name__ == "__main__":
     rolloffs = list()
     f0s = list()
     zcrs = list()
+
     for k, v in all_talkers.items():
         if all_talkers[k].__len__():
-            talker = all_talkers[k]  # first sample of every talker "belgium"
-            mean_centroid = np.mean([x.spectral_feature("centroid") for x in talker])
-            mean_rolloff = np.mean([x.spectral_feature("rolloff") for x in talker])
-            centroids.append(mean_centroid)
-            rolloffs.append(mean_rolloff)
+            talker = all_talkers[k]
+            centroids.append(np.mean([x.spectral_feature("centroid") for x in talker]))
+            rolloffs.append(np.mean([x.spectral_feature("rolloff") for x in talker]))
+            # fluxs.append(np.mean([x.spectral_feature("flux") for x in talker]))
+            # mean_f0 = np.mean([librosa.yin(x.data, fmin=librosa.note_to_hz('C2'),
+                                           #fmax=librosa.note_to_hz('C7'),
+                                           #sr=x.samplerate) for x in talker])
+            # mean_zcr = np.mean([librosa.feature.zero_crossing_rate(x.data) for x in talker])
         else:
             continue
 
     centroids = np.reshape(centroids, (-1, 1))
     rolloffs = np.reshape(rolloffs, (-1, 1))
+
     scaler = StandardScaler()  # basically z-score standardization
     scaled_centroids = np.array(np.round(scaler.fit_transform(centroids), 2))
     scaled_rolloffs = np.array(np.round(scaler.fit_transform(rolloffs), 2))
@@ -71,14 +76,22 @@ if __name__ == "__main__":
     X = pd.DataFrame({"centroids": scaled_centroids.reshape(1, -1)[0],
                       "rolloffs": scaled_rolloffs.reshape(1, -1)[0]})
 
+    # PCA
+    pca = PCA(2)
+    data = pca.fit_transform(X)
+    pca1 = [x[0] for x in data]
+    pca2 = [x[1] for x in data]
+    pcaX = pd.DataFrame({"pca1": pca1,
+                         "pca2": pca2})
+
     # plot features
-    plt.scatter(X.centroids, X.rolloffs)
+    plt.scatter(pcaX.pca1, pcaX.pca2)
 
     # do kmeans clustering and get elbow point
     sse = list()
     for cluster in range(1, 11):
         kmeans = KMeans(n_clusters=cluster, **kmeans_kwargs)
-        kmeans.fit(X)
+        kmeans.fit(data)
         sse.append(kmeans.inertia_)
 
     # plot sse
@@ -94,18 +107,14 @@ if __name__ == "__main__":
 
     # plot clusters in a scatter plot
     kmeans = KMeans(n_clusters=nclust_opt, **kmeans_kwargs)
-    kmeans.fit(X)
-    label = kmeans.fit_predict(X)
-    filtered_label0 = X[label == 0]
-    filtered_label1 = X[label == 1]
-    filtered_label2 = X[label == 2]
+    kmeans.fit(data)
+    label = kmeans.fit_predict(data)
+    filtered_label0 = data[label == 0]
+    filtered_label1 = data[label == 1]
+    filtered_label2 = data[label == 2]
 
     # plot results
-    plt.scatter(filtered_label0.centroids, filtered_label0.rolloffs, color='red')
-    plt.scatter(filtered_label1.centroids, filtered_label1.rolloffs, color='black')
-    plt.scatter(filtered_label2.centroids, filtered_label2.rolloffs, color='green')
-
-    # PCA
-    pca = PCA(2)
-    data = pca.fit_transform(X)
+    plt.scatter(filtered_label0, filtered_label0, color='red')
+    plt.scatter(filtered_label1, filtered_label1, color='black')
+    plt.scatter(filtered_label2, filtered_label2, color='green')
 
