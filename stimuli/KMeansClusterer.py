@@ -113,7 +113,7 @@ if __name__ == "__main__":
     plt.show()
 
     kl = KneeLocator(range(1, 11), sse, curve="convex", direction="decreasing")
-    nclust_opt = 7  # seems 3 clusters is optimal
+    nclust_opt = 8  # seems 3 clusters is optimal
 
     # plot clusters in a scatter plot
     kmeans = KMeans(n_clusters=nclust_opt, **kmeans_kwargs)
