@@ -62,13 +62,7 @@ if __name__ == "__main__":
             talker = all_talkers[k]
             centroids.append(np.mean([x.spectral_feature("centroid") for x in talker]))
             rolloffs.append(np.mean([x.spectral_feature("rolloff") for x in talker]))
-            # fluxs.append(np.mean([x.spectral_feature("flux") for x in talker]))
-            # f0s.append(np.mean(librosa.yin(talker[0].data,
-                                           #fmin=librosa.note_to_hz('C2'),
-                                           #fmax=librosa.note_to_hz('C7'),
-                                           #sr=talker[0].samplerate)))
             zcrs.append(np.mean([zcr(x.data) for x in talker]))
-            # mfccs.append(np.mean([librosa.feature.mfcc(y=x.data, sr=x.samplerate, hop_length=x.n_samples*1000*x.samplerate) for x in talker]))
         else:
             continue
 
@@ -117,28 +111,15 @@ if __name__ == "__main__":
 
     # plot clusters in a scatter plot
     kmeans = KMeans(n_clusters=nclust_opt, **kmeans_kwargs)
-    kmeans.fit(data)
+    label = kmeans.fit_predict(data)
     pcaX["clusters"] = kmeans.labels_
     centroids = kmeans.cluster_centers_
     pcaX["talker"] = netto_talkers.keys()
-    filtered_label0 = data[kmeans.labels_ == 0]
-    filtered_label1 = data[kmeans.labels_ == 1]
-    filtered_label2 = data[kmeans.labels_ == 2]
-    filtered_label3 = data[kmeans.labels_ == 3]
-    filtered_label4 = data[kmeans.labels_ == 4]
-    filtered_label5 = data[kmeans.labels_ == 5]
-    filtered_label6 = data[kmeans.labels_ == 6]
+    u_labels = np.unique(kmeans.labels_)
 
-    sns.scatterplot(data=pcaX,
-                    hue="talker",
-                    palette="viridis")
-
-    # plot results
-    plt.scatter(filtered_label0[:, 0], filtered_label0[:, 1], color='red')
-    plt.scatter(filtered_label1[:, 0], filtered_label1[:, 1], color='black')
-    plt.scatter(filtered_label2[:, 0], filtered_label2[:, 1], color='green')
-    plt.scatter(filtered_label3[:, 0], filtered_label3[:, 1], color='orange')
-    plt.scatter(filtered_label4[:, 0], filtered_label4[:, 1], color='blue')
-    plt.scatter(filtered_label5[:, 0], filtered_label5[:, 1], color='yellow')
-    plt.scatter(filtered_label6[:, 0], filtered_label6[:, 1], color='purple')
+    for i in u_labels:
+        plt.scatter(data[label == i, 0], data[label == i, 1])
+    plt.scatter(centroids[:, 0], centroids[:, 1], s=80, c="black", marker="x")
+    plt.legend()
+    plt.show()
 
