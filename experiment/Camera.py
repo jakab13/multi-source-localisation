@@ -20,6 +20,9 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 log = logging.getLogger(__name__)
 
+# TODO: FlirCam is deprecated
+
+
 class ArUcoCamSetting(DeviceSetting):
     """
     Class for defining the camera settings. primary group parameters are supposed to be changed and sometimes
@@ -46,8 +49,7 @@ class ArUcoCam(Device):
     aruco_dicts = [cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_100),
                    cv2.aruco.Dictionary_get(cv2.aruco.DICT_5X5_100)]
     params = cv2.aruco.DetectorParameters_create()
-    cams = [Camera(index=0), Camera(index=1)]
-    # led = Any()
+    cams = List()
     offset = Any()
     calibrated = Bool()
 
@@ -55,6 +57,7 @@ class ArUcoCam(Device):
         """
         Initializes the device and sets the state to "created". Necessary before running the device.
         """
+        self.cams = [Camera(index=0), Camera(index=1)]
         for c in self.cams:  # initialize cameras
             c.init()
 
@@ -73,14 +76,18 @@ class ArUcoCam(Device):
             c.start()  # start recording images into the camera buffer
         if self.calibrated:
             pose = self.get_pose()  # Get image as numpy array
+            for i, coord in enumerate(pose):
+                if coord is None:
+                    log.warning("Could not acquire head pose, ")
+                    pose[i] = 99
             if self.offset:
                 self.setting.pose = [pose[0] - self.offset[0], pose[1] - self.offset[1]]  # subtract offset
             else:
-                log.info("Camera not calibrated, head pose might be unreliable ...")
+                log.warning("Camera not calibrated, head pose might be unreliable ...")
                 self.setting.pose = pose
             log.info("Acquired pose!")
         else:
-            log.info("WARNING: Camera is not calibrated, head pose might be unreliable.")
+            log.warning("WARNING: Camera is not calibrated, head pose might be unreliable.")
             self.setting.pose = self.get_pose()
 
     def _pause(self, **kwargs):
