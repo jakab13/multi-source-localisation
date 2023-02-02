@@ -74,9 +74,10 @@ if __name__ == "__main__":
     responses = list()
     RP2 = RP2Device()
 
-    for trial in range(10):
-        RP2.configure()
+    for trial in range(5):
+        # RP2.configure()
         RP2.start()
         RP2.wait_for_button()
         responses.append(RP2.get_response())
         RP2.pause()
+        time.sleep(1)
