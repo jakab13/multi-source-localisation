@@ -26,7 +26,7 @@ class NumerosityJudgementSetting(ExperimentSetting):
 
     experiment_name = Str('NumJudge', group='status', dsec='name of the experiment', noshow=True)
     conditions = List([2, 3, 4], group="status", dsec="Number of simultaneous talkers in the experiment")
-    trial_number = Int(20, group='primary', dsec='Number of trials in each condition', reinit=False)
+    trial_number = Int(5, group='primary', dsec='Number of trials in each condition', reinit=False)
     trial_duration = Float(1.0, group='primary', dsec='Duration of each trial, (s)', reinit=False)
 
     def _get_total_trial(self):
@@ -69,6 +69,9 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def setup_experiment(self, info=None):
         self._tosave_para["sequence"] = self.sequence
+        self.devices["RX8"].handle.write(tag='bitmask',
+                                         value=1,
+                                         procs="RX81")  # illuminate central speaker LED
 
     def _prepare_trial(self):
         self.check_headpose()
@@ -85,7 +88,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def _start_trial(self):
         self.time_0 = time.time()  # starting time of the trial
-        log.info('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
+        log.warning('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         self.devices["RX8"].start()
         self.devices["RP2"].wait_for_button()
         self.devices["RP2"].get_response()
@@ -101,7 +104,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         #self.data.write(key="RP2", data=self.reaction_time)
         #self.data.write(key="RP2", data=is_correct)
         #self.data.save()
-        log.info('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
+        log.warning('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
 
     def load_signals(self, sound_type="tts-countries_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
@@ -130,12 +133,12 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         Calibrates the cameras. Initializes the RX81 to access the central loudspeaker. Illuminates the led on ele,
         azi 0°, then acquires the headpose and uses it as the offset. Turns the led off afterwards.
         """
-        log.info("Calibrating camera")
+        log.warning("Calibrating camera")
         led = self.speakers[3]  # central speaker
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
-        log.info('Point towards led and press button to start calibration')
+        log.warning('Point towards led and press button to start calibration')
         self.devices["RP2"].wait_for_button()  # start calibration after button press
         self.devices["ArUcoCam"].start()
         offset = self.devices["ArUcoCam"].get_pose()
@@ -144,14 +147,14 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         for i, v in enumerate(self.devices["ArUcoCam"].offset):  # check for NoneType in offset
             if v is None:
                 self.devices["ArUcoCam"].offset[i] = 0
-                log.info("Calibration unsuccessful, make sure markers can be detected by cameras!")
+                log.warning("Calibration unsuccessful, make sure markers can be detected by cameras!")
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=0,
                                          procs=f"{led.TDT_digital}{led.TDT_idx_digital}")  # turn off LED
         self.devices["ArUcoCam"].calibrated = True
         if report:
-            log.info(f"Camera offset: {offset}")
-        log.info('Calibration complete!')
+            log.warning(f"Camera offset: {offset}")
+        log.warning('Calibration complete!')
 
     def check_headpose(self):
         while True:
@@ -160,7 +163,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
             self.devices["ArUcoCam"].pause()
             try:
                 if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].setting.pose) ** 2)) > 10:
-                    log.info("Subject is not looking straight ahead")
+                    log.warning("Subject is not looking straight ahead")
                     for idx in range(1, 5):  # clear all speakers before loading warning tone
                         self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
                         self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
@@ -171,9 +174,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                 else:
                     break
             except TypeError:
-                log.info("Cannot detect markers, make sure cameras are set up correctly and arucomarkers can be detected.")
+                log.warning("Cannot detect markers, make sure cameras are set up correctly and arucomarkers can be detected.")
                 continue
-
 
 
 if __name__ == "__main__":
