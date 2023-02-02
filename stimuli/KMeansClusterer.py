@@ -11,7 +11,7 @@ import pandas as pd
 from sklearn.decomposition import PCA
 from stimuli.features import zcr
 import seaborn as sns
-plt.style.use("fivethirtyeight")
+plt.rcParams['image.cmap'] = 'viridis'
 
 
 class KMeansClusterer:
@@ -31,7 +31,7 @@ class KMeansClusterer:
 
 if __name__ == "__main__":
     # kwargs important for kmeans clustering
-    kmeans_kwargs = {"init": "random",
+    kmeans_kwargs = {"init": "kmeans++",
                      "n_init": 10,
                      "random_state": 42}
 
@@ -118,8 +118,9 @@ if __name__ == "__main__":
     u_labels = np.unique(kmeans.labels_)
 
     for i in u_labels:
-        plt.scatter(data[label == i, 0], data[label == i, 1])
-    plt.scatter(centroids[:, 0], centroids[:, 1], s=80, c="black", marker="x")
+        plt.scatter(data[label == i, 0], data[label == i, 1], label=i)
+    plt.scatter(centroids[:, 0], centroids[:, 1], s=80, marker="x", c="black")
     plt.legend()
+    plt.colorbar()
     plt.show()
 
