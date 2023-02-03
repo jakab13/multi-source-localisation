@@ -78,7 +78,9 @@ class SpatialUnmaskingExperiment(ExperimentLogic, ABC):
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
-        self.stairs = slab.Staircase(start_val=70, n_reversals=2, step_sizes=[4, 1])
+        self.stairs = slab.Staircase(start_val=config.start_val,
+                                     n_reversals=config.n_reversals,
+                                     step_sizes=config.step_sizes)
 
     def _prepare_trial(self):
         if self.stairs.finished:
