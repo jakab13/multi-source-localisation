@@ -3,7 +3,7 @@ from labplatform.core.Device import Device
 from labplatform.core.Setting import DeviceSetting
 from labplatform.core import TDTblackbox as tdt
 import time
-from traits.api import CFloat, Int, Str, Any
+from traits.api import CFloat, Str, Any, Tuple, Int
 import os
 import logging
 import numpy as np
@@ -21,6 +21,9 @@ class RP2Setting(DeviceSetting):  # this class contains important settings for t
     index = Any(1, group='status', dsec='index of the device to connect to')
     device_name = Str("RP2", group="status", dsec="Name of the device")
     device_type = Str("Processor", group='status', dsec='type of the device')
+    shape = Tuple(1, group="status", dsec="Dimension of the device output")
+    dtype = Int(int, group="status", dsec="data type of the output")
+    type = Str("analog_signal", group="status", dsec="Type of the signal")
 
 
 class RP2Device(Device):
@@ -28,7 +31,8 @@ class RP2Device(Device):
     setting = RP2Setting()
     handle = Any()  # handle for TDT method execution like handle.write, handle.read, ...
     # thread = Instance(threading.Thread)  # important for threading
-    _output_specs = {"response"}
+    _output_specs = {'type': setting.type, 'sampling_freq': setting.sampling_freq,
+                     'dtype': setting.dtype, "shape": setting.shape}
 
     def _initialize(self, **kwargs):  # this method is called upon self.initialize() execution
         expdir = get_config('DEVICE_ROOT')
