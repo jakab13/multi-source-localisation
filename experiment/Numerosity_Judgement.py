@@ -103,11 +103,11 @@ class NumerosityJudgementExperiment(ExperimentLogic, ABC):
 
     def _stop_trial(self):
         is_correct = True if self.sequence.this_trial / self.response == 1 else False
-        #self.data.write(key=nj.devices["RP2"].name, data=self.response)
-        #self.data.write(key="RP2", data=self.sequence.this_trial)
-        #self.data.write(key="RP2", data=self.reaction_time)
-        #self.data.write(key="RP2", data=is_correct)
-        #self.data.save()
+        self.data.write(key=self.devices["RP2"].device_name, data=self.response)
+        # self.data.write(key="RP2", data=self.sequence.this_trial)
+        # self.data.write(key="RP2", data=self.reaction_time)
+        # self.data.write(key="RP2", data=is_correct)
+        # self.data.save()
         log.warning('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
 
     def load_signals(self, sound_type="tts-countries_resamp_24414"):
@@ -127,10 +127,12 @@ class NumerosityJudgementExperiment(ExperimentLogic, ABC):
     def pick_speakers_this_trial(self, n_speakers):
         speakers_no_rep = list(x for x in self.speakers if x not in self.speakers_sample)
         self.speakers_sample = random.sample(speakers_no_rep, n_speakers)
+        self._tosave_para["speakers_sample"] = self.speakers_sample
 
     def pick_signals_this_trial(self, n_signals):
         signals_no_rep = list(x for x in self.signals if x not in self.signals_sample)
         self.signals_sample = random.sample(signals_no_rep, n_signals)
+        self._tosave_para["signals_sample"] = self.signals_sample
 
     def calibrate_camera(self, report=True):
         """
