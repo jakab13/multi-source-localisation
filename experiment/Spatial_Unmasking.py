@@ -1,4 +1,3 @@
-from abc import ABC
 from labplatform.core.Setting import ExperimentSetting
 from labplatform.core.ExperimentLogic import ExperimentLogic
 from labplatform.core.Data import ExperimentData
@@ -30,11 +29,11 @@ class SpatialUnmaskingSetting(ExperimentSetting):
 
     experiment_name = Str('SpatMask', group='status', dsec='name of the experiment', noshow=True)
     n_conditions = Int(config.n_conditions, group="status", dsec="Number of masker speaker positions in the experiment")
-    # trial_number = Int(1, group='primary', dsec='Number of trials in each condition', reinit=False)
+    trial_number = Int(10000000, group='primary', dsec='Number of trials in each condition', reinit=False)
     trial_duration = Float(config.trial_duration, group='status', dsec='Duration of one trial, (s)')
 
 
-class SpatialUnmaskingExperiment(ExperimentLogic, ABC):
+class SpatialUnmaskingExperiment(ExperimentLogic):
 
     setting = SpatialUnmaskingSetting()
     data = ExperimentData()
@@ -81,14 +80,21 @@ class SpatialUnmaskingExperiment(ExperimentLogic, ABC):
         self.stairs = slab.Staircase(start_val=config.start_val,
                                      n_reversals=config.n_reversals,
                                      step_sizes=config.step_sizes)
+        self._tosave_para["stairs"] = self.stairs
 
     def _prepare_trial(self):
-        if self.stairs.finished:
-            self.stairs = slab.Staircase(start_val=config.start_val,
-                                         n_reversals=config.n_reversals,
-                                         step_sizes=config.step_sizes)
-            self.sequence.__next__()
+        if not self.sequence.n_remaining:
+            log.warning("Sequence finished!")
+            self.change_state(complete=True)
+            self.stop()
+        else:
+            if self.stairs.finished:
+                self.stairs = slab.Staircase(start_val=config.start_val,
+                                             n_reversals=config.n_reversals,
+                                             step_sizes=config.step_sizes)
+                self.sequence.__next__()
         self.masker_speaker = self.speakers[self.sequence.this_n]
+        self._tosave_para["masker_speaker"] = self.masker_speaker
 
     def _start_trial(self):
         self.time_0 = time.time()  # starting time of the trial
@@ -113,25 +119,25 @@ class SpatialUnmaskingExperiment(ExperimentLogic, ABC):
         log.warning('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         # simulate response
         response = self.stairs.simulate_response(threshold=60)
+        self.devices["RP2"]._output_specs["response"] = response
         self.stairs.add_response(response)
         self.devices["RX8"].start()
         self.devices["RX8"].pause()
         # self.devices["RP2"].wait_for_button()
         reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
+        self._tosave_para["reaction_time"] = reaction_time
         # response = self.devices["RP2"].get_response()
         solution = target_sound_i + 1
-        is_correct = True if solution / response == 1 else False
+        self._tosave_para["solution"] = self.sequence.this_trial
         # self.stairs.add_response(1) if response/solution is True else self.stairs.add_response(0)
         self.stairs.plot()
         self.process_event({'trial_stop': 0})  # stops the trial
 
     def _stop_trial(self):
-        is_correct = True if self.sequence.this_trial / self.devices["RP2"]._output_specs["response"] == 1 else False
-        #self.data.write(key="solution", data=self.sequence.this_trial)
-        #self.data.write(key="reaction_time", data=self.reaction_time)
-        #self.data.write(key="is_correct", data=is_correct)
-        #self.data.save()
         log.warning('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
+        is_correct = True if self.sequence.this_trial / self.devices["RP2"]._output_specs["response"] == 1 else False
+        self._tosave_para["is_correct"] = is_correct
+        self.data.save()
 
     def load_signals(self, target_sounds_type="tts-numbers_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
