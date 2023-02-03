@@ -72,7 +72,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic, ABC):
     def setup_experiment(self, info=None):
         talker = random.randint(1, 108)
         self.masker_speaker = Any()
-        self.selected_target_sounds = self.signals[talker * 5:(talker + 1) * 5]  # select numbers 1-5 for one talker
+        self.selected_target_sounds = self.signals[talker * 9:(talker + 1) * 9]  # select numbers 1-9 for one talker
         self._tosave_para["sequence"] = self.sequence
         self._tosave_para["talker"] = talker
         self.devices["RX8"].handle.write(tag='bitmask',
