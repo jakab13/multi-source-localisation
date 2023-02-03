@@ -28,7 +28,7 @@ class RP2Device(Device):
     setting = RP2Setting()
     handle = Any()  # handle for TDT method execution like handle.write, handle.read, ...
     # thread = Instance(threading.Thread)  # important for threading
-    _output_specs = {}
+    _output_specs = {"response"}
 
     def _initialize(self, **kwargs):  # this method is called upon self.initialize() execution
         expdir = get_config('DEVICE_ROOT')
@@ -55,7 +55,7 @@ class RP2Device(Device):
     def get_response(self):  # collects response, preferably called right after wait_for_button
         log.info("Acquiring button response ... ")
         # because the response is stored in bit value, we need the base 2 log
-        # self._output_specs["response"] = int(np.log2(self.handle.GetTagVal("response")))
+        self._output_specs["response"] = int(np.log2(self.handle.GetTagVal("response")))
         return int(np.log2(self.handle.GetTagVal("response")))
 
 
