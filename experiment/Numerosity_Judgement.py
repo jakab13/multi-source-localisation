@@ -1,3 +1,5 @@
+from abc import ABC
+
 from labplatform.core.Setting import ExperimentSetting
 from labplatform.core.ExperimentLogic import ExperimentLogic
 from labplatform.core.Data import ExperimentData
@@ -18,6 +20,8 @@ import logging
 import datetime
 
 log = logging.getLogger(__name__)
+config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "numjudge_config.txt"))
+
 
 # TODO: data saving still sucks! log_trial() maybe? set_h5_atrributes()? data.data_spec?
 
@@ -25,15 +29,15 @@ log = logging.getLogger(__name__)
 class NumerosityJudgementSetting(ExperimentSetting):
 
     experiment_name = Str('NumJudge', group='status', dsec='name of the experiment', noshow=True)
-    conditions = List([2, 3, 4], group="status", dsec="Number of simultaneous talkers in the experiment")
-    trial_number = Int(5, group='primary', dsec='Number of trials in each condition', reinit=False)
-    trial_duration = Float(1.0, group='primary', dsec='Duration of each trial, (s)', reinit=False)
+    conditions = List(config.conditions, group="status", dsec="Number of simultaneous talkers in the experiment")
+    trial_number = Int(config.trial_number, group='status', dsec='Number of trials in each condition')
+    trial_duration = Float(config.trial_duration, group='status', dsec='Duration of each trial, (s)')
 
     def _get_total_trial(self):
         return self.trial_number * len(self.conditions)
 
 
-class NumerosityJudgementExperiment(ExperimentLogic):
+class NumerosityJudgementExperiment(ExperimentLogic, ABC):
 
     setting = NumerosityJudgementSetting()
     data = ExperimentData()
@@ -46,7 +50,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     speakers = List()
     signals = List()
     warning_tone = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "warning\\warning_tone.wav"))
-    response = Int()
+    # response = Int()
 
     def _initialize(self, **kwargs):
         self.load_speakers()
@@ -93,7 +97,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.devices["RP2"].wait_for_button()
         self.devices["RP2"].get_response()
         self.reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
-        self.response = self.devices["RP2"].get_response()
+        # self.response = self.devices["RP2"].get_response()
         self.devices["RX8"].pause()
         self.process_event({'trial_stop': 0})
 
@@ -113,7 +117,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.signals = sound_list
 
     def load_speakers(self, filename="dome_speakers.txt"):
-        basedir = get_config(setting="BASE_DIRECTORY")
+        basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
         filepath = os.path.join(basedir, filename)
         spk_array = SpeakerArray(file=filepath)
         spk_array.load_speaker_table()

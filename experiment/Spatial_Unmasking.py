@@ -31,7 +31,7 @@ class SpatialUnmaskingSetting(ExperimentSetting):
     experiment_name = Str('SpatMask', group='status', dsec='name of the experiment', noshow=True)
     n_conditions = Int(config.n_conditions, group="status", dsec="Number of masker speaker positions in the experiment")
     # trial_number = Int(1, group='primary', dsec='Number of trials in each condition', reinit=False)
-    trial_duration = Float(config.trial_duration, group='status', dsec='Duration of one trial, (s)', reinit=False)
+    trial_duration = Float(config.trial_duration, group='status', dsec='Duration of one trial, (s)')
 
 
 class SpatialUnmaskingExperiment(ExperimentLogic, ABC):
