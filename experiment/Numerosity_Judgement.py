@@ -1,5 +1,3 @@
-from abc import ABC
-
 from labplatform.core.Setting import ExperimentSetting
 from labplatform.core.ExperimentLogic import ExperimentLogic
 from labplatform.core.Data import ExperimentData
@@ -37,7 +35,7 @@ class NumerosityJudgementSetting(ExperimentSetting):
         return self.trial_number * len(self.conditions)
 
 
-class NumerosityJudgementExperiment(ExperimentLogic, ABC):
+class NumerosityJudgementExperiment(ExperimentLogic):
 
     setting = NumerosityJudgementSetting()
     data = ExperimentData()
@@ -45,7 +43,6 @@ class NumerosityJudgementExperiment(ExperimentLogic, ABC):
     devices = Dict()
     speakers_sample = List()
     signals_sample = List()
-    reaction_time = Int()
     time_0 = Float()
     speakers = List()
     signals = List()
@@ -80,6 +77,7 @@ class NumerosityJudgementExperiment(ExperimentLogic, ABC):
     def _prepare_trial(self):
         self.check_headpose()
         self.sequence.__next__()
+        self._tosave_para["solution"] = self.sequence.this_trial
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
         for idx, spk in enumerate(self.speakers_sample):
@@ -96,18 +94,17 @@ class NumerosityJudgementExperiment(ExperimentLogic, ABC):
         self.devices["RX8"].start()
         self.devices["RP2"].wait_for_button()
         self.devices["RP2"].get_response()
-        self.reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
+        reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
+        self._tosave_para["reaction_time"] = reaction_time
+
         # self.response = self.devices["RP2"].get_response()
         self.devices["RX8"].pause()
         self.process_event({'trial_stop': 0})
 
     def _stop_trial(self):
-        is_correct = True if self.sequence.this_trial / self.response == 1 else False
-        self.data.write(key=self.devices["RP2"].device_name, data=self.response)
-        # self.data.write(key="RP2", data=self.sequence.this_trial)
-        # self.data.write(key="RP2", data=self.reaction_time)
-        # self.data.write(key="RP2", data=is_correct)
-        # self.data.save()
+        is_correct = True if self.sequence.this_trial / self._devices_output_params()["RP2"]["response"] == 1 else False
+        self._tosave_para["is_correct"] = is_correct
+        self.data.save()
         log.warning('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
 
     def load_signals(self, sound_type="tts-countries_resamp_24414"):
@@ -217,7 +214,6 @@ if __name__ == "__main__":
     # subject.file_path
     experimenter = "Max"
     nj = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
-    # STEP %%: calibrate camera
     nj.calibrate_camera()
     nj.start()
     # nj.configure_traits()
