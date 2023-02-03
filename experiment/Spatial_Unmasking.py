@@ -138,7 +138,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic, ABC):
         self.signals = sound_list
 
     def load_speakers(self, filename="dome_speakers.txt"):
-        basedir = get_config(setting="BASE_DIRECTORY")
+        basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
         filepath = os.path.join(basedir, filename)
         spk_array = SpeakerArray(file=filepath)
         spk_array.load_speaker_table()
