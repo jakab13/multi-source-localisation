@@ -1,3 +1,4 @@
+from abc import ABC
 from labplatform.core.Setting import ExperimentSetting
 from labplatform.core.ExperimentLogic import ExperimentLogic
 from labplatform.core.Data import ExperimentData
@@ -18,27 +19,26 @@ import logging
 import datetime
 
 log = logging.getLogger(__name__)
+config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "spatmask_config.txt"))
 
 # TODO: check out threading module
 # TODO: data saving still sucks! log_trial() maybe? set_h5_atrributes()? data.data_spec?
 # TODO: clear camera buffer every once in a while
 
+
 class SpatialUnmaskingSetting(ExperimentSetting):
 
     experiment_name = Str('SpatMask', group='status', dsec='name of the experiment', noshow=True)
-    n_conditions = Int(6, group="status", dsec="Number of masker speaker positions in the experiment")
-    trial_number = Int(1, group='primary', dsec='Number of trials in each condition', reinit=False)
-    trial_duration = Float(1.0, group='primary', dsec='Duration of one trial, (s)', reinit=False)
-
-    def _get_total_trial(self):
-        return self.trial_number * self.n_conditions
+    n_conditions = Int(config.n_conditions, group="status", dsec="Number of masker speaker positions in the experiment")
+    # trial_number = Int(1, group='primary', dsec='Number of trials in each condition', reinit=False)
+    trial_duration = Float(config.trial_duration, group='status', dsec='Duration of one trial, (s)', reinit=False)
 
 
-class SpatialUnmaskingExperiment(ExperimentLogic):
+class SpatialUnmaskingExperiment(ExperimentLogic, ABC):
 
     setting = SpatialUnmaskingSetting()
     data = ExperimentData()
-    sequence = slab.Trialsequence(conditions=6, n_reps=1, kind="random_permutation")
+    sequence = slab.Trialsequence(setting.n_conditions, n_reps=1, kind="random_permutation")
     devices = Dict()
     time_0 = Float()
     speakers = List()
@@ -74,68 +74,66 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.masker_speaker = Any()
         self.selected_target_sounds = self.signals[talker * 5:(talker + 1) * 5]  # select numbers 1-5 for one talker
         self._tosave_para["sequence"] = self.sequence
+        self._tosave_para["talker"] = talker
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
+        self.stairs = slab.Staircase(start_val=70, n_reversals=2, step_sizes=[4, 1])
 
     def _prepare_trial(self):
-        self.stairs = slab.Staircase(start_val=70, n_reversals=2, step_sizes=[4, 1])  # renew
-        self.sequence.__next__()
+        if self.stairs.finished:
+            self.stairs = slab.Staircase(start_val=config.start_val,
+                                         n_reversals=config.n_reversals,
+                                         step_sizes=config.step_sizes)
+            self.sequence.__next__()
         self.masker_speaker = self.speakers[self.sequence.this_n]
 
     def _start_trial(self):
         self.time_0 = time.time()  # starting time of the trial
-        for level in self.stairs:
-            log.warning(f"trial {self.setting.current_trial} dB level: {level}")
-            self.check_headpose()
-            target_sound_i = random.choice(range(len(self.selected_target_sounds)))
-            target_sound = self.selected_target_sounds[target_sound_i]  # choose random number from sound_list
-            target_sound.level = level
-            self.devices["RX8"].handle.write("chan0",
-                                             self.target_speaker.channel_analog,
-                                             f"{self.target_speaker.TDT_analog}{self.target_speaker.TDT_idx_analog}")
-            self.devices["RX8"].handle.write("data0",
-                                             target_sound.data.flatten(),
-                                             f"{self.target_speaker.TDT_analog}{self.target_speaker.TDT_idx_analog}")
-            self.devices["RX8"].handle.write("chan1",
-                                             self.masker_speaker.channel_analog,
-                                             f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
-            self.devices["RX8"].handle.write("data1",
-                                             self.masker_sound.data.flatten(),
-                                             f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
-            log.warning('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
-            # simulate response
-            response = self.stairs.simulate_response(threshold=60)
-            self.stairs.add_response(response)
-            self.devices["RX8"].start()
-            self.devices["RX8"].pause()
-            # self.devices["RP2"].wait_for_button()
-            reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
-            # response = self.devices["RP2"].get_response()
-            solution = target_sound_i + 1
-            is_correct = True if solution / response == 1 else False
-            # self.stairs.add_response(1) if response/solution is True else self.stairs.add_response(0)
-            self.stairs.plot()
-            self.data.set_h5_attrs(response=response,
-                                   solution=solution,
-                                   reaction_time=reaction_time,
-                                   is_correct=is_correct)
-            self.data.save()
-        self.stairs.close_plot()
+        level = self.stairs.__next__()
+        log.warning(f"trial {self.setting.current_trial} dB level: {level}")
+        self.check_headpose()
+        target_sound_i = random.choice(range(len(self.selected_target_sounds)))
+        target_sound = self.selected_target_sounds[target_sound_i]  # choose random number from sound_list
+        target_sound.level = level
+        self.devices["RX8"].handle.write("chan0",
+                                         self.target_speaker.channel_analog,
+                                         f"{self.target_speaker.TDT_analog}{self.target_speaker.TDT_idx_analog}")
+        self.devices["RX8"].handle.write("data0",
+                                         target_sound.data.flatten(),
+                                         f"{self.target_speaker.TDT_analog}{self.target_speaker.TDT_idx_analog}")
+        self.devices["RX8"].handle.write("chan1",
+                                         self.masker_speaker.channel_analog,
+                                         f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
+        self.devices["RX8"].handle.write("data1",
+                                         self.masker_sound.data.flatten(),
+                                         f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
+        log.warning('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
+        # simulate response
+        response = self.stairs.simulate_response(threshold=60)
+        self.stairs.add_response(response)
+        self.devices["RX8"].start()
+        self.devices["RX8"].pause()
+        # self.devices["RP2"].wait_for_button()
+        reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
+        # response = self.devices["RP2"].get_response()
+        solution = target_sound_i + 1
+        is_correct = True if solution / response == 1 else False
+        # self.stairs.add_response(1) if response/solution is True else self.stairs.add_response(0)
+        self.stairs.plot()
         self.process_event({'trial_stop': 0})  # stops the trial
 
     def _stop_trial(self):
-        #self.data.set_h5_attrs(threshold=self.stairs.threshold())
-        #is_correct = True if self.sequence.this_trial / self.devices["RP2"]._output_specs["response"] == 1 else False
+        is_correct = True if self.sequence.this_trial / self.devices["RP2"]._output_specs["response"] == 1 else False
         #self.data.write(key="solution", data=self.sequence.this_trial)
         #self.data.write(key="reaction_time", data=self.reaction_time)
         #self.data.write(key="is_correct", data=is_correct)
         #self.data.save()
         log.warning('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
 
-    def load_signals(self, sound_type="tts-numbers_resamp_24414"):
+    def load_signals(self, target_sounds_type="tts-numbers_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
-        sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
+        sound_fp = pathlib.Path(os.path.join(sound_root, target_sounds_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
         self.signals = sound_list
 
