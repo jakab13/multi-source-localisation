@@ -1,7 +1,7 @@
 from labplatform.config import get_config
 from labplatform.core.Setting import DeviceSetting
 from labplatform.core.Device import Device
-from traits.api import Instance, Float, Any, Str, List, Tuple, Bool
+from traits.api import Instance, Float, Any, Str, List, Tuple, Bool, CFloat
 from PIL import ImageEnhance, Image
 from labplatform.core import TDTblackbox as tdt
 import logging
@@ -37,9 +37,10 @@ class ArUcoCamSetting(DeviceSetting):
     root = Str(get_config(setting="BASE_DIRECTORY"), group="status", dsec="Labplatform root directory")
     setup = Str("dome", group="status", dsec="experiment setup")
     file = Str(f"{setup.default_value}_speakers.txt", group="status", dsec="Speaker file")
-    pose = List(group="primary", dsec="Headpose", reinit=False)
+    # pose = List(group="primary", dsec="Headpose", reinit=False)
     device_name = Str("FireFly", group="status", dsec="Name of the device")
     device_type = Str("Camera", group='status', dsec='Type of the device')
+    sampling_freq = CFloat(1.0, group='primary', dsec='Sampling frequency of the device (Hz)', reinit=False)
 
 
 class ArUcoCam(Device):
@@ -55,6 +56,9 @@ class ArUcoCam(Device):
     cams = List()
     offset = Any()
     calibrated = Bool()
+    _output_specs = {'type': setting.type, 'sampling_freq': setting.sampling_freq,
+                     'dtype': setting.dtype, "shape": setting.shape}
+
 
     def _initialize(self, **kwargs):
         """
@@ -84,14 +88,14 @@ class ArUcoCam(Device):
                     log.warning("Could not acquire head pose, ")
                     pose[i] = 99
             if self.offset:
-                self.setting.pose = [pose[0] - self.offset[0], pose[1] - self.offset[1]]  # subtract offset
+                self._output_specs["pose"] = [pose[0] - self.offset[0], pose[1] - self.offset[1]]  # subtract offset
             else:
                 log.warning("Camera not calibrated, head pose might be unreliable ...")
-                self.setting.pose = pose
+                self._output_specs["pose"] = pose
             log.info("Acquired pose!")
         else:
             log.warning("WARNING: Camera is not calibrated, head pose might be unreliable.")
-            self.setting.pose = self.get_pose()
+            self._output_specs["pose"] = self.get_pose()
 
     def _pause(self, **kwargs):
         """

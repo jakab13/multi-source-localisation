@@ -165,7 +165,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
             self.devices["ArUcoCam"].start()
             self.devices["ArUcoCam"].pause()
             try:
-                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].setting.pose) ** 2)) > 10:
+                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 10:
                     log.warning("Subject is not looking straight ahead")
                     for idx in range(1, 5):  # clear all speakers before loading warning tone
                         self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
