@@ -94,7 +94,6 @@ class ArUcoCam(Device):
                 self._output_specs["pose"] = pose
             log.info("Acquired pose!")
         else:
-            log.warning("WARNING: Camera is not calibrated, head pose might be unreliable.")
             self._output_specs["pose"] = self.get_pose()
 
     def _pause(self, **kwargs):
