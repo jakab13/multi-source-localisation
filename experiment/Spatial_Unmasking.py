@@ -19,9 +19,9 @@ import datetime
 
 log = logging.getLogger(__name__)
 config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "spatmask_config.txt"))
+plane = "v"
 
 # TODO: check out threading module
-# TODO: data saving still sucks! log_trial() maybe? set_h5_atrributes()? data.data_spec?
 # TODO: clear camera buffer every once in a while
 
 
@@ -50,14 +50,14 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     masker_sound = slab.Sound.pinknoise(duration=setting.trial_duration)
 
     def _initialize(self, **kwargs):
-        self.load_speakers()
-        self.load_signals()
         self.devices["RP2"] = RP2Device()
         self.devices["RX8"] = RX8Device()
         self.devices["ArUcoCam"] = ArUcoCam()
         self.devices["RX8"].handle.write("playbuflen",
                                          self.devices["RX8"].setting.sampling_freq*self.setting.trial_duration,
                                          procs=self.devices["RX8"].handle.procs)
+        self.load_speakers()
+        self.load_signals()
 
     def _start(self, **kwargs):
         pass
@@ -71,7 +71,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     def setup_experiment(self, info=None):
         talker = random.randint(1, 108)
         self.masker_speaker = Any()
-        self.selected_target_sounds = self.signals[talker * 9:(talker + 1) * 9]  # select numbers 1-9 for one talker
+        self.selected_target_sounds = self.signals[talker * 5:(talker + 1) * 5]  # select numbers 1-9 for one talker
         self._tosave_para["sequence"] = self.sequence
         self._tosave_para["talker"] = talker
         self.devices["RX8"].handle.write(tag='bitmask',
@@ -118,25 +118,34 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                                          f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
         log.warning('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         # simulate response
-        response = self.stairs.simulate_response(threshold=60)
-        self.devices["RP2"]._output_specs["response"] = response
-        self.stairs.add_response(response)
+        # response = self.stairs.simulate_response(threshold=60)
         self.devices["RX8"].start()
         self.devices["RX8"].pause()
-        # self.devices["RP2"].wait_for_button()
+        self.devices["RP2"].wait_for_button()
         reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         self._tosave_para["reaction_time"] = reaction_time
-        # response = self.devices["RP2"].get_response()
-        solution = target_sound_i + 1
+        response = self.devices["RP2"].get_response()
+        print(response)
+        self.devices["RP2"]._output_specs["response"] = response
+        # self.stairs.add_response(response)
+        solution_converter = {"5": 0,
+                              "4": 1,
+                              "2": 4,
+                              "3": 3,
+                              "1": 2,
+                              "0": 5
+                              }
+        solution = solution_converter[str(target_sound_i)]
+        print(solution)
         self._tosave_para["solution"] = self.sequence.this_trial
-        # self.stairs.add_response(1) if response/solution is True else self.stairs.add_response(0)
+        self.stairs.add_response(1) if response == solution else self.stairs.add_response(0)
         self.stairs.plot()
         self.process_event({'trial_stop': 0})  # stops the trial
 
     def _stop_trial(self):
         log.warning('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
-        is_correct = True if self.sequence.this_trial / self.devices["RP2"]._output_specs["response"] == 1 else False
-        self._tosave_para["is_correct"] = is_correct
+        #is_correct = True if self.sequence.this_trial / self.devices["RP2"]._output_specs["response"] == 1 else False
+        #self._tosave_para["is_correct"] = is_correct
         self.data.save()
 
     def load_signals(self, target_sounds_type="tts-numbers_resamp_24414"):
@@ -150,7 +159,12 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         filepath = os.path.join(basedir, filename)
         spk_array = SpeakerArray(file=filepath)
         spk_array.load_speaker_table()
-        speakers = spk_array.pick_speakers([x for x in range(20, 27) if x != 23])
+        if plane == "v":
+            speakers = spk_array.pick_speakers([x for x in range(20, 27)])
+        if plane == "h":
+            speakers = spk_array.pick_speakers([2, 8, 15, 23, 31, 38, 44])
+        else:
+            log.warning("Wrong plane, must be v or h")
         self.speakers = speakers
         self.target_speaker = spk_array.pick_speakers(23)[0]
 
@@ -160,7 +174,6 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         azi 0°, then acquires the headpose and uses it as the offset. Turns the led off afterwards.
         """
         log.warning("Calibrating camera")
-        led = self.target_speaker  # central speaker
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
@@ -176,7 +189,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                 log.warning("Calibration unsuccessful, make sure markers can be detected by cameras!")
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=0,
-                                         procs=f"{led.TDT_digital}{led.TDT_idx_digital}")  # turn off LED
+                                         procs=f"RX81")  # turn off LED
         self.devices["ArUcoCam"].calibrated = True
         if report:
             log.warning(f"Camera offset: {offset}")
