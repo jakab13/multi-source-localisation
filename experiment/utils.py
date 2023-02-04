@@ -4,6 +4,9 @@ import os
 import logging
 from experiment.Numerosity_Judgement import NumerosityJudgementExperiment
 from experiment.Spatial_Unmasking import SpatialUnmaskingExperiment
+from experiment.Localization_Accuracy import LocalizationAccuracyExperiment
+
+import experiment
 
 
 log = logging.getLogger()
@@ -20,12 +23,17 @@ log.addHandler(ch)
 
 
 def setup_experiment():
-    exp_type = input("su or nm?").lower()
+    exp_type = input("la, su or nm?").lower()
     subject = input("Enter subject id: ").lower()
     group = input("Vertical or horizontal? Insert v or h").lower()
     sex = input("m or f? ").upper()
     cohort = input("Pilot or Test cohort? Insert p or t").lower()
     experimenter = input("Enter your name: ").lower()
+
+    experiment.Numerosity_Judgement.plane = group
+    experiment.Spatial_Unmasking.plane = group
+    experiment.Localization_Accuracy.plane = group
+
     try:
         subject = Subject(name=f"sub{subject}",
                           group=group,
@@ -42,17 +50,20 @@ def setup_experiment():
         subject.data_path = os.path.join(get_config("DATA_ROOT"), f"sub{subject}.h5")
 
     if exp_type == "su":
-        experiment = SpatialUnmaskingExperiment(subject=subject, experimenter=experimenter)
-        return experiment
+        exp = SpatialUnmaskingExperiment(subject=subject, experimenter=experimenter)
+        return exp
     elif exp_type == "nm":
-        experiment = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
-        return experiment
+        exp = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
+        return exp
+    elif exp_type == "la":
+        exp = LocalizationAccuracyExperiment(subject=subject, experimenter=experimenter)
+        return exp
     else:
         log.warning("Paradigm not found, aborting ...")
 
 
 def run_experiment(experiment, n_blocks):
     for _ in range(n_blocks):
+        input("Press any key to start experiment")
         experiment.start()
-        if experiment.state == "Stopped":
-            input("Press any key to continue experiment")
+
