@@ -18,7 +18,7 @@ import ast
 from stimuli.tts_models import models, get_from_c_arg
 
 DIR = pathlib.Path(os.getcwd())
-save_directory = DIR / "samples" / "TTS" / "countries"
+save_directory = DIR / "samples" / "TTS" / "numbers"
 
 tts_models = models["tts_models"]  # Between 1-58
 vocoder_models = models["vocoder_models"]  # Between 1-16
@@ -52,7 +52,7 @@ for tts_model_id, tts_model in tts_models.items():
         tts_models[tts_model_id]["speker_idxs"] = speaker_idxs_obj
 
 
-numbers = ["one", "two", "three", "four", "five"]
+numbers = ["six", "seven", "eight", "nine"]
 sentences = [
     "A king ruled the state in the early days.",
     "The ship was torn apart on the sharp reef.",
@@ -67,7 +67,7 @@ sentences = [
 ]
 sentences = ["One and two and three and four and five and.",
              "Six and eight and nine and."]
-sentences = [
+countries = [
     "Belgium",
     "Britain",
     "Burma",
@@ -96,8 +96,8 @@ sentences = [
 
 tts_model = tts_models[16]
 tts_c_arg = tts_model["c_arg"]
-for text in sentences:
-    for speaker_id in list(tts_model["speaker_idxs"].keys())[:10]:
+for text in numbers:
+    for speaker_id in list(tts_model["speaker_idxs"].keys()):
         sex = tts_model["speaker_genders"][speaker_id]
         filepath = save_directory / str("talker-" + speaker_id + "_" +
                                         "sex-" + sex + "_" +
@@ -110,3 +110,19 @@ for text in sentences:
             "--speaker_idx", speaker_id
             ]
         subprocess.run(args)
+
+file_names = os.listdir(save_directory)
+i = 0
+for file_name in file_names:
+    old_file_path = save_directory / file_name
+    if "sex" not in file_name:
+        speaker_id = file_name[file_name.find("talker-") + len("talker-"):file_name.rfind('_text')]
+        sex = tts_model["speaker_genders"][speaker_id]
+        sex_string = "_sex-" + sex
+        new_file_name = file_name[:file_name.rfind('_text')] + sex_string + file_name[file_name.rfind('_text'):]
+        new_file_path = save_directory / new_file_name
+        print(old_file_path, new_file_path)
+        print(i)
+        os.rename(old_file_path, new_file_path)
+        i += 1
+
