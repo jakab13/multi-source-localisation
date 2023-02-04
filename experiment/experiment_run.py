@@ -7,7 +7,10 @@ exp = setup_experiment()
 # STEP 2: calibrate camera
 exp.calibrate_camera()
 
+# STEP 3: localization test
+run_experiment(experiment=exp, n_blocks=1)
+
 # STEP 3: start experiment
-run_experiment(experiment=exp, n_blocks=5)
+run_experiment(experiment=exp, n_blocks=1)
 
 
