@@ -19,9 +19,7 @@ import datetime
 
 log = logging.getLogger(__name__)
 config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "numjudge_config.txt"))
-
-
-# TODO: data saving still sucks! log_trial() maybe? set_h5_atrributes()? data.data_spec?
+plane = "v"
 
 
 class NumerosityJudgementSetting(ExperimentSetting):
@@ -50,14 +48,14 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     # response = Int()
 
     def _initialize(self, **kwargs):
-        self.load_speakers()
-        self.load_signals()
         self.devices["RP2"] = RP2Device()
         self.devices["RX8"] = RX8Device()
         self.devices["ArUcoCam"] = ArUcoCam()
         self.devices["RX8"].handle.write("playbuflen",
                                          self.devices["RX8"].setting.sampling_freq*self.setting.trial_duration,
                                          procs=self.devices["RX8"].handle.procs)
+        self.load_speakers()
+        self.load_signals()
 
     def _start(self, **kwargs):
         pass
@@ -96,7 +94,6 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.devices["RP2"].get_response()
         reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         self._tosave_para["reaction_time"] = reaction_time
-
         # self.response = self.devices["RP2"].get_response()
         self.devices["RX8"].pause()
         self.process_event({'trial_stop': 0})
@@ -118,7 +115,12 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         filepath = os.path.join(basedir, filename)
         spk_array = SpeakerArray(file=filepath)
         spk_array.load_speaker_table()
-        speakers = spk_array.pick_speakers([x for x in range(20, 27)])
+        if plane == "v":
+            speakers = spk_array.pick_speakers([x for x in range(20, 27)])
+        if plane == "h":
+            speakers = spk_array.pick_speakers([2, 8, 15, 23, 31, 38, 44])
+        else:
+            log.warning("Wrong plane, must be v or h")
         self.speakers = speakers
 
     def pick_speakers_this_trial(self, n_speakers):
@@ -137,7 +139,6 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         azi 0°, then acquires the headpose and uses it as the offset. Turns the led off afterwards.
         """
         log.warning("Calibrating camera")
-        led = self.speakers[3]  # central speaker
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
@@ -153,7 +154,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                 log.warning("Calibration unsuccessful, make sure markers can be detected by cameras!")
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=0,
-                                         procs=f"{led.TDT_digital}{led.TDT_idx_digital}")  # turn off LED
+                                         procs=f"RX81")  # turn off LED
         self.devices["ArUcoCam"].calibrated = True
         if report:
             log.warning(f"Camera offset: {offset}")
