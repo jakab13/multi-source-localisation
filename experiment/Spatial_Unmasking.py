@@ -19,7 +19,7 @@ import datetime
 
 log = logging.getLogger(__name__)
 config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "spatmask_config.txt"))
-plane = "v"
+
 
 # TODO: check out threading module
 # TODO: clear camera buffer every once in a while
@@ -29,7 +29,7 @@ class SpatialUnmaskingSetting(ExperimentSetting):
 
     experiment_name = Str('SpatMask', group='status', dsec='name of the experiment', noshow=True)
     n_conditions = Int(config.n_conditions, group="status", dsec="Number of masker speaker positions in the experiment")
-    trial_number = Int(10000000, group='primary', dsec='Number of trials in each condition', reinit=False)
+    trial_number = Int(10000000, group='status', dsec='Number of trials in each condition')
     trial_duration = Float(config.trial_duration, group='status', dsec='Duration of one trial, (s)')
 
 
@@ -47,7 +47,8 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     target_speaker = Any()
     selected_target_sounds = List()
     masker_speaker = Any()
-    masker_sound = slab.Sound.pinknoise(duration=setting.trial_duration)
+    masker_sound = slab.Sound.pinknoise(duration=setting.trial_duration)  # must be babble noise
+    plane = Str("v")
 
     def _initialize(self, **kwargs):
         self.devices["RP2"] = RP2Device()
@@ -56,8 +57,6 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.devices["RX8"].handle.write("playbuflen",
                                          self.devices["RX8"].setting.sampling_freq*self.setting.trial_duration,
                                          procs=self.devices["RX8"].handle.procs)
-        self.load_speakers()
-        self.load_signals()
 
     def _start(self, **kwargs):
         pass
@@ -69,8 +68,10 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         pass
 
     def setup_experiment(self, info=None):
+        self.load_speakers()
+        self.load_signals()
         talker = random.randint(1, 108)
-        self.masker_speaker = Any()
+        # self.masker_speaker = Any()
         self.selected_target_sounds = self.signals[talker * 5:(talker + 1) * 5]  # select numbers 1-9 for one talker
         self._tosave_para["sequence"] = self.sequence
         self._tosave_para["talker"] = talker
@@ -81,9 +82,10 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                                      n_reversals=config.n_reversals,
                                      step_sizes=config.step_sizes)
         self._tosave_para["stairs"] = self.stairs
+        # self.sequence.__next__()
 
     def _prepare_trial(self):
-        if not self.sequence.n_remaining:
+        if self.sequence.finished:  # check if sequence is finished
             log.warning("Sequence finished!")
             self.change_state(complete=True)
             self.stop()
@@ -92,9 +94,14 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                 self.stairs = slab.Staircase(start_val=config.start_val,
                                              n_reversals=config.n_reversals,
                                              step_sizes=config.step_sizes)
-                self.sequence.__next__()
-        self.masker_speaker = self.speakers[self.sequence.this_n]
-        self._tosave_para["masker_speaker"] = self.masker_speaker
+                try:
+                    self.sequence.__next__()
+                except:
+                    log.warning("Sequence finished!")
+                    self.change_state(complete=True)
+                    self.stop()
+            self.masker_speaker = self.speakers[self.sequence.this_n]
+            self._tosave_para["masker_speaker"] = self.masker_speaker
 
     def _start_trial(self):
         self.time_0 = time.time()  # starting time of the trial
@@ -122,22 +129,20 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.devices["RX8"].start()
         self.devices["RX8"].pause()
         self.devices["RP2"].wait_for_button()
+        response = self.devices["RP2"].get_response()
         reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         self._tosave_para["reaction_time"] = reaction_time
-        response = self.devices["RP2"].get_response()
-        print(response)
-        self.devices["RP2"]._output_specs["response"] = response
+        print(f"response: {response}")
         # self.stairs.add_response(response)
-        solution_converter = {"5": 0,
-                              "4": 1,
-                              "2": 4,
+        solution_converter = {"0": 5,
+                              "1": 4,
+                              "2": 1,
                               "3": 3,
-                              "1": 2,
-                              "0": 5
+                              "4": 2,
                               }
         solution = solution_converter[str(target_sound_i)]
-        print(solution)
-        self._tosave_para["solution"] = self.sequence.this_trial
+        print(f"solution: {solution}")
+        self._tosave_para["solution"] = solution
         self.stairs.add_response(1) if response == solution else self.stairs.add_response(0)
         self.stairs.plot()
         self.process_event({'trial_stop': 0})  # stops the trial
@@ -159,12 +164,13 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         filepath = os.path.join(basedir, filename)
         spk_array = SpeakerArray(file=filepath)
         spk_array.load_speaker_table()
-        if plane == "v":
-            speakers = spk_array.pick_speakers([x for x in range(20, 27)])
-        if plane == "h":
-            speakers = spk_array.pick_speakers([2, 8, 15, 23, 31, 38, 44])
+        if self.plane == "v":
+            speakers = spk_array.pick_speakers([x for x in range(20, 27) if x != 23])
+        elif self.plane == "h":
+            speakers = spk_array.pick_speakers([2, 8, 15, 31, 38, 44])
         else:
-            log.warning("Wrong plane, must be v or h")
+            log.warning("Wrong plane, must be v or h. Unable to load speakers!")
+            speakers = [None]
         self.speakers = speakers
         self.target_speaker = spk_array.pick_speakers(23)[0]
 
@@ -180,7 +186,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         log.warning('Point towards led and press button to start calibration')
         self.devices["RP2"].wait_for_button()  # start calibration after button press
         self.devices["ArUcoCam"].start()
-        offset = self.devices["ArUcoCam"].get_pose()
+        offset = self.devices["ArUcoCam"]._output_specs["pose"]
         self.devices["ArUcoCam"].offset = offset
         self.devices["ArUcoCam"].pause()
         for i, v in enumerate(self.devices["ArUcoCam"].offset):  # check for NoneType in offset
@@ -197,7 +203,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
 
     def check_headpose(self):
         while True:
-            self.devices["ArUcoCam"].configure()
+            #self.devices["ArUcoCam"].configure()
             self.devices["ArUcoCam"].start()
             self.devices["ArUcoCam"].pause()
             try:
@@ -216,21 +222,23 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                 log.warning("Cannot detect markers, make sure cameras are set up correctly and arucomarkers can be detected.")
                 continue
 
+    @classmethod
+    def set_plane(cls, plane):
+        cls.plane = plane
+
 
 if __name__ == "__main__":
-
     log = logging.getLogger()
-    log.setLevel(logging.WARNING)
+    log.setLevel(logging.DEBUG)
     # create console handler and set level to debug
     ch = logging.StreamHandler()
-    ch.setLevel(logging.WARNING)
+    ch.setLevel(logging.DEBUG)
     # create formatter
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # add formatter to ch
     ch.setFormatter(formatter)
     # add ch to logger
     log.addHandler(ch)
-
     # Create subject
     try:
         subject = Subject(name="Foo",
