@@ -17,7 +17,6 @@ import datetime
 
 log = logging.getLogger(__name__)
 config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "locaaccu_config.txt"))
-plane = "v"
 
 
 class LocalizationAccuracySetting(ExperimentSetting):
@@ -44,6 +43,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
     warning_tone = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "warning\\warning_tone.wav"))
     pose = List()
     error = List()
+    plane = Str("v")
 
     def _initialize(self, **kwargs):
         self.devices["RP2"] = RP2Device()
@@ -52,7 +52,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         self.devices["RX8"].handle.write("playbuflen",
                                          self.devices["RX8"].setting.sampling_freq*self.setting.trial_duration,
                                          procs=self.devices["RX8"].handle.procs)
-        self.load_speakers()
+        self.load_speakers(plane=self.plane)
         self.load_signal()
 
     def _start(self, **kwargs):
@@ -108,17 +108,18 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         self.signal = slab.Sound.pinknoise(duration=self.setting.trial_duration,
                                            samplerate=self.devices["RX8"].setting.sampling_freq)
 
-    def load_speakers(self, filename="dome_speakers.txt"):
+    def load_speakers(self, plane, filename="dome_speakers.txt"):
         basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
         filepath = os.path.join(basedir, filename)
         spk_array = SpeakerArray(file=filepath)
         spk_array.load_speaker_table()
         if plane == "v":
             speakers = spk_array.pick_speakers([x for x in range(20, 27)])
-        if plane == "h":
-            speakers = spk_array.pick_speakers([2, 8, 15, 23, 31, 38, 44])
+        elif plane == "h":
+            speakers = spk_array.pick_speakers([2, 8, 15, 31, 38, 44])
         else:
-            log.warning("Wrong plane, must be v or h")
+            log.warning("Wrong plane, must be v or h. Unable to load speakers!")
+            speakers = [None]
         self.all_speakers = speakers
 
     def pick_speaker_this_trial(self, speaker_id):
@@ -137,7 +138,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         log.warning('Point towards led and press button to start calibration')
         self.devices["RP2"].wait_for_button()  # start calibration after button press
         self.devices["ArUcoCam"].start()
-        offset = self.devices["ArUcoCam"].get_pose()
+        offset = self.devices["ArUcoCam"]._output_specs["pose"]
         self.devices["ArUcoCam"].offset = offset
         self.devices["ArUcoCam"].pause()
         for i, v in enumerate(self.devices["ArUcoCam"].offset):  # check for NoneType in offset
@@ -154,7 +155,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
 
     def check_headpose(self):
         while True:
-            # self.devices["ArUcoCam"].configure()
+            #self.devices["ArUcoCam"].configure()
             self.devices["ArUcoCam"].start()
             self.devices["ArUcoCam"].pause()
             try:
@@ -173,6 +174,9 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
                 log.warning("Cannot detect markers, make sure cameras are set up correctly and arucomarkers can be detected.")
                 continue
 
+    @classmethod
+    def set_plane(cls, plane):
+        cls.plane = plane
 
 if __name__ == "__main__":
 
