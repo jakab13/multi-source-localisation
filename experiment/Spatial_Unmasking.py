@@ -222,10 +222,6 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                 log.warning("Cannot detect markers, make sure cameras are set up correctly and arucomarkers can be detected.")
                 continue
 
-    @classmethod
-    def set_plane(cls, plane):
-        cls.plane = plane
-
 
 if __name__ == "__main__":
     log = logging.getLogger()
