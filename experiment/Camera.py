@@ -79,8 +79,14 @@ class ArUcoCam(Device):
         Runs the device and sets the state to "running". Here lie all the important steps the camera has to do in each
         trial, such as acquiring and writing the head pose.
         """
-        for c in self.cams:
-            c.start()  # start recording images into the camera buffer
+        try:
+            for c in self.cams:
+                c.start()  # start recording images into the camera buffer
+        except:
+            self.cams = [Camera(index=0), Camera(index=1)]
+            for c in self.cams:
+                c.init()
+                c.start()  # start recording images into the camera buffer
         if self.calibrated:
             pose = self.get_pose()  # Get image as numpy array
             for i, coord in enumerate(pose):
