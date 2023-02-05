@@ -6,10 +6,8 @@ from experiment.Numerosity_Judgement import NumerosityJudgementExperiment
 from experiment.Spatial_Unmasking import SpatialUnmaskingExperiment
 from experiment.Localization_Accuracy import LocalizationAccuracyExperiment
 
-import experiment
 
-
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 log.setLevel(logging.WARNING)
 # create console handler and set level to debug
 ch = logging.StreamHandler()
@@ -30,9 +28,9 @@ def setup_experiment():
     cohort = input("Pilot or Test cohort? Insert p or t").lower()
     experimenter = input("Enter your name: ").lower()
 
-    experiment.Numerosity_Judgement.plane = group
-    experiment.Spatial_Unmasking.plane = group
-    experiment.Localization_Accuracy.plane = group
+    #NumerosityJudgementExperiment.set_plane(plane=group)
+    #SpatialUnmaskingExperiment.set_plane(plane=group)
+    #LocalizationAccuracyExperiment.set_plane(plane=group)
 
     try:
         subject = Subject(name=f"sub{subject}",
@@ -50,13 +48,16 @@ def setup_experiment():
         subject.data_path = os.path.join(get_config("DATA_ROOT"), f"sub{subject}.h5")
 
     if exp_type == "su":
-        exp = SpatialUnmaskingExperiment(subject=subject, experimenter=experimenter)
+        exp = SpatialUnmaskingExperiment(subject=subject, experimenter=experimenter, plane=group)
+        exp.plane = group
         return exp
     elif exp_type == "nm":
         exp = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
+        exp.plane = group
         return exp
     elif exp_type == "la":
         exp = LocalizationAccuracyExperiment(subject=subject, experimenter=experimenter)
+        exp.plane = group
         return exp
     else:
         log.warning("Paradigm not found, aborting ...")
@@ -64,6 +65,6 @@ def setup_experiment():
 
 def run_experiment(experiment, n_blocks):
     for _ in range(n_blocks):
-        input("Press any key to start experiment")
+        #input("Enter any key to start experiment")
         experiment.start()
 
