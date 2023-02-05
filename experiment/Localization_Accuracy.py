@@ -41,6 +41,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
     target = Any()
     signal = Any()
     warning_tone = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "warning\\warning_tone.wav"))
+    warning_tone = warning_tone.trim(0.0, 0.225)
     pose = List()
     error = List()
     plane = Str("v")
@@ -52,8 +53,6 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         self.devices["RX8"].handle.write("playbuflen",
                                          self.devices["RX8"].setting.sampling_freq*self.setting.trial_duration,
                                          procs=self.devices["RX8"].handle.procs)
-        self.load_speakers(plane=self.plane)
-        self.load_signal()
 
     def _start(self, **kwargs):
         pass
@@ -69,12 +68,15 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
+        self.load_speakers()
+        self.load_signal()
 
     def _prepare_trial(self):
         self.check_headpose()
         self.sequence.__next__()
-        self._tosave_para["solution"] = self.sequence.this_trial
-        self.pick_speaker_this_trial(speaker_id=self.sequence.this_trial-1)
+        solution = self.sequence.this_trial - 1
+        self._tosave_para["solution"] = solution
+        self.pick_speaker_this_trial(speaker_id=solution)
         self.devices["RX8"].handle.write(tag=f"data0",
                                          value=self.signal.data.flatten(),
                                          procs=f"{self.target.TDT_analog}{self.target.TDT_idx_analog}")
@@ -87,15 +89,16 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         log.warning('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         self.devices["RX8"].start()
         self.devices["RP2"].wait_for_button()
+        reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         self.devices["ArUcoCam"].start()
         self.pose = self.devices["ArUcoCam"]._output_specs["pose"]
         self.error.append(self.pose)
-        reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         self._tosave_para["reaction_time"] = reaction_time
         self.devices["ArUcoCam"].pause()
         self.devices["RX8"].pause()
         self.devices["RP2"].wait_for_button()
-        self.check_headpose()
+        time.sleep(0.2)
+        # self.check_headpose()
         self.process_event({'trial_stop': 0})
 
     def _stop_trial(self):
@@ -105,18 +108,21 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         log.warning('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
 
     def load_signal(self):
-        self.signal = slab.Sound.pinknoise(duration=self.setting.trial_duration,
-                                           samplerate=self.devices["RX8"].setting.sampling_freq)
+        noise = slab.Sound.pinknoise(duration=0.025, level=90, samplerate=self.devices["RX8"].setting.sampling_freq)
+        noise = noise.ramp(when='both', duration=0.01)
+        silence = slab.Sound.silence(duration=0.025, samplerate=self.devices["RX8"].setting.sampling_freq)
+        self.signal = slab.Sound.sequence(noise, silence, noise, silence, noise,
+                                          silence, noise, silence, noise)
 
-    def load_speakers(self, plane, filename="dome_speakers.txt"):
+    def load_speakers(self, filename="dome_speakers.txt"):
         basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
         filepath = os.path.join(basedir, filename)
         spk_array = SpeakerArray(file=filepath)
         spk_array.load_speaker_table()
-        if plane == "v":
+        if self.plane == "v":
             speakers = spk_array.pick_speakers([x for x in range(20, 27)])
-        elif plane == "h":
-            speakers = spk_array.pick_speakers([2, 8, 15, 31, 38, 44])
+        elif self.plane == "h":
+            speakers = spk_array.pick_speakers([2, 8, 15, 23, 31, 38, 44])
         else:
             log.warning("Wrong plane, must be v or h. Unable to load speakers!")
             speakers = [None]
@@ -159,24 +165,22 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
             self.devices["ArUcoCam"].start()
             self.devices["ArUcoCam"].pause()
             try:
-                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 10:
+                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 20:
                     log.warning("Subject is not looking straight ahead")
-                    for idx in range(1, 5):  # clear all speakers before loading warning tone
+                    for idx in range(5):  # clear all speakers before loading warning tone
                         self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
                         self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
                     self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
                     self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
                     self.devices["RX8"].start()
                     self.devices["RX8"].pause()
+                    self.devices["RX8"].handle.write("data0", 0, procs="RX81")
                 else:
                     break
             except TypeError:
                 log.warning("Cannot detect markers, make sure cameras are set up correctly and arucomarkers can be detected.")
                 continue
 
-    @classmethod
-    def set_plane(cls, plane):
-        cls.plane = plane
 
 if __name__ == "__main__":
 

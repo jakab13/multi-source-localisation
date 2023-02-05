@@ -129,7 +129,7 @@ def concatenate(sounds, n_concatenate=5):
 
 
 if __name__ == "__main__":
-    DIR = pathlib.Path("C:\labplatform\sound_files\\tts-numbers")
+    DIR = pathlib.Path("C:\labplatform\sound_files\\babble-numbers_resamp_24414")
     sounds_data = load(DIR)
     # pattern = "p227"
     # talker_files = pick_talker(data=sounds_data, pattern=pattern, DIR=DIR)

@@ -19,6 +19,7 @@ import datetime
 
 log = logging.getLogger(__name__)
 config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "spatmask_config.txt"))
+slab.set_default_samplerate(24414)
 
 
 # TODO: check out threading module
@@ -47,8 +48,10 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     target_speaker = Any()
     selected_target_sounds = List()
     masker_speaker = Any()
-    masker_sound = slab.Sound.pinknoise(duration=setting.trial_duration)  # must be babble noise
+    maskers = List()
     plane = Str("v")
+    masker_sound = Any()  # slab.Sound.pinknoise(duration=setting.trial_duration,
+                                        # samplerate=24414)
 
     def _initialize(self, **kwargs):
         self.devices["RP2"] = RP2Device()
@@ -70,6 +73,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     def setup_experiment(self, info=None):
         self.load_speakers()
         self.load_signals()
+        self.load_maskers()
         talker = random.randint(1, 108)
         # self.masker_speaker = Any()
         self.selected_target_sounds = self.signals[talker * 5:(talker + 1) * 5]  # select numbers 1-9 for one talker
@@ -101,6 +105,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                     self.change_state(complete=True)
                     self.stop()
             self.masker_speaker = self.speakers[self.sequence.this_n]
+            self.masker_sound = random.choice(self.maskers)
             self._tosave_para["masker_speaker"] = self.masker_speaker
 
     def _start_trial(self):
@@ -120,8 +125,10 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.devices["RX8"].handle.write("chan1",
                                          self.masker_speaker.channel_analog,
                                          f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
+        self.masker_sound.data = self.masker_sound.data[:12207]
+        self.masker_sound.data = self.masker_sound.data[::-1]
         self.devices["RX8"].handle.write("data1",
-                                         self.masker_sound.data.flatten(),
+                                         self.masker_sound.data[:, 0].flatten(),
                                          f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
         log.warning('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         # simulate response
@@ -158,6 +165,12 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         sound_fp = pathlib.Path(os.path.join(sound_root, target_sounds_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
         self.signals = sound_list
+
+    def load_maskers(self, sound_type="babble-numbers_resamp_24414"):
+        sound_root = get_config(setting="SOUND_ROOT")
+        sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
+        sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
+        self.maskers = sound_list
 
     def load_speakers(self, filename="dome_speakers.txt"):
         basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
@@ -209,7 +222,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             try:
                 if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 10:
                     log.warning("Subject is not looking straight ahead")
-                    for idx in range(1, 5):  # clear all speakers before loading warning tone
+                    for idx in range(5):  # clear all speakers before loading warning tone
                         self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
                         self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
                     self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
