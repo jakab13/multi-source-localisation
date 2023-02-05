@@ -19,8 +19,9 @@ import datetime
 
 log = logging.getLogger(__name__)
 config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "numjudge_config.txt"))
-plane = "v"
 
+#TODO: I think the experiment skips the last trial
+#TODO: Do I need to clear data buffer after each trial?
 
 class NumerosityJudgementSetting(ExperimentSetting):
 
@@ -45,6 +46,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     speakers = List()
     signals = List()
     warning_tone = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "warning\\warning_tone.wav"))
+    plane = Str("v")
     # response = Int()
 
     def _initialize(self, **kwargs):
@@ -54,8 +56,6 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.devices["RX8"].handle.write("playbuflen",
                                          self.devices["RX8"].setting.sampling_freq*self.setting.trial_duration,
                                          procs=self.devices["RX8"].handle.procs)
-        self.load_speakers()
-        self.load_signals()
 
     def _start(self, **kwargs):
         pass
@@ -71,6 +71,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
+        self.load_speakers()
+        self.load_signals()
 
     def _prepare_trial(self):
         self.check_headpose()
@@ -100,6 +102,10 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def _stop_trial(self):
         is_correct = True if self.sequence.this_trial / self._devices_output_params()["RP2"]["response"] == 1 else False
+        for data_idx in range(5):
+            self.devices["RX8"].handle.write(tag=f"data{data_idx}",
+                                             value=0,
+                                             procs=["RX81", "RX82"])
         self._tosave_para["is_correct"] = is_correct
         self.data.save()
         log.warning('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
@@ -115,12 +121,13 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         filepath = os.path.join(basedir, filename)
         spk_array = SpeakerArray(file=filepath)
         spk_array.load_speaker_table()
-        if plane == "v":
+        if self.plane == "v":
             speakers = spk_array.pick_speakers([x for x in range(20, 27)])
-        if plane == "h":
+        elif self.plane == "h":
             speakers = spk_array.pick_speakers([2, 8, 15, 23, 31, 38, 44])
         else:
-            log.warning("Wrong plane, must be v or h")
+            log.warning("Wrong plane, must be v or h. Unable to load speakers!")
+            speakers = [None]
         self.speakers = speakers
 
     def pick_speakers_this_trial(self, n_speakers):
@@ -145,7 +152,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         log.warning('Point towards led and press button to start calibration')
         self.devices["RP2"].wait_for_button()  # start calibration after button press
         self.devices["ArUcoCam"].start()
-        offset = self.devices["ArUcoCam"].get_pose()
+        offset = self.devices["ArUcoCam"]._output_specs["pose"]
         self.devices["ArUcoCam"].offset = offset
         self.devices["ArUcoCam"].pause()
         for i, v in enumerate(self.devices["ArUcoCam"].offset):  # check for NoneType in offset
@@ -162,7 +169,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def check_headpose(self):
         while True:
-            self.devices["ArUcoCam"].configure()
+            #self.devices["ArUcoCam"].configure()
             self.devices["ArUcoCam"].start()
             self.devices["ArUcoCam"].pause()
             try:
@@ -185,10 +192,10 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 if __name__ == "__main__":
 
     log = logging.getLogger()
-    log.setLevel(logging.DEBUG)
+    log.setLevel(logging.WARNING)
     # create console handler and set level to debug
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(logging.WARNING)
     # create formatter
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # add formatter to ch
