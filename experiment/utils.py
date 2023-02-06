@@ -5,6 +5,8 @@ import logging
 from experiment.Numerosity_Judgement import NumerosityJudgementExperiment
 from experiment.Spatial_Unmasking import SpatialUnmaskingExperiment
 from experiment.Localization_Accuracy import LocalizationAccuracyExperiment
+from experiment.exp_examples import LocalizationAccuracyExperiment_exmp, SpatialUnmaskingExperiment_exmp, \
+    NumerosityJudgementExperiment_exmp
 
 
 log = logging.getLogger(__name__)
@@ -27,10 +29,7 @@ def setup_experiment():
     sex = input("m or f? ").upper()
     cohort = input("Pilot or Test cohort? Insert p or t").lower()
     experimenter = input("Enter your name: ").lower()
-
-    #NumerosityJudgementExperiment.set_plane(plane=group)
-    #SpatialUnmaskingExperiment.set_plane(plane=group)
-    #LocalizationAccuracyExperiment.set_plane(plane=group)
+    is_example = input("Example? y or n").lower()
 
     try:
         subject = Subject(name=f"sub{subject}",
@@ -47,20 +46,37 @@ def setup_experiment():
         subject = sl.subjects[0]
         subject.data_path = os.path.join(get_config("DATA_ROOT"), f"sub{subject}.h5")
 
-    if exp_type == "su":
-        exp = SpatialUnmaskingExperiment(subject=subject, experimenter=experimenter, plane=group)
-        exp.plane = group
-        return exp
-    elif exp_type == "nm":
-        exp = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
-        exp.plane = group
-        return exp
-    elif exp_type == "la":
-        exp = LocalizationAccuracyExperiment(subject=subject, experimenter=experimenter)
-        exp.plane = group
-        return exp
-    else:
-        log.warning("Paradigm not found, aborting ...")
+    if is_example == "n":
+        if exp_type == "su":
+            exp = SpatialUnmaskingExperiment(subject=subject, experimenter=experimenter, plane=group)
+            exp.plane = group
+            return exp
+        elif exp_type == "nm":
+            exp = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
+            exp.plane = group
+            return exp
+        elif exp_type == "la":
+            exp = LocalizationAccuracyExperiment(subject=subject, experimenter=experimenter)
+            exp.plane = group
+            return exp
+        else:
+            log.warning("Paradigm not found, aborting ...")
+
+    elif is_example == "n":
+        if exp_type == "su":
+            exp = SpatialUnmaskingExperiment_exmp(subject=subject, experimenter=experimenter, plane=group)
+            exp.plane = group
+            return exp
+        elif exp_type == "nm":
+            exp = NumerosityJudgementExperiment_exmp(subject=subject, experimenter=experimenter)
+            exp.plane = group
+            return exp
+        elif exp_type == "la":
+            exp = LocalizationAccuracyExperiment_exmp(subject=subject, experimenter=experimenter)
+            exp.plane = group
+            return exp
+        else:
+            log.warning("Paradigm not found, aborting ...")
 
 
 def run_experiment(experiment, n_blocks):
