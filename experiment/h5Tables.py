@@ -13,7 +13,7 @@ about how the HDF5 data structure is represented in Python.  PyTables has a
 really nice API (application programming interface) that we can use to access
 the nodes stored in the file.  First, open a handle to the file::
 
-    fh = tables.openFile('filename', 'r')
+    fh = tables.open_file('filename', 'r')
 
 The top-level node can be accessed via an attribute called root::
 
