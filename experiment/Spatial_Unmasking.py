@@ -50,8 +50,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     masker_speaker = Any()
     maskers = List()
     plane = Str("v")
-    masker_sound = Any()  # slab.Sound.pinknoise(duration=setting.trial_duration,
-                                        # samplerate=24414)
+    masker_sound = Any()  # slab.Sound.pinknoise(duration=setting.trial_duration, samplerate=24414)
 
     def _initialize(self, **kwargs):
         self.devices["RP2"] = RP2Device()
@@ -125,8 +124,6 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.devices["RX8"].handle.write("chan1",
                                          self.masker_speaker.channel_analog,
                                          f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
-        self.masker_sound.data = self.masker_sound.data[:12207]
-        self.masker_sound.data = self.masker_sound.data[::-1]
         self.devices["RX8"].handle.write("data1",
                                          self.masker_sound.data[:, 0].flatten(),
                                          f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
@@ -166,7 +163,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
         self.signals = sound_list
 
-    def load_maskers(self, sound_type="babble-numbers_resamp_24414"):
+    def load_maskers(self, sound_type="babble-numbers-reversed-shifted_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
