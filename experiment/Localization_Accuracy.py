@@ -43,7 +43,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
     warning_tone = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "warning\\warning_tone.wav"))
     warning_tone = warning_tone.trim(0.0, 0.225)
     pose = List()
-    error = List()
+    error = np.array([])
     plane = Str("v")
 
     def _initialize(self, **kwargs):
@@ -91,8 +91,9 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         self.devices["RP2"].wait_for_button()
         reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         self.devices["ArUcoCam"].start()
-        self.pose = self.devices["ArUcoCam"]._output_specs["pose"]
-        self.error.append(self.pose)
+        self.pose = np.array(self.devices["ArUcoCam"]._output_specs["pose"])
+        actual = np.array([self.target.azimuth, self.target.elevation])
+        self.error = np.append(self.error, np.abs(actual-self.pose))
         self._tosave_para["reaction_time"] = reaction_time
         self.devices["ArUcoCam"].pause()
         self.devices["RX8"].pause()
