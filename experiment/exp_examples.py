@@ -397,7 +397,7 @@ class LocalizationAccuracySetting_exmp(ExperimentSetting):
 
     experiment_name = Str("LocaAccuExample", group='status', dsec='name of the experiment', noshow=True)
     conditions = Int(7, group="status", dsec="Number of total speakers")
-    trial_number = Int(5, group='status', dsec='Number of trials in each condition')
+    trial_number = Int(3, group='status', dsec='Number of trials in each condition')
     trial_duration = Float(1.0, group='status', dsec='Duration of each trial, (s)')
 
     def _get_total_trial(self):
@@ -416,8 +416,8 @@ class LocalizationAccuracyExperiment_exmp(ExperimentLogic):
     signal = Any()
     warning_tone = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "warning\\warning_tone.wav"))
     warning_tone = warning_tone.trim(0.0, 0.225)
-    pose = List()
-    error = np.array([])
+    pose = Any()
+    #error = np.array([])
     plane = Str("v")
 
     def _initialize(self, **kwargs):
@@ -466,8 +466,8 @@ class LocalizationAccuracyExperiment_exmp(ExperimentLogic):
         reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         self.devices["ArUcoCam"].start()
         self.pose = np.array(self.devices["ArUcoCam"]._output_specs["pose"])
-        actual = np.array([self.target.azimuth, self.target.elevation])
-        self.error = np.append(self.error, np.abs(actual-self.pose))
+        #actual = np.array([self.target.azimuth, self.target.elevation])
+        #self.error = np.append(self.error, np.abs(actual-self.pose))
         self._tosave_para["reaction_time"] = reaction_time
         self.devices["ArUcoCam"].pause()
         self.devices["RX8"].pause()
@@ -477,8 +477,8 @@ class LocalizationAccuracyExperiment_exmp(ExperimentLogic):
         self.process_event({'trial_stop': 0})
 
     def _stop_trial(self):
-        accuracy = np.abs(np.subtract([self.target.azimuth, self.target.elevation], self.pose))
-        log.warning(f"Accuracy azi: {accuracy[0]}, ele: {accuracy[1]}")
+        #accuracy = np.abs(np.subtract([self.target.azimuth, self.target.elevation], self.pose))
+        #log.warning(f"Accuracy azi: {accuracy[0]}, ele: {accuracy[1]}")
         self.data.save()
         log.warning('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
 
