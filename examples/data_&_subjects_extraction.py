@@ -10,7 +10,7 @@ from labplatform.core.Subject import load_cohort
 
 # get absolute filepath to cohort files
 data_root = get_config("DATA_ROOT")
-fp = os.path.join(data_root, "p_v_Human_subjulia")
+fp = os.path.join(data_root, "Foo_Test", "FooExp_Pilot_Human_Foo")
 files = glob(os.path.join(fp, '*.h5'))
 filters = (('_v_name', 'trial_log'), ('<+nyu_id', lambda id: id != 0))
 fields = (('<+identifier', 'id'), ('<+sex', 'sex'))
