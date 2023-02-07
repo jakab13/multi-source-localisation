@@ -31,7 +31,7 @@ class SpatialUnmaskingSetting(ExperimentSetting):
     experiment_name = Str('SpatMask', group='status', dsec='name of the experiment', noshow=True)
     n_conditions = Int(config.n_conditions, group="status", dsec="Number of masker speaker positions in the experiment")
     trial_number = Int(10000000, group='status', dsec='Number of trials in each condition')
-    trial_duration = Float(config.trial_duration, group='status', dsec='Duration of one trial, (s)')
+    stim_duration = Float(config.trial_duration, group='status', dsec='Duration of one trial, (s)')
 
 
 class SpatialUnmaskingExperiment(ExperimentLogic):
@@ -57,7 +57,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.devices["RX8"] = RX8Device()
         self.devices["ArUcoCam"] = ArUcoCam()
         self.devices["RX8"].handle.write("playbuflen",
-                                         self.devices["RX8"].setting.sampling_freq*self.setting.trial_duration,
+                                         self.devices["RX8"].setting.sampling_freq*self.setting.stim_duration,
                                          procs=self.devices["RX8"].handle.procs)
 
     def _start(self, **kwargs):
@@ -67,6 +67,9 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         pass
 
     def _stop(self, **kwargs):
+        self.devices["RX8"].handle.write(tag='bitmask',
+                                         value=0,
+                                         procs=f"RX81")  # turn off LED
         pass
 
     def setup_experiment(self, info=None):
@@ -131,12 +134,14 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         # simulate response
         # response = self.stairs.simulate_response(threshold=60)
         self.devices["RX8"].start()
-        self.devices["RX8"].pause()
+        # self.devices["RX8"].pause()
+        # self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
+        # self.devices["RX8"].wait_to_finish_playing()
         self.devices["RP2"].wait_for_button()
         response = self.devices["RP2"].get_response()
         reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         self._tosave_para["reaction_time"] = reaction_time
-        print(f"response: {response}")
+        log.warning(f"response: {response}")
         # self.stairs.add_response(response)
         solution_converter = {"0": 5,
                               "1": 4,
@@ -145,7 +150,9 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                               "4": 2,
                               }
         solution = solution_converter[str(target_sound_i)]
-        print(f"solution: {solution}")
+        log.warning(f"solution: {solution}")
+        is_correct = True if response == solution else False
+        self._tosave_para["is_correct"] = is_correct
         self._tosave_para["solution"] = solution
         self.stairs.add_response(1) if response == solution else self.stairs.add_response(0)
         self.stairs.plot()
@@ -195,10 +202,10 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                                          procs="RX81")  # illuminate central speaker LED
         log.warning('Point towards led and press button to start calibration')
         self.devices["RP2"].wait_for_button()  # start calibration after button press
-        self.devices["ArUcoCam"].start()
+        self.devices["ArUcoCam"].run()
         offset = self.devices["ArUcoCam"]._output_specs["pose"]
         self.devices["ArUcoCam"].offset = offset
-        self.devices["ArUcoCam"].pause()
+        # self.devices["ArUcoCam"].pause()
         for i, v in enumerate(self.devices["ArUcoCam"].offset):  # check for NoneType in offset
             if v is None:
                 self.devices["ArUcoCam"].offset[i] = 0
@@ -214,8 +221,8 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     def check_headpose(self):
         while True:
             #self.devices["ArUcoCam"].configure()
-            self.devices["ArUcoCam"].start()
-            self.devices["ArUcoCam"].pause()
+            self.devices["ArUcoCam"].run()
+            # self.devices["ArUcoCam"].pause()
             try:
                 if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 10:
                     log.warning("Subject is not looking straight ahead")
@@ -224,8 +231,10 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                         self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
                     self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
                     self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
-                    self.devices["RX8"].start()
-                    self.devices["RX8"].pause()
+                    # self.devices["RX8"].start()
+                    self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
+                    self.devices["RX8"].wait_to_finish_playing()
+                    # self.devices["RX8"].pause()
                 else:
                     break
             except TypeError:
