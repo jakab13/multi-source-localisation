@@ -5,6 +5,8 @@ from experiment.h5Tables import *
 from glob import glob
 from labplatform.core import Subject
 from labplatform.core.Subject import load_cohort
+import pandas as pd
+import numpy as np
 
 # TODO: ask chao about subject and data modules
 
@@ -15,6 +17,8 @@ files = glob(os.path.join(fp, '*.h5'))
 filters = (('_v_name', 'trial_log'), ('<+nyu_id', lambda id: id != 0))
 fields = (('<+identifier', 'id'), ('<+sex', 'sex'))
 data = extract_data(files, filters, fields)
+h5py = File(files[0])
+df = pd.DataFrame(np.array(File(files[0])))
 
 # define filters and fields for h5Tables.extract files
 # filters = (('_v_name', 'trial_log'), ('<+nyu_id', lambda id: id != 0))
