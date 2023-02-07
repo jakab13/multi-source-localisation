@@ -62,7 +62,7 @@ def setup_experiment():
         else:
             log.warning("Paradigm not found, aborting ...")
 
-    elif is_example == "n":
+    elif is_example == "y":
         if exp_type == "su":
             exp = SpatialUnmaskingExperiment_exmp(subject=subject, experimenter=experimenter, plane=group)
             exp.plane = group
