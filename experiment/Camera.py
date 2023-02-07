@@ -79,6 +79,32 @@ class ArUcoCam(Device):
         Runs the device and sets the state to "running". Here lie all the important steps the camera has to do in each
         trial, such as acquiring and writing the head pose.
         """
+        pass
+
+    def _pause(self, **kwargs):
+        """
+        Pauses the camera and sets the state to "paused".
+        """
+        pass
+
+    def _stop(self):
+        """
+        Closes the camera and cleans up and sets the state to "stopped".
+        """
+        for c in self.cams:
+            c.close()
+
+    def snapshot(self, cmap="gray"):
+        """
+        Args:
+            cmap: matplotlib colormap
+        """
+        for c in self.cams:
+            image = c.get_array()  # get image as np array
+            plt.imshow(image, cmap=cmap)  # show image
+            plt.show()
+
+    def run(self):
         try:
             for c in self.cams:
                 c.start()  # start recording images into the camera buffer
@@ -101,30 +127,8 @@ class ArUcoCam(Device):
             log.info("Acquired pose!")
         else:
             self._output_specs["pose"] = self.get_pose()
-
-    def _pause(self, **kwargs):
-        """
-        Pauses the camera and sets the state to "paused".
-        """
         for c in self.cams:
             c.stop()
-
-    def _stop(self):
-        """
-        Closes the camera and cleans up and sets the state to "stopped".
-        """
-        for c in self.cams:
-            c.close()
-
-    def snapshot(self, cmap="gray"):
-        """
-        Args:
-            cmap: matplotlib colormap
-        """
-        for c in self.cams:
-            image = c.get_array()  # get image as np array
-            plt.imshow(image, cmap=cmap)  # show image
-            plt.show()
 
     def get_pose(self, plot=False, resolution=1.0):
         pose = [None, None]
