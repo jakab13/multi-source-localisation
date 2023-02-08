@@ -51,6 +51,8 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     maskers = List()
     plane = Str("v")
     masker_sound = Any()  # slab.Sound.pinknoise(duration=setting.trial_duration, samplerate=24414)
+    talker = Any()
+    potential_maskers = Any()
 
     def _initialize(self, **kwargs):
         self.devices["RP2"] = RP2Device()
@@ -76,11 +78,11 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.load_speakers()
         self.load_signals()
         self.load_maskers()
-        talker = random.randint(1, 108)
+        self.talker = random.choice(["229", "318", "256", "307", "243", "245", "284", "280"])
         # self.masker_speaker = Any()
-        self.selected_target_sounds = self.signals[talker * 5:(talker + 1) * 5]  # select numbers 1-9 for one talker
+        self.selected_target_sounds = self.signals[self.talker]  # select numbers 1-9 for one talker
         self._tosave_para["sequence"] = self.sequence
-        self._tosave_para["talker"] = talker
+        self._tosave_para["talker"] = self.talker
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
@@ -107,7 +109,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                     self.change_state(complete=True)
                     self.stop()
             self.masker_speaker = self.speakers[self.sequence.this_n]
-            self.masker_sound = random.choice(self.maskers)
+            self.masker_sound = random.choice(self.potential_maskers)
             self._tosave_para["masker_speaker"] = self.masker_speaker
 
     def _start_trial(self):
@@ -168,13 +170,29 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, target_sounds_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
-        self.signals = sound_list
+        all_talkers = dict()
+        talker_id_range = range(225, 377)
+        for talker_id in talker_id_range:
+            talker_sorted = list()
+            for i, sound in enumerate(os.listdir(sound_fp)):
+                if str(talker_id) in sound:
+                    talker_sorted.append(sound_list[i])
+            all_talkers[str(talker_id)] = talker_sorted
+        self.signals = all_talkers
 
     def load_maskers(self, sound_type="babble-numbers-reversed-shifted_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
-        self.maskers = sound_list
+        all_talkers = dict()
+        talker_id_range = os.listdir(sound_fp)
+        for talker_id in talker_id_range:
+            talker_sorted = list()
+            for i, sound in enumerate(os.listdir(sound_fp)):
+                if str(talker_id) in sound:
+                    talker_sorted.append(sound_list[i])
+            all_talkers[str(talker_id)] = talker_sorted
+        self.maskers = all_talkers
 
     def load_speakers(self, filename="dome_speakers.txt"):
         basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
@@ -190,6 +208,13 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             speakers = [None]
         self.speakers = speakers
         self.target_speaker = spk_array.pick_speakers(23)[0]
+
+    def pick_babble_according_to_talker(self):
+        potential_maskers = list()
+        for masker in self.maskers:
+            if self.talker not in masker:
+                potential_maskers.append(masker)
+        self.potential_maskers = potential_maskers
 
     def calibrate_camera(self, report=True):
         """
