@@ -25,19 +25,17 @@ log.addHandler(ch)
 def setup_experiment():
     exp_type = input("What is the paradigm? Enter la, su or nm ").lower()
     subject = input("Enter subject id: ").lower()
-<<<<<<< HEAD
     cohort = input("Vertical or horizontal? Insert v or h").lower()
     sex = input("m or f? ").upper()
     group = input("Pilot or Test cohort? Insert p or t").lower()
     experimenter = input("Enter your name: ").lower()
     is_example = input("Example? y or n").lower()
-=======
+
     group = input("Vertical or horizontal? Insert v or h").lower()
     sex = input("Gender? Enter m or f ").upper()
     cohort = input("Pilot or Test cohort? Insert p or t").lower()
     experimenter = input("Enter your name ").lower()
     is_example = input("Example? Enter y or n").lower()
->>>>>>> 3899108 (set subject to 99 during example)
 
     try:
         if is_example == "y":
