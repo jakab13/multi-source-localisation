@@ -11,11 +11,10 @@ import os
 from traits.api import List, Str, Int, Dict, Float, Any
 import random
 import slab
-import pathlib
 import time
 import numpy as np
 import logging
-import datetime
+import pathlib
 
 log = logging.getLogger(__name__)
 config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "spatmask_config.txt"))
@@ -64,13 +63,14 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         pass
 
     def _pause(self, **kwargs):
-        pass
+        for device in self.devices.items():
+            self.devices[device].pause()
 
     def _stop(self, **kwargs):
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=0,
                                          procs=f"RX81")  # turn off LED
-        pass
+        self.stairs.close_plot()
 
     def setup_experiment(self, info=None):
         self.load_speakers()
@@ -91,24 +91,22 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         # self.sequence.__next__()
 
     def _prepare_trial(self):
-        if self.sequence.finished:  # check if sequence is finished
-            log.warning("Sequence finished!")
-            self.change_state(complete=True)
-            self.stop()
-        else:
-            if self.stairs.finished:
-                self.stairs = slab.Staircase(start_val=config.start_val,
-                                             n_reversals=config.n_reversals,
-                                             step_sizes=config.step_sizes)
-                try:
-                    self.sequence.__next__()
-                except:
-                    log.warning("Sequence finished!")
-                    self.change_state(complete=True)
-                    self.stop()
-            self.masker_speaker = self.speakers[self.sequence.this_n]
-            self.masker_sound = random.choice(self.maskers)
-            self._tosave_para["masker_speaker"] = self.masker_speaker
+        #if self.sequence.finished:  # check if sequence is finished
+            #log.warning("Sequence finished!")
+            #self.change_state(complete=True)
+            #self.stop()
+        if self.stairs.finished:
+            self.stairs = slab.Staircase(start_val=config.start_val,
+                                         n_reversals=config.n_reversals,
+                                         step_sizes=config.step_sizes)
+            self.sequence.__next__()
+            #except:
+                #log.warning("Sequence finished!")
+                #self.change_state(complete=True)
+                #self.stop()
+        self.masker_speaker = self.speakers[self.sequence.this_n]
+        self.masker_sound = random.choice(self.maskers)
+        self._tosave_para["masker_speaker"] = self.masker_speaker
 
     def _start_trial(self):
         self.time_0 = time.time()  # starting time of the trial
@@ -132,17 +130,17 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                                          f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
         log.warning('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         # simulate response
-        # response = self.stairs.simulate_response(threshold=60)
         self.devices["RX8"].start()
+        response = self.stairs.simulate_response(threshold=70)
+
         # self.devices["RX8"].pause()
         # self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
-        # self.devices["RX8"].wait_to_finish_playing()
-        self.devices["RP2"].wait_for_button()
-        response = self.devices["RP2"].get_response()
+        # self.devices["RP2"].wait_for_button()
+        # self.devices["RP2"].get_response()
         reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         self._tosave_para["reaction_time"] = reaction_time
         log.warning(f"response: {response}")
-        # self.stairs.add_response(response)
+        self.stairs.add_response(response)
         solution_converter = {"0": 5,
                               "1": 4,
                               "2": 1,
@@ -151,18 +149,24 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                               }
         solution = solution_converter[str(target_sound_i)]
         log.warning(f"solution: {solution}")
-        is_correct = True if response == solution else False
-        self._tosave_para["is_correct"] = is_correct
+        # is_correct = True if response == solution else False
+        # self._tosave_para["is_correct"] = is_correct
         self._tosave_para["solution"] = solution
-        self.stairs.add_response(1) if response == solution else self.stairs.add_response(0)
+        # self.stairs.add_response(1) if response == solution else self.stairs.add_response(0)
         self.stairs.plot()
-        self.process_event({'trial_stop': 0})  # stops the trial
+        self.devices["RP2"].stop_event()
+        # self.process_event({'trial_stop': 0})  # stops the trial
 
     def _stop_trial(self):
         log.warning('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
+        self.devices["RX8"].pause()
         #is_correct = True if self.sequence.this_trial / self.devices["RP2"]._output_specs["response"] == 1 else False
         #self._tosave_para["is_correct"] = is_correct
         self.data.save()
+        if self.sequence.n_remaining <= 0:
+            # self.pause()
+            self.change_state(complete=True)
+            self.stop()
 
     def load_signals(self, target_sounds_type="tts-numbers_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
@@ -255,22 +259,28 @@ if __name__ == "__main__":
     # add ch to logger
     log.addHandler(ch)
     # Create subject
+
     try:
-        subject = Subject(name="Foo",
+        subject = Subject(name="Test",
                           group="Pilot",
-                          birth=datetime.date(1996, 11, 18),
                           species="Human",
                           sex="M",
-                          cohort="SpatMask")
-        subject.data_path = os.path.join(get_config("DATA_ROOT"), "Foo_test.h5")
-        subject.add_subject_to_h5file(os.path.join(get_config("SUBJECT_ROOT"), "Foo_test.h5"))
-        #test_subject.file_path
+                          cohort="Vertical")
+        cohort_fp = os.path.join(get_config("SUBJECT_ROOT"), subject.cohort)
+        if not pathlib.Path.is_dir(pathlib.Path(cohort_fp)):
+            os.mkdir(path=cohort_fp)
+        subject.data_path = os.path.join(get_config("DATA_ROOT"), f"sub{subject}.h5")
+        subject.add_subject_to_h5file(os.path.join(cohort_fp, f"{subject.name}.h5"))
     except ValueError:
-        # read the subject information
-        sl = SubjectList(file_path=os.path.join(get_config("SUBJECT_ROOT"), "Foo_test.h5"))
-        sl.read_from_h5file()
-        subject = sl.subjects[0]
-        subject.data_path = os.path.join(get_config("DATA_ROOT"), "Foo_test.h5")
+        subject = Subject(name="Test",
+                          group="Pilot",
+                          species="Human",
+                          sex="M",
+                          cohort="Vertical")
+        cohort_fp = os.path.join(get_config("SUBJECT_ROOT"), subject.cohort)
+        subject.read_info_from_h5file(file=os.path.join(cohort_fp, f"{subject.name}.h5"))
+        subject.data_path = os.path.join(get_config("DATA_ROOT"), f"sub{subject}.h5")
+
     # subject.file_path
     experimenter = "Max"
     su = SpatialUnmaskingExperiment(subject=subject, experimenter=experimenter)
