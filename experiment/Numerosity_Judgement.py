@@ -61,10 +61,15 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         pass
 
     def _pause(self, **kwargs):
+        # self.devices["RX8"].pause()
         pass
 
     def _stop(self, **kwargs):
-        pass
+        self.devices["RX8"].handle.write(tag='bitmask',
+                                         value=0,
+                                         procs=f"RX81")  # turn off LED
+
+
 
     def setup_experiment(self, info=None):
         self._tosave_para["sequence"] = self.sequence
@@ -97,7 +102,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         self._tosave_para["reaction_time"] = reaction_time
         # self.response = self.devices["RP2"].get_response()
-        self.devices["RX8"].pause()
+        # self.devices["RX8"].pause()
         self.process_event({'trial_stop': 0})
 
     def _stop_trial(self):
@@ -151,10 +156,10 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                                          procs="RX81")  # illuminate central speaker LED
         log.warning('Point towards led and press button to start calibration')
         self.devices["RP2"].wait_for_button()  # start calibration after button press
-        self.devices["ArUcoCam"].start()
+        self.devices["ArUcoCam"].run()
         offset = self.devices["ArUcoCam"]._output_specs["pose"]
         self.devices["ArUcoCam"].offset = offset
-        self.devices["ArUcoCam"].pause()
+        # self.devices["ArUcoCam"].pause()
         for i, v in enumerate(self.devices["ArUcoCam"].offset):  # check for NoneType in offset
             if v is None:
                 self.devices["ArUcoCam"].offset[i] = 0
@@ -170,8 +175,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     def check_headpose(self):
         while True:
             #self.devices["ArUcoCam"].configure()
-            self.devices["ArUcoCam"].start()
-            self.devices["ArUcoCam"].pause()
+            self.devices["ArUcoCam"].run()
+            # self.devices["ArUcoCam"].pause()
             try:
                 if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 10:
                     log.warning("Subject is not looking straight ahead")
@@ -180,8 +185,10 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                         self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
                     self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
                     self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
-                    self.devices["RX8"].start()
-                    self.devices["RX8"].pause()
+                    #self.devices["RX8"].start()
+                    #self.devices["RX8"].pause()
+                    self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
+                    self.devices["RX8"].wait_to_finish_playing()
                 else:
                     break
             except TypeError:
