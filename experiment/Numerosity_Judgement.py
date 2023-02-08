@@ -97,6 +97,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.time_0 = time.time()  # starting time of the trial
         log.warning('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         self.devices["RX8"].start()
+        self.devices["RP2"].start()
+        self.devices["ArUcoCam"].start()
         self.devices["RP2"].wait_for_button()
         self.devices["RP2"].get_response()
         reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
@@ -106,6 +108,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.process_event({'trial_stop': 0})
 
     def _stop_trial(self):
+        for device in self.devices.keys():
+            self.devices[device].pause()
         is_correct = True if self.sequence.this_trial / self._devices_output_params()["RP2"]["response"] == 1 else False
         for data_idx in range(5):
             self.devices["RX8"].handle.write(tag=f"data{data_idx}",
