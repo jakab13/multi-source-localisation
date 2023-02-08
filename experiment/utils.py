@@ -24,52 +24,48 @@ log.addHandler(ch)
 
 def setup_experiment():
     exp_type = input("What is the paradigm? Enter la, su or nm ").lower()
-    subject = input("Enter subject id: ").lower()
-    cohort = input("Vertical or horizontal? Insert v or h").lower()
+    name = input("Enter subject id: ").lower()
+    group = input("Vertical or horizontal? Insert v or h").lower()
     sex = input("m or f? ").upper()
-    group = input("Pilot or Test cohort? Insert p or t").lower()
+    cohort = input("Pilot or Test cohort? Insert p or t").lower()
     experimenter = input("Enter your name: ").lower()
     is_example = input("Example? y or n").lower()
 
-    group = input("Vertical or horizontal? Insert v or h").lower()
-    sex = input("Gender? Enter m or f ").upper()
-    cohort = input("Pilot or Test cohort? Insert p or t").lower()
-    experimenter = input("Enter your name ").lower()
-    is_example = input("Example? Enter y or n").lower()
-
     try:
         if is_example == "y":
-            subject = Subject(name="99",
+            name = "99"
+            subject = Subject(name=name,
                               group=group,
                               species="Human",
                               sex=sex,
                               cohort=cohort)
         elif is_example == "n":
-            subject = Subject(name=f"sub{subject}",
+            subject = Subject(name=f"sub{name}",
                               group=group,
                               species="Human",
                               sex=sex,
                               cohort=cohort)
-        subject.data_path = os.path.join(get_config("DATA_ROOT"), f"sub{subject}.h5")
-        subject.add_subject_to_h5file(os.path.join(get_config("SUBJECT_ROOT"), f"sub{subject}.h5"))
+        subject.add_subject_to_h5file(os.path.join(get_config("SUBJECT_ROOT"), f"sub{name}.h5"))
     except ValueError:
         # read the subject information
-        sl = SubjectList(file_path=os.path.join(get_config("SUBJECT_ROOT"), f"sub{subject}.h5"))
-        sl.read_from_h5file()
-        subject = sl.subjects[0]
-        subject.data_path = os.path.join(get_config("DATA_ROOT"), f"sub{subject}.h5")
-
+        subject = Subject(name=f"sub{name}",
+                          group=group,
+                          species="Human",
+                          sex=sex,
+                          cohort=cohort)
+        subject.read_from_h5file()
+    subject.data_path = os.path.join(get_config("DATA_ROOT"), f"sub{name}.h5")
     if is_example == "n":
         if exp_type == "su":
-            exp = SpatialUnmaskingExperiment(subject=subject, experimenter=experimenter)
+            exp = SpatialUnmaskingExperiment(subject=name, experimenter=experimenter)
             exp.plane = group
             return exp
         elif exp_type == "nm":
-            exp = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
+            exp = NumerosityJudgementExperiment(subject=name, experimenter=experimenter)
             exp.plane = group
             return exp
         elif exp_type == "la":
-            exp = LocalizationAccuracyExperiment(subject=subject, experimenter=experimenter)
+            exp = LocalizationAccuracyExperiment(subject=name, experimenter=experimenter)
             exp.plane = group
             return exp
         else:
@@ -77,15 +73,15 @@ def setup_experiment():
 
     elif is_example == "y":
         if exp_type == "su":
-            exp = SpatialUnmaskingExperiment_exmp(subject=subject, experimenter=experimenter, plane=group)
+            exp = SpatialUnmaskingExperiment_exmp(subject=name, experimenter=experimenter)
             exp.plane = group
             return exp
         elif exp_type == "nm":
-            exp = NumerosityJudgementExperiment_exmp(subject=subject, experimenter=experimenter)
+            exp = NumerosityJudgementExperiment_exmp(subject=name, experimenter=experimenter)
             exp.plane = group
             return exp
         elif exp_type == "la":
-            exp = LocalizationAccuracyExperiment_exmp(subject=subject, experimenter=experimenter)
+            exp = LocalizationAccuracyExperiment_exmp(subject=name, experimenter=experimenter)
             exp.plane = group
             return exp
         else:
