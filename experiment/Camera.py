@@ -59,7 +59,6 @@ class ArUcoCam(Device):
     _output_specs = {'type': setting.type, 'sampling_freq': setting.sampling_freq,
                      'dtype': setting.dtype, "shape": setting.shape}
 
-
     def _initialize(self, **kwargs):
         """
         Initializes the device and sets the state to "created". Necessary before running the device.
@@ -403,54 +402,22 @@ if __name__ == "__main__":
     # add ch to logger
     log.addHandler(ch)
 
-    cam = ArUcoCam()
-    cam.initialize()
+    import cv2
+    import EasyPySpin
+    from matplotlib import pyplot as plt
 
-    interval = 10
-    poses = list()
-    azimuth = list()
-    elevation = list()
+    cams = [EasyPySpin.VideoCapture(0), EasyPySpin.VideoCapture(1)]
 
-    for trial in range(interval):
-        cam.configure()
-        cam.start()
-        cam.snapshot()
-        cam.pause()
-        poses.append(cam.setting.pose)
+    for k, cam in cams.items():
+        ret, frame = cam.read()
+        plt.imshow(frame)
+        plt.show()
 
-    for azi, ele in poses:
-        azimuth.append(azi)
-        elevation.append(ele)
 
-    print(f"SD over {interval} trials: \
-          azimuth:{np.std(azimuth)}\
-          elevation: {np.std(elevation)}")
+    plt.show()
 
-    # Facial landmark detection logic test
-    # see if the logic works
-    """
-    cam = FlirCam()
-    cam.initialize()
-    cam.configure()
-    cam.start()
-    cam.snapshot()
-    cam.pause()
-    
-    # headpose estimation
-    import time
-    time.sleep(10)
-    est = PoseEstimator()
-    cam = Camera()
-    cam.init()
-    cam.start()
-    img = cam.get_array()
-    cam.stop()
-    img = Image.fromarray(img)
-    brightness = ImageEnhance.Brightness(img)
-    bright = brightness.enhance(6.0)
-    array = np.asarray(bright)
-    roll, pitch, yaw = est.pose_from_image(array)  # estimate the head pose
-    """
+
+
 
 
 
