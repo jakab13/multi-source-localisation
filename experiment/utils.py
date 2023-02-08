@@ -25,9 +25,9 @@ log.addHandler(ch)
 def setup_experiment():
     exp_type = input("la, su or nm?").lower()
     subject = input("Enter subject id: ").lower()
-    group = input("Vertical or horizontal? Insert v or h").lower()
+    cohort = input("Vertical or horizontal? Insert v or h").lower()
     sex = input("m or f? ").upper()
-    cohort = input("Pilot or Test cohort? Insert p or t").lower()
+    group = input("Pilot or Test cohort? Insert p or t").lower()
     experimenter = input("Enter your name: ").lower()
     is_example = input("Example? y or n").lower()
 
@@ -48,7 +48,7 @@ def setup_experiment():
 
     if is_example == "n":
         if exp_type == "su":
-            exp = SpatialUnmaskingExperiment(subject=subject, experimenter=experimenter, plane=group)
+            exp = SpatialUnmaskingExperiment(subject=subject, experimenter=experimenter)
             exp.plane = group
             return exp
         elif exp_type == "nm":
