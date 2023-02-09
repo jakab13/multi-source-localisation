@@ -10,16 +10,6 @@ from experiment.exp_examples import LocalizationAccuracyExperiment_exmp, Spatial
 
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.WARNING)
-# create console handler and set level to debug
-ch = logging.StreamHandler()
-ch.setLevel(logging.WARNING)
-# create formatter
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# add formatter to ch
-ch.setFormatter(formatter)
-# add ch to logger
-log.addHandler(ch)
 
 
 def setup_experiment():
@@ -69,7 +59,7 @@ def setup_experiment():
             exp.plane = group
             return exp
         else:
-            log.warning("Paradigm not found, aborting ...")
+            log.info("Paradigm not found, aborting ...")
 
     elif is_example == "y":
         if exp_type == "su":
@@ -85,7 +75,7 @@ def setup_experiment():
             exp.plane = group
             return exp
         else:
-            log.warning("Paradigm not found, aborting ...")
+            log.info("Paradigm not found, aborting ...")
 
 
 def run_experiment(experiment, n_blocks):
