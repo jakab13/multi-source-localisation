@@ -121,24 +121,29 @@ class ArUcoCam(Device):
         pose = [None, None]
         for i, c in enumerate(self.cams):
             ret, image = c.read()
-            if image.ndim == 3:
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            if resolution < 1.0:
-                image = self.change_res(image, resolution)
-            _pose, info = self.pose_from_image(image=image, dictionary=self.aruco_dicts[i])
-            if plot:
-                if _pose is None:
-                    image = self.draw_markers(image, _pose, self.aruco_dicts[i], info)
-                plt.imshow(image)
-            if _pose:
-                _pose = np.asarray(_pose)[:, 2].astype('float16')
-                # remove outliers
-                d = np.abs(_pose - np.median(_pose))  # deviation from median
-                mdev = np.median(d)  # mean deviation
-                s = d / mdev if mdev else 0.  # factorized mean deviation of each element in pose
-                _pose = _pose[s < 2]  # remove outliers
-                _pose = np.mean(_pose)
-                pose[i] = _pose
+            while True:  # avoid breaking when image is None
+                if image is not None:
+                    if image.ndim == 3:
+                        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                    if resolution < 1.0:
+                        image = self.change_res(image, resolution)
+                    _pose, info = self.pose_from_image(image=image, dictionary=self.aruco_dicts[i])
+                    if plot:
+                        if _pose is None:
+                            image = self.draw_markers(image, _pose, self.aruco_dicts[i], info)
+                        plt.imshow(image)
+                    if _pose:
+                        _pose = np.asarray(_pose)[:, 2].astype('float16')
+                        # remove outliers
+                        d = np.abs(_pose - np.median(_pose))  # deviation from median
+                        mdev = np.median(d)  # mean deviation
+                        s = d / mdev if mdev else 0.  # factorized mean deviation of each element in pose
+                        _pose = _pose[s < 2]  # remove outliers
+                        _pose = np.mean(_pose)
+                        pose[i] = _pose
+                    break
+                else:
+                    continue
         return pose
 
     def pose_from_image(self, image, dictionary):  # get pose
