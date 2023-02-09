@@ -62,11 +62,11 @@ class RP2Device(Device):
         # because the response is stored in bit value, we need the base 2 log
         self._output_specs["response"] = int(np.log2(self.handle.GetTagVal("response")))
         # return int(np.log2(self.handle.GetTagVal("response")))
-        if self.experiment:
-            self.experiment.process_event({'trial_stop': 0})
 
-    # def thread_func(self):
-        # pass
+    def thread_func(self):
+        if self.experiment:
+            if 0 < self.handle.GetTagVal("response") < 9 and self.state == "Running":
+                self.experiment.process_event({'trial_stop': 0})
 
 
 if __name__ == "__main__":
