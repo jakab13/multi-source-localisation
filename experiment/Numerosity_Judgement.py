@@ -49,10 +49,16 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     plane = Str("v")
     # response = Int()
 
+    def _devices_default(self):
+        rp2 = RP2Device()
+        rx8 = RX8Device()
+        cam = ArUcoCam()
+        return {"RP2": rp2,
+                "RX8": rx8,
+                "ArUcoCam": cam}
+
+
     def _initialize(self, **kwargs):
-        self.devices["RP2"] = RP2Device()
-        self.devices["RX8"] = RX8Device()
-        self.devices["ArUcoCam"] = ArUcoCam()
         self.devices["RX8"].handle.write("playbuflen",
                                          self.devices["RX8"].setting.sampling_freq*self.setting.trial_duration,
                                          procs=self.devices["RX8"].handle.procs)
@@ -231,7 +237,7 @@ if __name__ == "__main__":
     # subject.file_path
     experimenter = "Max"
     nj = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
-    nj.devices["RP2"].experiment = nj
+    # nj.devices["RP2"].experiment = nj
     nj.calibrate_camera()
     nj.start()
     # nj.configure_traits()
