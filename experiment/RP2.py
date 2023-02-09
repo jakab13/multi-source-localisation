@@ -66,7 +66,7 @@ class RP2Device(Device):
     def thread_func(self):
         if self.experiment:
             if 0 < self.handle.GetTagVal("response") < 9 and self.state == "Running":
-                self.experiment.process_event({'trial_stop': 0})
+                self.experiment().process_event({'trial_stop': 0})
 
 
 if __name__ == "__main__":
