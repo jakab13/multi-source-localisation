@@ -3,11 +3,10 @@ from labplatform.core.Device import Device
 from labplatform.core.Setting import DeviceSetting
 from labplatform.core import TDTblackbox as tdt
 import time
-from traits.api import CFloat, Str, Any, Tuple, Int
+from traits.api import CFloat, Str, Any, Tuple, Int, Float
 import os
 import logging
 import numpy as np
-import threading
 
 log = logging.getLogger(__name__)
 
@@ -24,6 +23,7 @@ class RP2Setting(DeviceSetting):  # this class contains important settings for t
     shape = Tuple(1, group="status", dsec="Dimension of the device output")
     dtype = Int(int, group="status", dsec="data type of the output")
     type = Str("analog_signal", group="status", dsec="Type of the signal")
+    control_interval = Float(0.1, group="primary", dsec="Interval at which the device is checking its state")
 
 
 class RP2Device(Device):
@@ -61,11 +61,11 @@ class RP2Device(Device):
         log.info("Acquiring button response ... ")
         # because the response is stored in bit value, we need the base 2 log
         self._output_specs["response"] = int(np.log2(self.handle.GetTagVal("response")))
-        # return int(np.log2(self.handle.GetTagVal("response")))
+        return int(np.log2(self.handle.GetTagVal("response")))
 
     def thread_func(self):
         if self.experiment:
-            if 0 < self.handle.GetTagVal("response") < 9 and self.state == "Running":
+            if self.handle.GetTagVal("response") > 0 and self.state == "Running":
                 self.experiment().process_event({'trial_stop': 0})
 
 
