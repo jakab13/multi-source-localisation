@@ -69,8 +69,6 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                                          value=0,
                                          procs=f"RX81")  # turn off LED
 
-
-
     def setup_experiment(self, info=None):
         self._tosave_para["sequence"] = self.sequence
         self.devices["RX8"].handle.write(tag='bitmask',
@@ -105,7 +103,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self._tosave_para["reaction_time"] = reaction_time
         # self.response = self.devices["RP2"].get_response()
         # self.devices["RX8"].pause()
-        self.process_event({'trial_stop': 0})
+        # self.process_event({'trial_stop': 0})
 
     def _stop_trial(self):
         for device in self.devices.keys():
@@ -160,7 +158,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                                          procs="RX81")  # illuminate central speaker LED
         log.warning('Point towards led and press button to start calibration')
         self.devices["RP2"].wait_for_button()  # start calibration after button press
-        self.devices["ArUcoCam"].run()
+        self.devices["ArUcoCam"].retrieve()
         offset = self.devices["ArUcoCam"]._output_specs["pose"]
         self.devices["ArUcoCam"].offset = offset
         # self.devices["ArUcoCam"].pause()
@@ -179,7 +177,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     def check_headpose(self):
         while True:
             #self.devices["ArUcoCam"].configure()
-            self.devices["ArUcoCam"].run()
+            self.devices["ArUcoCam"].retrieve()
             # self.devices["ArUcoCam"].pause()
             try:
                 if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 10:
