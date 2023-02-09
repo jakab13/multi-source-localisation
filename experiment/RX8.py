@@ -79,6 +79,11 @@ class RX8Device(Device):
             time.sleep(0.01)
         log.info('Done waiting.')
 
+    def clear_buffers(self):
+        for idx in range(5):  # clear all speakers before loading warning tone
+            self.handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
+            self.handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
+
 
 if __name__ == "__main__":
     log = logging.getLogger()
