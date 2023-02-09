@@ -49,8 +49,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     plane = Str("v")
     # response = Int()
 
-    @staticmethod
-    def _devices_default():
+    def _devices_default(self):
         rp2 = RP2Device()
         rx8 = RX8Device()
         cam = ArUcoCam()
