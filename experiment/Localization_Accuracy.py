@@ -87,6 +87,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
                                          procs=self.devices["RX8"].handle.procs)
 
     def _prepare_trial(self):
+        self.devices["RX8"].clear_buffers()
         self.check_headpose()
         self.sequence.__next__()
         solution = self.sequence.this_trial - 1

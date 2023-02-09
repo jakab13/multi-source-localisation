@@ -88,6 +88,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self._tosave_para["solution"] = self.sequence.this_trial
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
+        self.devices["RX8"].clear_buffers()
         for idx, spk in enumerate(self.speakers_sample):
             self.devices["RX8"].handle.write(tag=f"data{idx}",
                                              value=self.signals_sample[idx].data.flatten(),
