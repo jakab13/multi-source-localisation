@@ -40,18 +40,24 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
     all_speakers = List()
     target = Any()
     signal = Any()
-    warning_tone = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "warning\\warning_tone.wav"))
-    warning_tone = warning_tone.trim(0.0, 0.225)
+    # warning_tone = warning_tone.trim(0.0, 0.225)
     pose = Any()
     #error = np.array([])
     plane = Str("v")
+    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\off_center.wav"))
+    paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
+
+    def _devices_default(self):
+        rp2 = RP2Device()
+        rx8 = RX8Device()
+        cam = ArUcoCam()
+        return {"RP2": rp2,
+                "RX8": rx8,
+                "ArUcoCam": cam}
 
     def _initialize(self, **kwargs):
-        self.devices["RP2"] = RP2Device()
-        self.devices["RX8"] = RX8Device()
-        self.devices["ArUcoCam"] = ArUcoCam()
         self.devices["RX8"].handle.write("playbuflen",
-                                         self.devices["RX8"].setting.sampling_freq*self.setting.trial_duration,
+                                         self.paradigm_start.duration * self.devices["RX8"].setting.sampling_freq,
                                          procs=self.devices["RX8"].handle.procs)
 
     def _start(self, **kwargs):
@@ -61,7 +67,9 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         pass
 
     def _stop(self, **kwargs):
-        pass
+        self.devices["RX8"].handle.write(tag='bitmask',
+                                         value=0,
+                                         procs="RX81")  # turn off LED
 
     def setup_experiment(self, info=None):
         self._tosave_para["sequence"] = self.sequence
@@ -70,6 +78,13 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
                                          procs="RX81")  # illuminate central speaker LED
         self.load_speakers()
         self.load_signal()
+        self.devices["RX8"].handle.write("data0", self.paradigm_start.data.flatten(), procs="RX81")
+        self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
+        self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
+        self.devices["RX8"].wait_to_finish_playing()
+        self.devices["RX8"].handle.write("playbuflen",
+                                         self.devices["RX8"].setting.sampling_freq*self.setting.stim_duration,
+                                         procs=self.devices["RX8"].handle.procs)
 
     def _prepare_trial(self):
         self.check_headpose()
@@ -86,30 +101,28 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
 
     def _start_trial(self):
         self.time_0 = time.time()  # starting time of the trial
-        log.warning('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
-        self.devices["RX8"].start()
+        log.info('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
+        for device in self.devices.keys():
+            self.devices[device].start()
         self.devices["RP2"].wait_for_button()
         reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
-        self.devices["ArUcoCam"].start()
         #self.pose = np.array(self.devices["ArUcoCam"]._output_specs["pose"])
         #actual = np.array([self.target.azimuth, self.target.elevation])
         #self.error = np.append(self.error, np.abs(actual-self.pose))
         self._tosave_para["reaction_time"] = reaction_time
-        self.devices["ArUcoCam"].pause()
-        self.devices["RX8"].pause()
         self.devices["RP2"].wait_for_button()
-        time.sleep(0.2)
-        # self.check_headpose()
-        self.process_event({'trial_stop': 0})
+        # time.sleep(0.2)
 
     def _stop_trial(self):
         #accuracy = np.abs(np.subtract([self.target.azimuth, self.target.elevation], self.pose))
         #log.warning(f"Accuracy azi: {accuracy[0]}, ele: {accuracy[1]}")
+        log.info('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
+        for device in self.devices.keys():
+            self.devices[device].pause()
         self.data.save()
-        log.warning('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
 
     def load_signal(self):
-        noise = slab.Sound.pinknoise(duration=0.025, level=90, samplerate=self.devices["RX8"].setting.sampling_freq)
+        noise = slab.Sound.pinknoise(duration=0.025, level=70, samplerate=self.devices["RX8"].setting.sampling_freq)
         noise = noise.ramp(when='both', duration=0.01)
         silence = slab.Sound.silence(duration=0.025, samplerate=self.devices["RX8"].setting.sampling_freq)
         self.signal = slab.Sound.sequence(noise, silence, noise, silence, noise,
@@ -125,7 +138,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         elif self.plane == "h":
             speakers = spk_array.pick_speakers([2, 8, 15, 23, 31, 38, 44])
         else:
-            log.warning("Wrong plane, must be v or h. Unable to load speakers!")
+            log.info("Wrong plane, must be v or h. Unable to load speakers!")
             speakers = [None]
         self.all_speakers = speakers
 
@@ -138,48 +151,47 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         Calibrates the cameras. Initializes the RX81 to access the central loudspeaker. Illuminates the led on ele,
         azi 0°, then acquires the headpose and uses it as the offset. Turns the led off afterwards.
         """
-        log.warning("Calibrating camera")
+        log.info("Calibrating camera")
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
-        log.warning('Point towards led and press button to start calibration')
+        log.info('Point towards led and press button to start calibration')
         self.devices["RP2"].wait_for_button()  # start calibration after button press
-        self.devices["ArUcoCam"].start()
+        self.devices["ArUcoCam"].retrieve()
         offset = self.devices["ArUcoCam"]._output_specs["pose"]
         self.devices["ArUcoCam"].offset = offset
-        self.devices["ArUcoCam"].pause()
+        # self.devices["ArUcoCam"].pause()
         for i, v in enumerate(self.devices["ArUcoCam"].offset):  # check for NoneType in offset
             if v is None:
                 self.devices["ArUcoCam"].offset[i] = 0
-                log.warning("Calibration unsuccessful, make sure markers can be detected by cameras!")
+                log.info("Calibration unsuccessful, make sure markers can be detected by cameras!")
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=0,
                                          procs=f"RX81")  # turn off LED
         self.devices["ArUcoCam"].calibrated = True
         if report:
-            log.warning(f"Camera offset: {offset}")
-        log.warning('Calibration complete!')
+            log.info(f"Camera offset: {offset}")
+        log.info('Calibration complete!')
 
     def check_headpose(self):
         while True:
             #self.devices["ArUcoCam"].configure()
-            self.devices["ArUcoCam"].start()
-            self.devices["ArUcoCam"].pause()
+            self.devices["ArUcoCam"].retrieve()
+            # self.devices["ArUcoCam"].pause()
             try:
                 if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 12.5:
-                    log.warning("Subject is not looking straight ahead")
-                    for idx in range(5):  # clear all speakers before loading warning tone
-                        self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
-                        self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
-                    self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
+                    log.info("Subject is not looking straight ahead")
+                    self.devices["RX8"].clear_buffers()
+                    self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
                     self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
-                    self.devices["RX8"].start()
-                    self.devices["RX8"].pause()
-                    self.devices["RX8"].handle.write("data0", 0, procs="RX81")
+                    #self.devices["RX8"].start()
+                    #self.devices["RX8"].pause()
+                    self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
+                    self.devices["RX8"].wait_to_finish_playing()
                 else:
                     break
             except TypeError:
-                log.warning("Cannot detect markers, make sure cameras are set up correctly and arucomarkers can be detected.")
+                log.info("Cannot detect markers, make sure cameras are set up correctly and arucomarkers can be detected.")
                 continue
 
 
