@@ -63,7 +63,9 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                 "ArUcoCam": cam}
 
     def _initialize(self, **kwargs):
-        pass
+        self.devices["RX8"].handle.write("playbuflen",
+                                         self.paradigm_start.duration * self.devices["RX8"].setting.sampling_freq,
+                                         procs=self.devices["RX8"].handle.procs)
 
     def _start(self, **kwargs):
         pass
@@ -94,9 +96,6 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                                      step_sizes=config.step_sizes)
         self._tosave_para["stairs"] = self.stairs
         self.sequence.__next__()
-        self.devices["RX8"].handle.write("playbuflen",
-                                         self.paradigm_start.duration * self.devices["RX8"].setting.sampling_freq,
-                                         procs=self.devices["RX8"].handle.procs)
         self.devices["RX8"].handle.write("data0", self.paradigm_start.data.flatten(), procs="RX81")
         self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
         self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
