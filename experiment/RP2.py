@@ -33,6 +33,7 @@ class RP2Device(Device):
     # thread = Instance(threading.Thread)  # important for threading
     _output_specs = {'type': setting.type, 'sampling_freq': setting.sampling_freq,
                      'dtype': setting.dtype, "shape": setting.shape}
+    _use_default_thread = True
 
     def _initialize(self, **kwargs):  # this method is called upon self.initialize() execution
         expdir = get_config('DEVICE_ROOT')
@@ -60,12 +61,12 @@ class RP2Device(Device):
         log.info("Acquiring button response ... ")
         # because the response is stored in bit value, we need the base 2 log
         self._output_specs["response"] = int(np.log2(self.handle.GetTagVal("response")))
-        return int(np.log2(self.handle.GetTagVal("response")))
-        # self.stop_event()
-
-    def stop_event(self):
+        # return int(np.log2(self.handle.GetTagVal("response")))
         if self.experiment:
-            self.experiment.process_event({'trial_stop': 0})  # stops the trial
+            self.experiment.process_event({'trial_stop': 0})
+
+    # def thread_func(self):
+        # pass
 
 
 if __name__ == "__main__":
