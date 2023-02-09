@@ -84,7 +84,6 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.load_signals()
         self.load_maskers()
         self.talker = random.choice(["229", "318", "256", "307", "243", "245", "284", "280"])
-        # self.masker_speaker = Any()
         self.selected_target_sounds = self.signals[self.talker]  # select numbers 1-9 for one talker
         self._tosave_para["sequence"] = self.sequence
         self._tosave_para["talker"] = self.talker
@@ -126,7 +125,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     def _start_trial(self):
         self.time_0 = time.time()  # starting time of the trial
         level = self.stairs.__next__()
-        log.warning(f"trial {self.setting.current_trial} dB level: {level}")
+        log.info(f"trial {self.setting.current_trial} dB level: {level}")
         self.check_headpose()
         target_sound_i = random.choice(range(len(self.selected_target_sounds)))
         target_sound = self.selected_target_sounds[target_sound_i]  # choose random number from sound_list
@@ -143,7 +142,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.devices["RX8"].handle.write("data1",
                                          self.masker_sound[0].data[:, 0].flatten(),
                                          f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
-        log.warning('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
+        log.info('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         # simulate response
         # response = self.stairs.simulate_response(threshold=60)
         for device in self.devices.keys():
@@ -155,7 +154,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         response = self.devices["RP2"].get_response()
         reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         self._tosave_para["reaction_time"] = reaction_time
-        log.warning(f"response: {response}")
+        log.info(f"response: {response}")
         # self.stairs.add_response(response)
         solution_converter = {"0": 5,
                               "1": 4,
@@ -164,20 +163,19 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                               "4": 2,
                               }
         solution = solution_converter[str(target_sound_i)]
-        log.warning(f"solution: {solution}")
+        log.info(f"solution: {solution}")
         is_correct = True if response == solution else False
         self._tosave_para["is_correct"] = is_correct
         self._tosave_para["solution"] = solution
+        is_correct = True if solution == response else False
+        self._tosave_para["is_correct"] = is_correct
         self.stairs.add_response(1) if response == solution else self.stairs.add_response(0)
         self.stairs.plot()
-        # self.process_event({'trial_stop': 0})  # stops the trial
 
     def _stop_trial(self):
-        log.warning('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
+        log.info('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         for device in self.devices.keys():
             self.devices[device].pause()
-        #is_correct = True if self.sequence.this_trial / self.devices["RP2"]._output_specs["response"] == 1 else False
-        #self._tosave_para["is_correct"] = is_correct
         self.data.save()
         if self.sequence.n_remaining == 0 and self.stairs.finished:
             self.setting.current_trial = self.setting.total_trial
@@ -186,7 +184,6 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
             self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
             self.devices["RX8"].wait_to_finish_playing()
-
 
     def load_signals(self, target_sounds_type="tts-numbers_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
@@ -243,11 +240,11 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         Calibrates the cameras. Initializes the RX81 to access the central loudspeaker. Illuminates the led on ele,
         azi 0°, then acquires the headpose and uses it as the offset. Turns the led off afterwards.
         """
-        log.warning("Calibrating camera")
+        log.info("Calibrating camera")
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
-        log.warning('Point towards led and press button to start calibration')
+        log.info('Point towards led and press button to start calibration')
         self.devices["RP2"].wait_for_button()  # start calibration after button press
         self.devices["ArUcoCam"].retrieve()
         offset = self.devices["ArUcoCam"]._output_specs["pose"]
@@ -256,23 +253,21 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         for i, v in enumerate(self.devices["ArUcoCam"].offset):  # check for NoneType in offset
             if v is None:
                 self.devices["ArUcoCam"].offset[i] = 0
-                log.warning("Calibration unsuccessful, make sure markers can be detected by cameras!")
+                log.info("Calibration unsuccessful, make sure markers can be detected by cameras!")
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=0,
                                          procs=f"RX81")  # turn off LED
         self.devices["ArUcoCam"].calibrated = True
         if report:
-            log.warning(f"Camera offset: {offset}")
-        log.warning('Calibration complete!')
+            log.info(f"Camera offset: {offset}")
+        log.info('Calibration complete!')
 
     def check_headpose(self):
         while True:
-            #self.devices["ArUcoCam"].configure()
             self.devices["ArUcoCam"].retrieve()
-            # self.devices["ArUcoCam"].pause()
             try:
                 if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 12.5:
-                    log.warning("Subject is not looking straight ahead")
+                    log.info("Subject is not looking straight ahead")
                     self.devices["RX8"].clear_buffers()
                     self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
                     self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
@@ -283,7 +278,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                 else:
                     break
             except TypeError:
-                log.warning("Cannot detect markers, make sure cameras are set up correctly and arucomarkers can be detected.")
+                log.info("Cannot detect markers, make sure cameras are set up correctly and arucomarkers can be detected.")
                 continue
 
 
