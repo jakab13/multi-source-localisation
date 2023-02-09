@@ -13,7 +13,7 @@ import numpy as np
 from Speakers.speaker_config import SpeakerArray
 import os
 try:
-    from simple_pyspin import Camera
+    import EasyPySpin
 except ModuleNotFoundError:
     PySpin = False
 import cv2
@@ -63,9 +63,7 @@ class ArUcoCam(Device):
         """
         Initializes the device and sets the state to "created". Necessary before running the device.
         """
-        self.cams = [Camera(index=0), Camera(index=1)]
-        for c in self.cams:  # initialize cameras
-            c.init()
+        self.cams = [EasyPySpin.VideoCapture(0), EasyPySpin.VideoCapture(1)]
 
     def _configure(self, **kwargs):
         """
@@ -91,7 +89,7 @@ class ArUcoCam(Device):
         Closes the camera and cleans up and sets the state to "stopped".
         """
         for c in self.cams:
-            c.close()
+            c.release()
 
     def snapshot(self, cmap="gray"):
         """
@@ -99,19 +97,11 @@ class ArUcoCam(Device):
             cmap: matplotlib colormap
         """
         for c in self.cams:
-            image = c.get_array()  # get image as np array
-            plt.imshow(image, cmap=cmap)  # show image
+            ret, frame = c.read()
+            plt.imshow(frame, cmap=cmap)  # show image
             plt.show()
 
-    def run(self):
-        try:
-            for c in self.cams:
-                c.start()  # start recording images into the camera buffer
-        except:
-            self.cams = [Camera(index=0), Camera(index=1)]
-            for c in self.cams:
-                c.init()
-                c.start()  # start recording images into the camera buffer
+    def retrieve(self):
         if self.calibrated:
             pose = self.get_pose()  # Get image as numpy array
             for i, coord in enumerate(pose):
@@ -126,20 +116,20 @@ class ArUcoCam(Device):
             log.info("Acquired pose!")
         else:
             self._output_specs["pose"] = self.get_pose()
-        for c in self.cams:
-            c.stop()
 
     def get_pose(self, plot=False, resolution=1.0):
         pose = [None, None]
         for i, c in enumerate(self.cams):
-            image = c.get_array()
+            ret, image = c.read()
+            if image.ndim == 3:
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             if resolution < 1.0:
                 image = self.change_res(image, resolution)
             _pose, info = self.pose_from_image(image=image, dictionary=self.aruco_dicts[i])
             if plot:
                 if _pose is None:
                     image = self.draw_markers(image, _pose, self.aruco_dicts[i], info)
-                cv2.imshow('camera %s' % c.DeviceID(), image)
+                plt.imshow(image)
             if _pose:
                 _pose = np.asarray(_pose)[:, 2].astype('float16')
                 # remove outliers
@@ -408,14 +398,13 @@ if __name__ == "__main__":
 
     cams = [EasyPySpin.VideoCapture(0), EasyPySpin.VideoCapture(1)]
 
-    for k, cam in cams.items():
+    for k, cam in cams:
         ret, frame = cam.read()
         plt.imshow(frame)
         plt.show()
 
 
     plt.show()
-
 
 
 
