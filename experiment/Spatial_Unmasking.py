@@ -21,8 +21,6 @@ log = logging.getLogger(__name__)
 config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "spatmask_config.txt"))
 slab.set_default_samplerate(24414)
 
-
-# TODO: check out threading module
 # TODO: clear camera buffer every once in a while
 
 
@@ -30,7 +28,7 @@ class SpatialUnmaskingSetting(ExperimentSetting):
 
     experiment_name = Str('SpatMask', group='status', dsec='name of the experiment', noshow=True)
     n_conditions = Int(config.n_conditions, group="status", dsec="Number of masker speaker positions in the experiment")
-    trial_number = Int(10000000, group='status', dsec='Number of trials in each condition')
+    trial_number = Int(1000, group='status', dsec='Number of trials in each condition')
     stim_duration = Float(config.trial_duration, group='status', dsec='Duration of one trial, (s)')
 
 
@@ -42,25 +40,30 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     devices = Dict()
     time_0 = Float()
     speakers = List()
-    signals = List()
-    warning_tone = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "warning\\warning_tone.wav"))
+    signals = Dict()
+    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\off_center.wav"))
+    paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
+    staircase_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\staircase_end.wav"))
     stairs = Any()
     target_speaker = Any()
     selected_target_sounds = List()
     masker_speaker = Any()
-    maskers = List()
+    maskers = Dict()
     plane = Str("v")
     masker_sound = Any()  # slab.Sound.pinknoise(duration=setting.trial_duration, samplerate=24414)
     talker = Any()
     potential_maskers = Any()
 
+    def _devices_default(self):
+        rp2 = RP2Device()
+        rx8 = RX8Device()
+        cam = ArUcoCam()
+        return {"RP2": rp2,
+                "RX8": rx8,
+                "ArUcoCam": cam}
+
     def _initialize(self, **kwargs):
-        self.devices["RP2"] = RP2Device()
-        self.devices["RX8"] = RX8Device()
-        self.devices["ArUcoCam"] = ArUcoCam()
-        self.devices["RX8"].handle.write("playbuflen",
-                                         self.devices["RX8"].setting.sampling_freq*self.setting.stim_duration,
-                                         procs=self.devices["RX8"].handle.procs)
+        pass
 
     def _start(self, **kwargs):
         pass
@@ -72,7 +75,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=0,
                                          procs=f"RX81")  # turn off LED
-        pass
+        self.stairs.close_plot()
 
     def setup_experiment(self, info=None):
         self.load_speakers()
@@ -90,27 +93,36 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                                      n_reversals=config.n_reversals,
                                      step_sizes=config.step_sizes)
         self._tosave_para["stairs"] = self.stairs
-        # self.sequence.__next__()
+        self.sequence.__next__()
+        self.devices["RX8"].handle.write("playbuflen",
+                                         self.paradigm_start.duration * self.devices["RX8"].setting.sampling_freq,
+                                         procs=self.devices["RX8"].handle.procs)
+        self.devices["RX8"].handle.write("data0", self.paradigm_start.data.flatten(), procs="RX81")
+        self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
+        self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
+        self.devices["RX8"].wait_to_finish_playing()
+        self.devices["RX8"].handle.write("playbuflen",
+                                         self.devices["RX8"].setting.sampling_freq*self.setting.stim_duration,
+                                         procs=self.devices["RX8"].handle.procs)
 
     def _prepare_trial(self):
-        if self.sequence.finished:  # check if sequence is finished
-            log.warning("Sequence finished!")
-            self.change_state(complete=True)
-            self.stop()
-        else:
-            if self.stairs.finished:
-                self.stairs = slab.Staircase(start_val=config.start_val,
-                                             n_reversals=config.n_reversals,
-                                             step_sizes=config.step_sizes)
-                try:
-                    self.sequence.__next__()
-                except:
-                    log.warning("Sequence finished!")
-                    self.change_state(complete=True)
-                    self.stop()
-            self.masker_speaker = self.speakers[self.sequence.this_n]
-            self.masker_sound = random.choice(self.potential_maskers)
-            self._tosave_para["masker_speaker"] = self.masker_speaker
+        if self.stairs.finished:
+            self.devices["RX8"].clear_buffers()
+            self._tosave_para["threshold"] = self.stairs.threshold
+            self.stairs = slab.Staircase(start_val=config.start_val,
+                                         n_reversals=config.n_reversals,
+                                         step_sizes=config.step_sizes)
+            self._tosave_para["stairs"] = self.stairs
+            self.sequence.__next__()
+            self.devices["RX8"].handle.write("data0", self.staircase_end.data.flatten(), procs="RX81")
+            self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
+            self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
+            self.devices["RX8"].wait_to_finish_playing()
+        self.masker_speaker = self.speakers[self.sequence.this_trial]
+        self.pick_masker_according_to_talker()
+        self.masker_sound = random.choice(self.potential_maskers)
+        self._tosave_para["masker_speaker"] = self.masker_speaker
+        self.devices["RX8"].clear_buffers()
 
     def _start_trial(self):
         self.time_0 = time.time()  # starting time of the trial
@@ -130,12 +142,13 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                                          self.masker_speaker.channel_analog,
                                          f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
         self.devices["RX8"].handle.write("data1",
-                                         self.masker_sound.data[:, 0].flatten(),
+                                         self.masker_sound[0].data[:, 0].flatten(),
                                          f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
         log.warning('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
         # simulate response
         # response = self.stairs.simulate_response(threshold=60)
-        self.devices["RX8"].start()
+        for device in self.devices.keys():
+            self.devices[device].start()
         # self.devices["RX8"].pause()
         # self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
         # self.devices["RX8"].wait_to_finish_playing()
@@ -158,13 +171,23 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self._tosave_para["solution"] = solution
         self.stairs.add_response(1) if response == solution else self.stairs.add_response(0)
         self.stairs.plot()
-        self.process_event({'trial_stop': 0})  # stops the trial
+        # self.process_event({'trial_stop': 0})  # stops the trial
 
     def _stop_trial(self):
         log.warning('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
+        for device in self.devices.keys():
+            self.devices[device].pause()
         #is_correct = True if self.sequence.this_trial / self.devices["RP2"]._output_specs["response"] == 1 else False
         #self._tosave_para["is_correct"] = is_correct
         self.data.save()
+        if self.sequence.n_remaining == 0 and self.stairs.finished:
+            self.setting.current_trial = self.setting.total_trial
+            self.devices["RX8"].clear_buffers()
+            self.devices["RX8"].handle.write("data0", self.staircase_end.data.flatten(), procs="RX81")
+            self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
+            self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
+            self.devices["RX8"].wait_to_finish_playing()
+
 
     def load_signals(self, target_sounds_type="tts-numbers_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
@@ -209,9 +232,9 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.speakers = speakers
         self.target_speaker = spk_array.pick_speakers(23)[0]
 
-    def pick_babble_according_to_talker(self):
+    def pick_masker_according_to_talker(self):
         potential_maskers = list()
-        for masker in self.maskers:
+        for masker in self.maskers.values():
             if self.talker not in masker:
                 potential_maskers.append(masker)
         self.potential_maskers = potential_maskers
@@ -227,7 +250,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                                          procs="RX81")  # illuminate central speaker LED
         log.warning('Point towards led and press button to start calibration')
         self.devices["RP2"].wait_for_button()  # start calibration after button press
-        self.devices["ArUcoCam"].run()
+        self.devices["ArUcoCam"].retrieve()
         offset = self.devices["ArUcoCam"]._output_specs["pose"]
         self.devices["ArUcoCam"].offset = offset
         # self.devices["ArUcoCam"].pause()
@@ -246,20 +269,18 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     def check_headpose(self):
         while True:
             #self.devices["ArUcoCam"].configure()
-            self.devices["ArUcoCam"].run()
+            self.devices["ArUcoCam"].retrieve()
             # self.devices["ArUcoCam"].pause()
             try:
-                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 10:
+                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 12.5:
                     log.warning("Subject is not looking straight ahead")
-                    for idx in range(5):  # clear all speakers before loading warning tone
-                        self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
-                        self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
-                    self.devices["RX8"].handle.write("data0", self.warning_tone.data.flatten(), procs="RX81")
+                    self.devices["RX8"].clear_buffers()
+                    self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
                     self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
-                    # self.devices["RX8"].start()
+                    #self.devices["RX8"].start()
+                    #self.devices["RX8"].pause()
                     self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
                     self.devices["RX8"].wait_to_finish_playing()
-                    # self.devices["RX8"].pause()
                 else:
                     break
             except TypeError:
@@ -269,10 +290,10 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
 
 if __name__ == "__main__":
     log = logging.getLogger()
-    log.setLevel(logging.DEBUG)
+    log.setLevel(logging.WARNING)
     # create console handler and set level to debug
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(logging.WARNING)
     # create formatter
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # add formatter to ch
