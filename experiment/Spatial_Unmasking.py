@@ -76,7 +76,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     def _stop(self, **kwargs):
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=0,
-                                         procs=f"RX81")  # turn off LED
+                                         procs="RX81")  # turn off LED
         self.stairs.close_plot()
 
     def setup_experiment(self, info=None):
@@ -105,6 +105,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
 
     def _prepare_trial(self):
         if self.stairs.finished:
+            self.stairs.close_plot()
             self.devices["RX8"].clear_buffers()
             self._tosave_para["threshold"] = self.stairs.threshold
             self.stairs = slab.Staircase(start_val=config.start_val,
@@ -223,7 +224,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         elif self.plane == "h":
             speakers = spk_array.pick_speakers([2, 8, 15, 31, 38, 44])
         else:
-            log.warning("Wrong plane, must be v or h. Unable to load speakers!")
+            log.info("Wrong plane, must be v or h. Unable to load speakers!")
             speakers = [None]
         self.speakers = speakers
         self.target_speaker = spk_array.pick_speakers(23)[0]
