@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "numjudge_config.txt"))
 
 #TODO: I think the experiment skips the last trial
-#TODO: Do I need to clear data buffer after each trial?
+
 
 class NumerosityJudgementSetting(ExperimentSetting):
 
@@ -101,6 +101,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.devices["RP2"].get_response()
         reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         self._tosave_para["reaction_time"] = reaction_time
+        is_correct = True if self.sequence.this_trial == self._devices_output_params()["RP2"]["response"] else False
+        self._tosave_para["is_correct"] = is_correct
         # self.response = self.devices["RP2"].get_response()
         # self.devices["RX8"].pause()
         # self.process_event({'trial_stop': 0})
@@ -108,12 +110,10 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     def _stop_trial(self):
         for device in self.devices.keys():
             self.devices[device].pause()
-        is_correct = True if self.sequence.this_trial / self._devices_output_params()["RP2"]["response"] == 1 else False
         for data_idx in range(5):
             self.devices["RX8"].handle.write(tag=f"data{data_idx}",
                                              value=0,
                                              procs=["RX81", "RX82"])
-        self._tosave_para["is_correct"] = is_correct
         self.data.save()
         log.warning('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
 
@@ -180,7 +180,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
             self.devices["ArUcoCam"].retrieve()
             # self.devices["ArUcoCam"].pause()
             try:
-                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 10:
+                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 15:
                     log.warning("Subject is not looking straight ahead")
                     for idx in range(5):  # clear all speakers before loading warning tone
                         self.devices["RX8"].handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
@@ -231,6 +231,7 @@ if __name__ == "__main__":
     # subject.file_path
     experimenter = "Max"
     nj = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
+    nj.devices["RP2"].experiment = nj
     nj.calibrate_camera()
     nj.start()
     # nj.configure_traits()
