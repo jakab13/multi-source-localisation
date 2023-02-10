@@ -21,6 +21,9 @@ def setup_experiment():
     experimenter = input("Enter your name: ").lower()
     is_example = input("Example? y or n").lower()
 
+    # _get_data_path() method call possible if instance calls itself
+    #TODO
+    # Verzweigung "= None:"-> add_subject...() else: read_from...()
     try:
         if is_example == "y":
             name = "99"
