@@ -34,7 +34,7 @@ class RP2Device(Device):
     _output_specs = {'type': setting.type, 'sampling_freq': setting.sampling_freq,
                      'dtype': setting.dtype, "shape": setting.shape}
     _use_default_thread = True
-    button_press_count = 0
+    button_press_count = Int(0)
 
 
     def _initialize(self, **kwargs):  # this method is called upon self.initialize() execution
@@ -68,10 +68,10 @@ class RP2Device(Device):
 
     def thread_func(self):
         if self.experiment:
-            if self.experiment().experiment_name == "SpatMask" or "Numjude":
+            if self.experiment().setting.experiment_name == "SpatMask" or "NumJudge":
                 if self.handle.GetTagVal("response") > 0 and self.experiment.experiment_name == "SpatMask" or "Numjude":
                     self.experiment().process_event({'trial_stop': 0})
-            elif self.experiment().experiment_name == "LocaAccu":
+            elif self.experiment().setting.experiment_name == "LocaAccu":
                 if self.button_press_count % 2 != 0:
                     if self.button_press_count > 1:
                         self.experiment().process_event({'trial_stop': 0})
