@@ -14,6 +14,8 @@ import time
 import numpy as np
 import logging
 import datetime
+import pathlib
+import random
 
 log = logging.getLogger(__name__)
 config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "locaaccu_config.txt"))
@@ -39,7 +41,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
     time_0 = Float()
     all_speakers = List()
     target = Any()
-    signal = Any()
+    signals = Any()
     # warning_tone = warning_tone.trim(0.0, 0.225)
     pose = Any()
     #error = np.array([])
@@ -93,8 +95,9 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         solution = self.sequence.this_trial - 1
         self._tosave_para["solution"] = solution
         self.pick_speaker_this_trial(speaker_id=solution)
+        signal = random.choice(self.signals)
         self.devices["RX8"].handle.write(tag=f"data0",
-                                         value=self.signal.data.flatten(),
+                                         value=signal[0].data[:, 0].flatten(),
                                          procs=f"{self.target.TDT_analog}{self.target.TDT_idx_analog}")
         self.devices["RX8"].handle.write(tag=f"chan0",
                                          value=self.target.channel_analog,
@@ -122,12 +125,11 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
             self.devices[device].pause()
         self.data.save()
 
-    def load_signal(self):
-        noise = slab.Sound.pinknoise(duration=0.025, level=70, samplerate=self.devices["RX8"].setting.sampling_freq)
-        noise = noise.ramp(when='both', duration=0.01)
-        silence = slab.Sound.silence(duration=0.025, samplerate=self.devices["RX8"].setting.sampling_freq)
-        self.signal = slab.Sound.sequence(noise, silence, noise, silence, noise,
-                                          silence, noise, silence, noise)
+    def load_signals(self, sound_type="babble-numbers-reversed-shifted_resamp_24414"):
+        sound_root = get_config(setting="SOUND_ROOT")
+        sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
+        sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
+        self.signals = sound_list
 
     def load_speakers(self, filename="dome_speakers.txt"):
         basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
