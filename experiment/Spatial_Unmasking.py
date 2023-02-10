@@ -285,10 +285,10 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
 
 if __name__ == "__main__":
     log = logging.getLogger()
-    log.setLevel(logging.WARNING)
+    log.setLevel(logging.INFO)
     # create console handler and set level to debug
     ch = logging.StreamHandler()
-    ch.setLevel(logging.WARNING)
+    ch.setLevel(logging.INFO)
     # create formatter
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # add formatter to ch
