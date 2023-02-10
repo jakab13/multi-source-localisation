@@ -120,8 +120,8 @@ class ArUcoCam(Device):
     def get_pose(self, plot=False, resolution=1.0):
         pose = [None, None]
         for i, c in enumerate(self.cams):
-            ret, image = c.read()
-            while True:  # avoid breaking when image is None
+            while True:  # avoid breaking when image is NoneType
+                ret, image = c.read()
                 if image is not None:
                     if image.ndim == 3:
                         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
