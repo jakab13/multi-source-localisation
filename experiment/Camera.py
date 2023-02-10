@@ -18,7 +18,6 @@ except ModuleNotFoundError:
     PySpin = False
 import cv2
 import PIL
-from matplotlib import pyplot as plt
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 log = logging.getLogger(__name__)
