@@ -101,6 +101,15 @@ class ArUcoCam(Device):
             plt.imshow(frame, cmap=cmap)  # show image
             plt.show()
 
+    def show_video(self):
+        for c in self.cams:
+            while True:
+                ret, frame = c.read()
+                cv2.imshow("press q to quit", frame)
+                key = cv2.waitKey(30)
+                if key == ord("q"):
+                    break
+
     def retrieve(self):
         if self.calibrated:
             pose = self.get_pose()  # Get image as numpy array
