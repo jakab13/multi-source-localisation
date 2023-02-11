@@ -28,7 +28,7 @@ class NumerosityJudgementSetting(ExperimentSetting):
     experiment_name = Str('NumJudge', group='status', dsec='name of the experiment', noshow=True)
     conditions = List(config.conditions, group="status", dsec="Number of simultaneous talkers in the experiment")
     trial_number = Int(config.trial_number, group='status', dsec='Number of trials in each condition')
-    trial_duration = Float(config.trial_duration, group='status', dsec='Duration of each trial, (s)')
+    stim_duration = Float(config.trial_duration, group='status', dsec='Duration of each trial, (s)')
 
     def _get_total_trial(self):
         return self.trial_number * len(self.conditions)
@@ -45,7 +45,9 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     time_0 = Float()
     speakers = List()
     signals = List()
-    warning_tone = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "warning\\warning_tone.wav"))
+    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\off_center.wav"))
+    paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
+    paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_end.wav"))
     plane = Str("v")
     # response = Int()
 
@@ -59,7 +61,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def _initialize(self, **kwargs):
         self.devices["RX8"].handle.write("playbuflen",
-                                         self.devices["RX8"].setting.sampling_freq*self.setting.trial_duration,
+                                         self.setting.stim_duration * self.devices["RX8"].setting.sampling_freq,
                                          procs=self.devices["RX8"].handle.procs)
 
     def _start(self, **kwargs):
@@ -73,6 +75,11 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=0,
                                          procs="RX81")  # turn off LED
+        self.devices["RX8"].clear_channels()
+        self.devices["RX8"].handle.write("data0", self.paradigm_end.data.flatten(), procs="RX81")
+        self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
+        self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
+        self.devices["RX8"].wait_to_finish_playing()
 
     def setup_experiment(self, info=None):
         self._tosave_para["sequence"] = self.sequence
@@ -81,6 +88,15 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                                          procs="RX81")  # illuminate central speaker LED
         self.load_speakers()
         self.load_signals()
+        self.devices["RX8"].handle.write("data0", self.paradigm_start.data.flatten(), procs="RX81")
+        self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
+        self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
+        self.devices["RX8"].wait_to_finish_playing()
+        # self.devices["RX8"].handle.write("playbuflen",
+                                         # self.devices["RX8"].setting.sampling_freq*self.setting.stim_duration,
+                                         # procs=self.devices["RX8"].handle.procs)
+        time.sleep(1)
+
 
     def _prepare_trial(self):
         self.check_headpose()
@@ -88,7 +104,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self._tosave_para["solution"] = self.sequence.this_trial
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
-        self.devices["RX8"].clear_buffers()
+        self.devices["RX8"].clear_channels()
         for idx, spk in enumerate(self.speakers_sample):
             self.devices["RX8"].handle.write(tag=f"data{idx}",
                                              value=self.signals_sample[idx].data.flatten(),
@@ -188,7 +204,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
             try:
                 if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 12.5:
                     log.info("Subject is not looking straight ahead")
-                    self.devices["RX8"].clear_buffers()
+                    self.devices["RX8"].clear_channels()
                     self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
                     self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
                     #self.devices["RX8"].start()
@@ -205,10 +221,10 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 if __name__ == "__main__":
 
     log = logging.getLogger()
-    log.setLevel(logging.WARNING)
+    log.setLevel(logging.INFO)
     # create console handler and set level to debug
     ch = logging.StreamHandler()
-    ch.setLevel(logging.WARNING)
+    ch.setLevel(logging.INFO)
     # create formatter
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # add formatter to ch
