@@ -64,12 +64,12 @@ class RP2Device(Device):
         log.info("Acquiring button response ... ")
         # because the response is stored in bit value, we need the base 2 log
         self._output_specs["response"] = int(np.log2(self.handle.GetTagVal("response")))
-        return int(np.log2(self.handle.GetTagVal("response")))
+        return self._output_specs["response"]
 
     def thread_func(self):
         if self.experiment:
             if self.experiment().setting.experiment_name == "SpatMask" or "NumJudge":
-                if self.handle.GetTagVal("response") > 0 and self.experiment.experiment_name == "SpatMask" or "Numjude":
+                if self.handle.GetTagVal("response") > 0 and self.experiment.experiment_name == "SpatMask" or "NumJudge":
                     self.experiment().process_event({'trial_stop': 0})
             elif self.experiment().setting.experiment_name == "LocaAccu":
                 if self.button_press_count % 2 != 0:
@@ -88,14 +88,16 @@ if __name__ == "__main__":
     # add formatter to ch
     ch.setFormatter(formatter)
     # add ch to logger
-    log.addHandler(ch)
-    responses = list()
     RP2 = RP2Device()
 
-    for trial in range(5):
+    log.addHandler(ch)
+    responses = list()
+
+    for trial in range(9):
         # RP2.configure()
         RP2.start()
         RP2.wait_for_button()
         responses.append(RP2.get_response())
         RP2.pause()
+        print(RP2._output_specs["response"])
         time.sleep(1)
