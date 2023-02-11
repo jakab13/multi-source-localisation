@@ -7,6 +7,7 @@ from labplatform.core import TDTblackbox as tdt
 import logging
 import os
 import time
+import numpy as np
 
 log = logging.getLogger(__name__)
 
@@ -79,11 +80,14 @@ class RX8Device(Device):
             time.sleep(0.01)
         log.info('Done waiting.')
 
-    def clear_buffers(self):
+    def clear_channels(self):
         for idx in range(5):  # clear all speakers before loading warning tone
-            self.handle.write(f"data{idx}", 0, procs=["RX81", "RX82"])
             self.handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
 
+    def clear_buffers(self):
+        for idx in range(5):  # clear all speakers before loading warning tone
+            buffer_len = 100000
+            self.handle.write(f"data{idx}", buffer_len, procs=["RX81", "RX82"])
 
 if __name__ == "__main__":
     log = logging.getLogger()
