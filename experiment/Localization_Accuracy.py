@@ -26,7 +26,7 @@ class LocalizationAccuracySetting(ExperimentSetting):
     experiment_name = Str('LocaAccu', group='status', dsec='name of the experiment', noshow=True)
     conditions = Int(config.conditions, group="status", dsec="Number of total speakers")
     trial_number = Int(config.trial_number, group='status', dsec='Number of trials in each condition')
-    trial_duration = Float(config.trial_duration, group='status', dsec='Duration of each trial, (s)')
+    stim_duration = Float(config.trial_duration, group='status', dsec='Duration of each trial, (s)')
 
     def _get_total_trial(self):
         return self.trial_number * self.conditions
@@ -42,12 +42,12 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
     all_speakers = List()
     target = Any()
     signals = Any()
-    # warning_tone = warning_tone.trim(0.0, 0.225)
-    pose = Any()
-    #error = np.array([])
-    plane = Str("v")
     off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\off_center.wav"))
     paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
+    paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_end.wav"))
+    # pose = Any()
+    error = List()
+    plane = Str("v")
 
     def _devices_default(self):
         rp2 = RP2Device()
@@ -59,7 +59,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
 
     def _initialize(self, **kwargs):
         self.devices["RX8"].handle.write("playbuflen",
-                                         self.paradigm_start.duration * self.devices["RX8"].setting.sampling_freq,
+                                         self.setting.stim_duration * self.devices["RX8"].setting.sampling_freq,
                                          procs=self.devices["RX8"].handle.procs)
 
     def _start(self, **kwargs):
@@ -72,6 +72,12 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=0,
                                          procs="RX81")  # turn off LED
+        self.devices["RX8"].clear_channels()
+        self.devices["RX8"].handle.write("data0", self.paradigm_end.data.flatten(), procs="RX81")
+        self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
+        self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
+        self.devices["RX8"].wait_to_finish_playing()
+        log.info(f"Mean error - azimuth: {np.mean(np.array(self.error)[:, 0])}, elevation: {np.mean(np.array(self.error)[:, 1])}")
 
     def setup_experiment(self, info=None):
         self._tosave_para["sequence"] = self.sequence
@@ -79,17 +85,19 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
         self.load_speakers()
-        self.load_signal()
+        self.load_pinknoise()
         self.devices["RX8"].handle.write("data0", self.paradigm_start.data.flatten(), procs="RX81")
         self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
         self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
         self.devices["RX8"].wait_to_finish_playing()
-        self.devices["RX8"].handle.write("playbuflen",
-                                         self.devices["RX8"].setting.sampling_freq*self.setting.stim_duration,
-                                         procs=self.devices["RX8"].handle.procs)
+        self.devices["RX8"].handle.write("data0", np.zeros(len(self.paradigm_start.data.flatten())), procs="RX81")
+        # self.devices["RX8"].handle.write("playbuflen",
+                                         # self.devices["RX8"].setting.sampling_freq*self.setting.stim_duration,
+                                         # procs=self.devices["RX8"].handle.procs)
+        time.sleep(1)
 
     def _prepare_trial(self):
-        self.devices["RX8"].clear_buffers()
+        self.devices["RX8"].clear_channels()
         self.check_headpose()
         self.sequence.__next__()
         solution = self.sequence.this_trial - 1
@@ -97,7 +105,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         self.pick_speaker_this_trial(speaker_id=solution)
         signal = random.choice(self.signals)
         self.devices["RX8"].handle.write(tag=f"data0",
-                                         value=signal[0].data[:, 0].flatten(),
+                                         value=signal.data.flatten(),
                                          procs=f"{self.target.TDT_analog}{self.target.TDT_idx_analog}")
         self.devices["RX8"].handle.write(tag=f"chan0",
                                          value=self.target.channel_analog,
@@ -109,12 +117,16 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         for device in self.devices.keys():
             self.devices[device].start()
         self.devices["RP2"].wait_for_button()
+        self.devices["ArUcoCam"].retrieve()
         reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
-        #self.pose = np.array(self.devices["ArUcoCam"]._output_specs["pose"])
-        #actual = np.array([self.target.azimuth, self.target.elevation])
-        #self.error = np.append(self.error, np.abs(actual-self.pose))
+        np.array(self.devices["ArUcoCam"]._output_specs["pose"])
+        actual = np.array([self.target.azimuth, self.target.elevation])
+        accuracy = np.abs(actual - self.devices["ArUcoCam"]._output_specs["pose"])
+        self.error.append(accuracy)
         self._tosave_para["reaction_time"] = reaction_time
+        time.sleep(1)
         self.devices["RP2"].wait_for_button()
+        log.info(f"Trial {self.setting.current_trial} error - azimuth: {accuracy[0]}, elevation: {accuracy[1]}")
         # time.sleep(0.2)
 
     def _stop_trial(self):
@@ -125,11 +137,20 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
             self.devices[device].pause()
         self.data.save()
 
-    def load_signals(self, sound_type="babble-numbers-reversed-shifted_resamp_24414"):
+    def load_babble(self, sound_type="babble-numbers-reversed-shifted_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
         self.signals = sound_list
+
+    def load_pinknoise(self):
+        noise = slab.Sound.pinknoise(duration=0.025, level=90, samplerate=self.devices["RX8"].setting.sampling_freq)
+        noise = noise.ramp(when='both', duration=0.01)
+        silence = slab.Sound.silence(duration=0.025, samplerate=self.devices["RX8"].setting.sampling_freq)
+        stim = slab.Sound.sequence(noise, silence, noise, silence, noise,
+                                   silence, noise, silence, noise)
+        stim = stim.ramp(when='both', duration=0.01)
+        self.signals = [stim]
 
     def load_speakers(self, filename="dome_speakers.txt"):
         basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
@@ -184,7 +205,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
             try:
                 if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 12.5:
                     log.info("Subject is not looking straight ahead")
-                    self.devices["RX8"].clear_buffers()
+                    self.devices["RX8"].clear_channels()
                     self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
                     self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
                     #self.devices["RX8"].start()
@@ -201,10 +222,10 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
 if __name__ == "__main__":
 
     log = logging.getLogger()
-    log.setLevel(logging.DEBUG)
+    log.setLevel(logging.INFO)
     # create console handler and set level to debug
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(logging.INFO)
     # create formatter
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # add formatter to ch
@@ -231,6 +252,6 @@ if __name__ == "__main__":
     # subject.file_path
     experimenter = "Max"
     la = LocalizationAccuracyExperiment(subject=subject, experimenter=experimenter)
-    # la.calibrate_camera()
+    la.calibrate_camera()
     la.start()
     # nj.configure_traits()
