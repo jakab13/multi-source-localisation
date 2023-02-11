@@ -59,6 +59,7 @@ class RP2Device(Device):
         while not self.handle.GetTagVal("response"):
             time.sleep(0.1)  # sleeps while the response tag in the rcx circuit does not yield 1
         self.button_press_count += 1
+        print(self.button_press_count)
 
     def get_response(self):  # collects response, preferably called right after wait_for_button
         log.info("Acquiring button response ... ")
@@ -69,12 +70,14 @@ class RP2Device(Device):
     def thread_func(self):
         if self.experiment:
             if self.experiment().setting.experiment_name == "SpatMask" or "NumJudge":
-                if self.handle.GetTagVal("response") > 0 and self.experiment.experiment_name == "SpatMask" or "NumJudge":
+                if self.handle.GetTagVal("response") > 0:
                     self.experiment().process_event({'trial_stop': 0})
             elif self.experiment().setting.experiment_name == "LocaAccu":
                 if self.button_press_count % 2 != 0:
-                    if self.button_press_count > 1:
+                    if self.button_press_count != 1:
                         self.experiment().process_event({'trial_stop': 0})
+                    else:
+                        pass
 
 
 if __name__ == "__main__":
