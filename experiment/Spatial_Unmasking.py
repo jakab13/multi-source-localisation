@@ -44,6 +44,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\off_center.wav"))
     paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
     staircase_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\staircase_end.wav"))
+    paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_end.wav"))
     stairs = Any()
     target_speaker = Any()
     selected_target_sounds = List()
@@ -64,7 +65,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
 
     def _initialize(self, **kwargs):
         self.devices["RX8"].handle.write("playbuflen",
-                                         self.paradigm_start.duration * self.devices["RX8"].setting.sampling_freq,
+                                         self.setting.stim_duration * self.devices["RX8"].setting.sampling_freq,
                                          procs=self.devices["RX8"].handle.procs)
 
     def _start(self, **kwargs):
@@ -77,6 +78,11 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=0,
                                          procs="RX81")  # turn off LED
+        # self.devices["RX8"].clear_buffers(buffer_length=len(self.staircase_end.data.flatten()))
+        self.devices["RX8"].handle.write("data0", self.paradigm_end.data.flatten(), procs="RX81")
+        self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
+        self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
+        self.devices["RX8"].wait_to_finish_playing()
         self.stairs.close_plot()
 
     def setup_experiment(self, info=None):
@@ -99,14 +105,15 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
         self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
         self.devices["RX8"].wait_to_finish_playing()
-        self.devices["RX8"].handle.write("playbuflen",
-                                         self.devices["RX8"].setting.sampling_freq*self.setting.stim_duration,
-                                         procs=self.devices["RX8"].handle.procs)
+        # self.devices["RX8"].handle.write("playbuflen",
+                                         # self.devices["RX8"].setting.sampling_freq*self.setting.stim_duration,
+                                         # procs=self.devices["RX8"].handle.procs)
+        time.sleep(1)
 
     def _prepare_trial(self):
         if self.stairs.finished:
             self.stairs.close_plot()
-            self.devices["RX8"].clear_buffers()
+            self.devices["RX8"].clear_channels()
             self._tosave_para["threshold"] = self.stairs.threshold
             self.stairs = slab.Staircase(start_val=config.start_val,
                                          n_reversals=config.n_reversals,
@@ -117,11 +124,12 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
             self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
             self.devices["RX8"].wait_to_finish_playing()
+            self.devices["RX8"].clear_channels()
+            time.sleep(1.0)
         self.masker_speaker = self.speakers[self.sequence.this_trial]
         self.pick_masker_according_to_talker()
         self.masker_sound = random.choice(self.potential_maskers)
         self._tosave_para["masker_speaker"] = self.masker_speaker
-        self.devices["RX8"].clear_buffers()
 
     def _start_trial(self):
         self.time_0 = time.time()  # starting time of the trial
@@ -180,7 +188,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.data.save()
         if self.sequence.n_remaining == 0 and self.stairs.finished:
             self.setting.current_trial = self.setting.total_trial
-            self.devices["RX8"].clear_buffers()
+            self.devices["RX8"].clear_channels()
             self.devices["RX8"].handle.write("data0", self.staircase_end.data.flatten(), procs="RX81")
             self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
             self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
@@ -269,7 +277,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             try:
                 if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 12.5:
                     log.info("Subject is not looking straight ahead")
-                    self.devices["RX8"].clear_buffers()
+                    self.devices["RX8"].clear_channels()
                     self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
                     self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
                     #self.devices["RX8"].start()
