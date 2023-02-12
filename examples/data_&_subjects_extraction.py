@@ -12,13 +12,10 @@ import numpy as np
 
 # get absolute filepath to cohort files
 data_root = get_config("DATA_ROOT")
-fp = os.path.join(data_root, "Foo_Test", "FooExp_Pilot_Human_Foo")
+fp = os.path.join(data_root, "pilot_data")
 files = glob(os.path.join(fp, '*.h5'))
-filters = (('_v_name', 'trial_log'), ('<+nyu_id', lambda id: id != 0))
-fields = (('<+identifier', 'id'), ('<+sex', 'sex'))
-data = extract_data(files, filters, fields)
-h5py = File(files[0])
-df = pd.DataFrame(np.array(File(files[0])))
+fh = tables.open_file(files[1], 'r')
+trial_log = p_get_node(fh.root.trial_0000, '*/data/trial_log')
 
 # define filters and fields for h5Tables.extract files
 # filters = (('_v_name', 'trial_log'), ('<+nyu_id', lambda id: id != 0))
