@@ -124,7 +124,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
             self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
             self.devices["RX8"].wait_to_finish_playing()
-            self.devices["RX8"].clear_channels()
+            # self.devices["RX8"].clear_channels()
             time.sleep(1.0)
         self.masker_speaker = self.speakers[self.sequence.this_trial]
         self.pick_masker_according_to_talker()
@@ -186,13 +186,6 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         for device in self.devices.keys():
             self.devices[device].pause()
         self.data.save()
-        if self.sequence.n_remaining == 0 and self.stairs.finished:
-            self.setting.current_trial = self.setting.total_trial
-            self.devices["RX8"].clear_channels()
-            self.devices["RX8"].handle.write("data0", self.staircase_end.data.flatten(), procs="RX81")
-            self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
-            self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
-            self.devices["RX8"].wait_to_finish_playing()
 
     def load_signals(self, target_sounds_type="tts-numbers_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
