@@ -27,13 +27,13 @@ def setup_experiment():
     try:
         if is_example == "y":
             name = "99"
-            subject = Subject(name=name,
+            subject = Subject(name=f"msl{name}",
                               group=group,
                               species="Human",
                               sex=sex,
                               cohort=cohort)
         elif is_example == "n":
-            subject = Subject(name=f"sub{name}",
+            subject = Subject(name=f"msl{name}",
                               group=group,
                               species="Human",
                               sex=sex,
@@ -41,7 +41,7 @@ def setup_experiment():
         subject.add_subject_to_h5file(os.path.join(get_config("SUBJECT_ROOT"), f"sub{name}.h5"))
     except ValueError:
         # read the subject information
-        subject = Subject(name=f"sub{name}",
+        subject = Subject(name=f"msl{name}",
                           group=group,
                           species="Human",
                           sex=sex,
