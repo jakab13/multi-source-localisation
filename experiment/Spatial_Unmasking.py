@@ -21,8 +21,6 @@ log = logging.getLogger(__name__)
 config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "spatmask_config.txt"))
 slab.set_default_samplerate(24414)
 
-# TODO: clear camera buffer every once in a while
-
 
 class SpatialUnmaskingSetting(ExperimentSetting):
 
@@ -173,8 +171,6 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                               }
         solution = solution_converter[str(target_sound_i)]
         log.info(f"solution: {solution}")
-        is_correct = True if response == solution else False
-        self._tosave_para["is_correct"] = is_correct
         self._tosave_para["solution"] = solution
         is_correct = True if solution == response else False
         self._tosave_para["is_correct"] = is_correct
