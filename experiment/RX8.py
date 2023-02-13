@@ -84,10 +84,8 @@ class RX8Device(Device):
         for idx in range(5):  # clear all speakers before loading warning tone
             self.handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
 
-    def clear_buffers(self):
-        for idx in range(5):  # clear all speakers before loading warning tone
-            buffer_len = 100000
-            self.handle.write(f"data{idx}", buffer_len, procs=["RX81", "RX82"])
+    def clear_buffer(self, buffer_length=24414):
+        self.handle.write(f"data0", buffer_length, procs=["RX81", "RX82"])
 
 if __name__ == "__main__":
     log = logging.getLogger()
