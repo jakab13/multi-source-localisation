@@ -134,6 +134,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         level = self.stairs.__next__()
         log.info(f"trial {self.setting.current_trial} dB level: {level}")
         self.check_headpose()
+        self.devices["RX8"].clear_buffer()
         target_sound_i = random.choice(range(len(self.selected_target_sounds)))
         target_sound = self.selected_target_sounds[target_sound_i]  # choose random number from sound_list
         target_sound.level = level

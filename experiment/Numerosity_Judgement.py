@@ -97,9 +97,9 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                                          # procs=self.devices["RX8"].handle.procs)
         time.sleep(1)
 
-
     def _prepare_trial(self):
         self.check_headpose()
+        self.devices["RX8"].clear_buffer()
         self.sequence.__next__()
         self._tosave_para["solution"] = self.sequence.this_trial
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)

@@ -99,6 +99,8 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
     def _prepare_trial(self):
         self.devices["RX8"].clear_channels()
         self.check_headpose()
+        self.devices["RX8"].clear_channels()
+        self.devices["RX8"].clear_buffer()
         self.sequence.__next__()
         solution = self.sequence.this_trial - 1
         self._tosave_para["solution"] = solution
