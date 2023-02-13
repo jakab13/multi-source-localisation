@@ -56,7 +56,7 @@ class ArUcoCam(Device):
     offset = Any()
     calibrated = Bool()
     _output_specs = {'type': setting.type, 'sampling_freq': setting.sampling_freq,
-                     'dtype': setting.dtype, "shape": setting.shape}
+                     'dtype': setting.dtype, "shape": setting.shape, "pose": List}
 
     def _initialize(self, **kwargs):
         """
