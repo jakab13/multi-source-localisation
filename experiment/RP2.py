@@ -32,7 +32,7 @@ class RP2Device(Device):
     handle = Any()  # handle for TDT method execution like handle.write, handle.read, ...
     # thread = Instance(threading.Thread)  # important for threading
     _output_specs = {'type': setting.type, 'sampling_freq': setting.sampling_freq,
-                     'dtype': setting.dtype, "shape": setting.shape}
+                     'dtype': setting.dtype, "shape": setting.shape, "response": Int}
     _use_default_thread = True
     button_press_count = Int(0)
 
