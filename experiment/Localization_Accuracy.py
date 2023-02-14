@@ -115,7 +115,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
 
     def _start_trial(self):
         self.time_0 = time.time()  # starting time of the trial
-        log.info('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
+        log.info(f'trial {self.setting.current_trial}/{self.setting.total_trial} start: {time.time() - self.time_0}')
         for device in self.devices.keys():
             self.devices[device].start()
         self.devices["RP2"].wait_for_button()
@@ -134,7 +134,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
     def _stop_trial(self):
         #accuracy = np.abs(np.subtract([self.target.azimuth, self.target.elevation], self.pose))
         #log.warning(f"Accuracy azi: {accuracy[0]}, ele: {accuracy[1]}")
-        log.info('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
+        log.info(f"trial {self.setting.current_trial}/{self.setting.total_trial} end: {time.time() - self.time_0}")
         for device in self.devices.keys():
             self.devices[device].pause()
         self.data.save()

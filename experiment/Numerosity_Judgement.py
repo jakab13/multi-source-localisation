@@ -115,7 +115,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def _start_trial(self):
         self.time_0 = time.time()  # starting time of the trial
-        log.info('trial {} start: {}'.format(self.setting.current_trial, time.time() - self.time_0))
+        log.info(f'trial {self.setting.current_trial}/{self.setting.total_trial} start: {time.time() - self.time_0}')
         self.devices["RX8"].start()
         self.devices["RP2"].start()
         self.devices["ArUcoCam"].start()
@@ -137,7 +137,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                                              value=0,
                                              procs=["RX81", "RX82"])
         self.data.save()
-        log.info('trial {} end: {}'.format(self.setting.current_trial, time.time() - self.time_0))
+        log.info(f"trial {self.setting.current_trial}/{self.setting.total_trial} end: {time.time() - self.time_0}")
 
     def load_signals(self, sound_type="tts-countries_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
