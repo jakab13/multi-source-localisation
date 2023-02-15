@@ -106,8 +106,9 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
         self.devices["RX8"].clear_channels()
         for idx, spk in enumerate(self.speakers_sample):
+            sound = spk.apply_equalization(self.signals_sample[idx], level_only=False)
             self.devices["RX8"].handle.write(tag=f"data{idx}",
-                                             value=self.signals_sample[idx].data.flatten(),
+                                             value=sound.data.flatten(),
                                              procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
             self.devices["RX8"].handle.write(tag=f"chan{idx}",
                                              value=spk.channel_analog,
@@ -150,6 +151,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         filepath = os.path.join(basedir, filename)
         spk_array = SpeakerArray(file=filepath)
         spk_array.load_speaker_table()
+        spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), "calibration_labplatform_test.pkl"))
         if self.plane == "v":
             speakers = spk_array.pick_speakers([x for x in range(20, 27)])
         elif self.plane == "h":
