@@ -17,9 +17,9 @@ TESTING = {'speaker_file': 'TESTING_speakers.txt',
            }
 
 FREEFIELD = {"speaker_file": "dome_speakers.txt",
-             "device": {"file_name": "RX8.py",
-                        "device_class": "RX8RX8SpeakerCal"},
-             "TDT_rec": "RX8",
+             "device": {"file_name": "TDT_RP2RX8_speaker_calibration.py",
+                        "device_class": "RP2RX8SpeakerCal"},
+             "TDT_rec": "RP2",
              "TDT_aud": "RX8",
-             "ref_spk_id": 0
+             "ref_spk_id": 23
              }
