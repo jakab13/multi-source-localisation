@@ -38,15 +38,15 @@ class SpeakerCalibrator:
             'SPL_Vrms': [1.],  # Vrms values used in single speaker calibration
             'stim_type': 'chirp',
             'stim_dur': 0.05,
-            'stim_freqbound': [2000, 46000],
-            'samplerate': 97656.25,
-            'ref_spk_id': 0,
+            'stim_freqbound': [20, 20000],
+            'samplerate': 48828.125,
+            'ref_spk_id': 23,
             'spks_to_cal': 'all',
             'N_repeats': 10,
             'calib_dB': 75,
             'filter_bank': {'length': 512,
                             'bandwidth': 0.125,
-                            'low_cutoff': 2000,
+                            'low_cutoff': 20,
                             'high_cutoff': None,
                             'alpha': 1.0},
             'stim_ramp': {'duration': 0.005, }    # parameters for stimulus ramp, see slab.Sound.ramp
@@ -55,7 +55,7 @@ class SpeakerCalibrator:
             self.calib_param['ref_spk_id'] = self.config_param['ref_spk_id']
         else:
             # by default, use the 1st speaker as reference
-            self.calib_param['ref_spk_id'] = 0
+            self.calib_param['ref_spk_id'] = 23
         # sound wave data
         self.audio_data = None
         self.save_audio_data = False
