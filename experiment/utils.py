@@ -8,7 +8,7 @@ from experiment.Localization_Accuracy import LocalizationAccuracyExperiment
 from experiment.exp_examples import LocalizationAccuracyExperiment_exmp, SpatialUnmaskingExperiment_exmp, \
     NumerosityJudgementExperiment_exmp
 
-
+# TODO: make set_logger()
 log = logging.getLogger(__name__)
 
 
