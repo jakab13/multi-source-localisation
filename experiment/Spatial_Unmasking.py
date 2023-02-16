@@ -45,7 +45,9 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_end.wav"))
     stairs = slab.Staircase(start_val=config.start_val,
                             n_reversals=config.n_reversals,
-                            step_sizes=config.step_sizes)
+                            step_sizes=config.step_sizes,
+                            step_up_factor=config.step_up_factor,
+                            step_type="db")
     target_speaker = Any()
     selected_target_sounds = List()
     masker_speaker = Any()
@@ -113,9 +115,11 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             self.stairs.close_plot()
             self.devices["RX8"].clear_channels()
             self._tosave_para["threshold"] = self.stairs.threshold
-            self.stairs = slab.Staircase(start_val=config.start_val,
-                                         n_reversals=config.n_reversals,
-                                         step_sizes=config.step_sizes)
+            stairs = slab.Staircase(start_val=config.start_val,
+                                    n_reversals=config.n_reversals,
+                                    step_sizes=config.step_sizes,
+                                    step_up_factor=config.step_up_factor,
+                                    step_type="db")
             self._tosave_para["stairs"] = self.stairs
             self.sequence.__next__()
             self.devices["RX8"].handle.write("data0", self.staircase_end.data.flatten(), procs="RX81")
