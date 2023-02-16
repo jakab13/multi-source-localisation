@@ -1,7 +1,7 @@
 from labplatform.config import get_config
 from labplatform.core.Device import Device
 from labplatform.core.Setting import DeviceSetting
-from traits.api import Float, Str, Any, List
+from traits.api import Float, Str, Any, List, Int
 import threading
 from labplatform.core import TDTblackbox as tdt
 import logging
@@ -27,7 +27,10 @@ class RX8Device(Device):
 
     setting = RX8Setting()  # device setting
     handle = Any()  # device handle
-
+    _output_specs = {'type': setting.type, 'sampling_freq': setting.sampling_freq,
+                     'dtype': setting.dtype, "shape": setting.shape, "masker_speaker": Any,
+                     "threshold": Float, "target": Any, "accuracy": Any, "actual": List, "perceived": List,
+                     "signals_sample": Any, "speakers_sample": Any}
     # thread = Instance(threading.Thread)  # important for threading
 
     def _initialize(self, **kwargs):
