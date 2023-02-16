@@ -101,7 +101,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.check_headpose()
         self.devices["RX8"].clear_buffer()
         self.sequence.__next__()
-        self._tosave_para["solution"] = self.sequence.this_trial
+        self.devices["RP2"]._output_specs["solution"] = self.sequence.this_trial
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
         self.devices["RX8"].clear_channels()
@@ -164,12 +164,12 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     def pick_speakers_this_trial(self, n_speakers):
         speakers_no_rep = list(x for x in self.speakers if x not in self.speakers_sample)
         self.speakers_sample = random.sample(speakers_no_rep, n_speakers)
-        self._tosave_para["speakers_sample"] = self.speakers_sample
+        self.devices["RX8"]._output_specs["speakers_sample"] = self.speakers_sample
 
     def pick_signals_this_trial(self, n_signals):
         signals_no_rep = list(x for x in self.signals if x not in self.signals_sample)
         self.signals_sample = random.sample(signals_no_rep, n_signals)
-        self._tosave_para["signals_sample"] = self.signals_sample
+        self.devices["RX8"]._output_specs["signals_sample"] = self.signals_sample
 
     def calibrate_camera(self, report=True):
         """
