@@ -103,7 +103,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         self.devices["RX8"].clear_buffer()
         self.sequence.__next__()
         solution = self.sequence.this_trial - 1
-        self._tosave_para["solution"] = solution
+        self.devices["RP2"]._output_specs["solution"] = solution
         self.pick_speaker_this_trial(speaker_id=solution)
         signal = random.choice(self.signals)
         sound = self.target.apply_equalization(signal, level_only=False)
@@ -124,7 +124,10 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         # reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         np.array(self.devices["ArUcoCam"]._output_specs["pose"])
         actual = np.array([self.target.azimuth, self.target.elevation])
-        accuracy = np.abs(actual - self.devices["ArUcoCam"]._output_specs["pose"])
+        perceived = self.devices["ArUcoCam"]._output_specs["pose"]
+        accuracy = np.abs(actual - perceived)
+        self.devices["RX8"]._output_specs["actual"] = actual
+        self.devices["RX8"]._output_specs["perceived"] = perceived
         self.error.append(accuracy)
         # self._tosave_para["reaction_time"] = reaction_time
         time.sleep(1)
@@ -171,7 +174,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
 
     def pick_speaker_this_trial(self, speaker_id):
         self.target = self.all_speakers[speaker_id]
-        self._tosave_para["target"] = self.target
+        self.devices["RX8"]._output_specs["target"] = self.target
 
     def calibrate_camera(self, report=True):
         """
