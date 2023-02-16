@@ -33,7 +33,7 @@ class RP2Device(Device):
     # thread = Instance(threading.Thread)  # important for threading
     _output_specs = {'type': setting.type, 'sampling_freq': setting.sampling_freq,
                      'dtype': setting.dtype, "shape": setting.shape, "response": Int,
-                     "rt": Any}
+                     "rt": Any, "solution": Int, "is_correct": Bool}
     _use_default_thread = True
     button_press_count = Int(0)
 
