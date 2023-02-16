@@ -39,7 +39,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     time_0 = Float()
     speakers = List()
     signals = Dict()
-    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\off_center.wav"))
+    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\440_tone.wav"))
     paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
     staircase_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\staircase_end.wav"))
     paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_end.wav"))

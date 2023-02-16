@@ -45,7 +45,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     time_0 = Float()
     speakers = List()
     signals = List()
-    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\off_center.wav"))
+    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\440_tone.wav"))
     paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
     paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_end.wav"))
     plane = Str("v")
