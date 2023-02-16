@@ -14,8 +14,7 @@ import numpy as np
 data_root = get_config("DATA_ROOT")
 fp = os.path.join(data_root, "pilot_data")
 files = glob(os.path.join(fp, '*.h5'))
-fh = tables.open_file(files[1], 'r')
-trial_log = p_get_node(fh.root.trial_0000, '*/data/trial_log')
+fh = tables.open_file(files[0], 'r')
 
 # define filters and fields for h5Tables.extract files
 # filters = (('_v_name', 'trial_log'), ('<+nyu_id', lambda id: id != 0))
