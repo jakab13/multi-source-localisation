@@ -15,21 +15,23 @@ ion in the end as well. Setting the n_down parameter accordingly is therefore ba
 estimated by trial-and-error.
 """
 
-stairs = Staircase(start_val=50,
-                   n_reversals=10,
-                   step_sizes=[4, 1],
-                   step_up_factor=1,
-                   n_pretrials=0,
-                   n_up=1,
-                   n_down=3,  # the higher this value, the longer the staircase duration
-                   step_type="lin")
+stairs = Staircase(start_val=50,  # starting dB value
+                   n_reversals=8,  # number of reversals
+                   step_sizes=[3, 1],  # step sizes (in this case, go 4 dB until first reversal point, then do 1 steps)
+                   step_up_factor=1,  # Sdown * (1-Xthresh)
+                   n_pretrials=0,  # number of pretrials before the staircase begins
+                   n_up=1,  # amount of correct responses before stimulus is lowered in dB
+                   n_down=1,  # amount of correct responses before stimulus is lowered in dB
+                   step_type="db")
 
+simulated_hearing_threshold = 10
 for level in stairs:
-    response = stairs.simulate_response(30)
+    response = stairs.simulate_response(simulated_hearing_threshold)
     stairs.add_response(response)
-    print(f'reversals: {stairs.reversal_intensities}')
-    stairs.plot()
+    # stairs.plot()
 
 stairs.close_plot()
 print(f"mean detection threshold: {stairs.threshold()}")
+print(f"deviation from true threshold: {simulated_hearing_threshold-stairs.threshold()}")
 print(f"total trials: {stairs.this_trial_n}")
+
