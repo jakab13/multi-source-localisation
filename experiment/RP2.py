@@ -76,8 +76,8 @@ class RP2Device(Device):
                 if self.handle.GetTagVal("response") > 0:
                     self.experiment().process_event({'trial_stop': 0})
             elif self.experiment().setting.experiment_name == "LocaAccu":
-                if self.button_press_count % 2 != 0:
-                    if self.button_press_count != 1:
+                if self.button_press_count != 1:
+                    if self.button_press_count % 2 != 0:
                         self.experiment().process_event({'trial_stop': 0})
                     else:
                         pass
