@@ -114,12 +114,12 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         if self.stairs.finished:
             self.stairs.close_plot()
             self.devices["RX8"].clear_channels()
-            self._tosave_para["threshold"] = self.stairs.threshold
-            stairs = slab.Staircase(start_val=config.start_val,
-                                    n_reversals=config.n_reversals,
-                                    step_sizes=config.step_sizes,
-                                    step_up_factor=config.step_up_factor,
-                                    step_type="db")
+            self.devices["RX8"]._output_specs["threshold"] = self.stairs.threshold()
+            self.stairs = slab.Staircase(start_val=config.start_val,
+                                         n_reversals=config.n_reversals,
+                                         step_sizes=config.step_sizes,
+                                         step_up_factor=config.step_up_factor,
+                                         step_type="db")
             # self._tosave_para["stairs"] = self.stairs
             self.sequence.__next__()
             self.devices["RX8"].handle.write("data0", self.staircase_end.data.flatten(), procs="RX81")
@@ -131,6 +131,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.masker_speaker = self.speakers[self.sequence.this_trial]
         self.pick_masker_according_to_talker()
         self.masker_sound = random.choice(self.potential_maskers)
+        self.devices["RX8"]._output_specs["masker_speaker"] = self.masker_speaker
         # self._tosave_para["masker_speaker"] = self.masker_speaker
         log.info(f"Staircase number {self.sequence.this_n} out of {self.sequence.n_conditions}")
 
@@ -178,16 +179,16 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                               "4": 2,
                               }
         solution = solution_converter[str(target_sound_i)]
+        self.devices["RP2"]._output_specs["solution"] = solution
         log.info(f"solution: {solution}")
         # self._tosave_para["solution"] = solution
-        # is_correct = True if solution == response else False
-        # self._tosave_para["is_correct"] = is_correct
+        is_correct = True if solution == response else False
+        self.devices["RP2"]._output_specs["is_correct"] = is_correct
         self.stairs.add_response(1) if response == solution else self.stairs.add_response(0)
         self.stairs.plot()
 
     def _stop_trial(self):
         log.info(f"trial {self.setting.current_trial} end: {time.time() - self.time_0}")
-        self.data.write_to_base(data, "")
         for device in self.devices.keys():
             self.devices[device].pause()
         self.data.save()
