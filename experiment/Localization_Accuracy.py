@@ -121,12 +121,12 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
             self.devices[device].start()
         self.devices["RP2"].wait_for_button()
         self.devices["ArUcoCam"].retrieve()
-        reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
+        # reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         np.array(self.devices["ArUcoCam"]._output_specs["pose"])
         actual = np.array([self.target.azimuth, self.target.elevation])
         accuracy = np.abs(actual - self.devices["ArUcoCam"]._output_specs["pose"])
         self.error.append(accuracy)
-        self._tosave_para["reaction_time"] = reaction_time
+        # self._tosave_para["reaction_time"] = reaction_time
         time.sleep(1)
         self.devices["RP2"].wait_for_button()
         log.info(f"Trial {self.setting.current_trial} error - azimuth: {accuracy[0]}, elevation: {accuracy[1]}")

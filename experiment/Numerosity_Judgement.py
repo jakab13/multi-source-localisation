@@ -122,10 +122,10 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.devices["ArUcoCam"].start()
         self.devices["RP2"].wait_for_button()
         self.devices["RP2"].get_response()
-        reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
-        self._tosave_para["reaction_time"] = reaction_time
-        is_correct = True if self.sequence.this_trial == self._devices_output_params()["RP2"]["response"] else False
-        self._tosave_para["is_correct"] = is_correct
+        # reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
+        # self._tosave_para["reaction_time"] = reaction_time
+        # is_correct = True if self.sequence.this_trial == self._devices_output_params()["RP2"]["response"] else False
+        # self._tosave_para["is_correct"] = is_correct
         # self.response = self.devices["RP2"].get_response()
         # self.devices["RX8"].pause()
         # self.process_event({'trial_stop': 0})

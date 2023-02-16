@@ -3,7 +3,7 @@ from labplatform.core.Device import Device
 from labplatform.core.Setting import DeviceSetting
 from labplatform.core import TDTblackbox as tdt
 import time
-from traits.api import CFloat, Str, Any, Tuple, Int, Float
+from traits.api import CFloat, Str, Any, Tuple, Int, Float, Bool
 import os
 import logging
 import numpy as np
@@ -32,7 +32,8 @@ class RP2Device(Device):
     handle = Any()  # handle for TDT method execution like handle.write, handle.read, ...
     # thread = Instance(threading.Thread)  # important for threading
     _output_specs = {'type': setting.type, 'sampling_freq': setting.sampling_freq,
-                     'dtype': setting.dtype, "shape": setting.shape, "response": Int}
+                     'dtype': setting.dtype, "shape": setting.shape, "response": Int,
+                     "rt": Any}
     _use_default_thread = True
     button_press_count = Int(0)
 
@@ -59,6 +60,8 @@ class RP2Device(Device):
         while not self.handle.GetTagVal("response"):
             time.sleep(0.1)  # sleeps while the response tag in the rcx circuit does not yield 1
         self.button_press_count += 1
+        if self.experiment:
+            self._output_specs["reaction_time"] = int(round(time.time() - self.experiment().time_0, 3) * 1000)
         print(self.button_press_count)
 
     def get_response(self):  # collects response, preferably called right after wait_for_button
