@@ -99,7 +99,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
         self._tosave_para["stairs"] = self.stairs
-        self._tosave_para["reaction_time"] = Any
+        # self._tosave_para["reaction_time"] = Any
         self.sequence.__next__()
         self.devices["RX8"].handle.write("data0", self.paradigm_start.data.flatten(), procs="RX81")
         self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
@@ -120,7 +120,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                                     step_sizes=config.step_sizes,
                                     step_up_factor=config.step_up_factor,
                                     step_type="db")
-            self._tosave_para["stairs"] = self.stairs
+            # self._tosave_para["stairs"] = self.stairs
             self.sequence.__next__()
             self.devices["RX8"].handle.write("data0", self.staircase_end.data.flatten(), procs="RX81")
             self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
@@ -131,7 +131,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.masker_speaker = self.speakers[self.sequence.this_trial]
         self.pick_masker_according_to_talker()
         self.masker_sound = random.choice(self.potential_maskers)
-        self._tosave_para["masker_speaker"] = self.masker_speaker
+        # self._tosave_para["masker_speaker"] = self.masker_speaker
         log.info(f"Staircase number {self.sequence.this_n} out of {self.sequence.n_conditions}")
 
     def _start_trial(self):
@@ -167,8 +167,8 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         # self.devices["RX8"].wait_to_finish_playing()
         self.devices["RP2"].wait_for_button()
         response = self.devices["RP2"].get_response()
-        reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
-        self._tosave_para["reaction_time"] = reaction_time
+        # reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
+        # self._tosave_para["reaction_time"] = reaction_time
         log.info(f"response: {response}")
         # self.stairs.add_response(response)
         solution_converter = {"0": 5,
@@ -179,14 +179,15 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                               }
         solution = solution_converter[str(target_sound_i)]
         log.info(f"solution: {solution}")
-        self._tosave_para["solution"] = solution
-        is_correct = True if solution == response else False
-        self._tosave_para["is_correct"] = is_correct
+        # self._tosave_para["solution"] = solution
+        # is_correct = True if solution == response else False
+        # self._tosave_para["is_correct"] = is_correct
         self.stairs.add_response(1) if response == solution else self.stairs.add_response(0)
         self.stairs.plot()
 
     def _stop_trial(self):
         log.info(f"trial {self.setting.current_trial} end: {time.time() - self.time_0}")
+        self.data.write_to_base(data, "")
         for device in self.devices.keys():
             self.devices[device].pause()
         self.data.save()
