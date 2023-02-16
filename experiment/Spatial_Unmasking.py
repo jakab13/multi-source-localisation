@@ -139,6 +139,8 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         target_sound_i = random.choice(range(len(self.selected_target_sounds)))
         target_sound = self.selected_target_sounds[target_sound_i]  # choose random number from sound_list
         target_sound.level = level
+        target_sound = self.target.apply_equalization(target_sound, level_only=False)
+        self.masker_sound = self.target.apply_equalization(self.masker_sound, level_only=False)
         self.devices["RX8"].handle.write("chan0",
                                          self.target_speaker.channel_analog,
                                          f"{self.target_speaker.TDT_analog}{self.target_speaker.TDT_idx_analog}")

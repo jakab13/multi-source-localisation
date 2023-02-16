@@ -106,8 +106,9 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         self._tosave_para["solution"] = solution
         self.pick_speaker_this_trial(speaker_id=solution)
         signal = random.choice(self.signals)
+        sound = self.target.apply_equalization(signal, level_only=False)
         self.devices["RX8"].handle.write(tag=f"data0",
-                                         value=signal.data.flatten(),
+                                         value=sound.data.flatten(),
                                          procs=f"{self.target.TDT_analog}{self.target.TDT_idx_analog}")
         self.devices["RX8"].handle.write(tag=f"chan0",
                                          value=self.target.channel_analog,
