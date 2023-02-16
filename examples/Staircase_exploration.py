@@ -12,7 +12,9 @@ at which the participant has to put a lot of effort into stimulus detection. Inc
 fore lead to a higher detection percentage and less exhaustive listening. On the other hand, increasing the n_down para-
 meter will lead to a higher amount of total trials in order to estimate hearing thresholds, probably leading to exhaust-
 ion in the end as well. Setting the n_down parameter accordingly is therefore based on a trade-off and will be probably
-estimated by trial-and-error.
+estimated by trial-and-error. Also, setting the step_up_factor to n_down*(1-Xthresh) allows for weighted staircases,
+which in theory will yield a more efficient staircase with less error and trials. However, this is not the truth with 
+simulated responses.
 """
 
 stairs = Staircase(start_val=50,  # starting dB value
