@@ -205,13 +205,13 @@ class SpeakerCalibrator:
         # set analog output channel to chosen speaker
         # TODO: for now it is easy since we only have one output device. for multiple output devices, we need a mapping
         #  from speaker attributes to output device
-        self.device.configure(stim_ch=spk.channel_analog)
+        self.device.configure(rx8_idx=spk.TDT_idx_analog, stim_ch=spk.channel_analog)
         SPL_res = []
         for amp in self.calib_param['SPL_Vrms']:
             if use_noise:
-                self.device.configure(WN_amp=amp)
+                self.device.configure(rx8_idx=spk.TDT_idx_analog, WN_amp=amp)
             else:
-                self.device.configure(tone_amp=amp)
+                self.device.configure(rx8_idx=spk.TDT_idx_analog, tone_amp=amp)
             # play continuous sound from the chosen speaker
             print('Playing sound from the speaker: {}. Please measure intensity.'.format(spk.id))
             self.device.start()
@@ -326,7 +326,8 @@ class SpeakerCalibrator:
         else:
             rec_delay = spk_delay
             gate_delay = 1
-        self.device.configure(stim_ch=spk.channel_analog,
+        self.device.configure(rx8_idx=spk.TDT_idx_analog,
+                              stim_ch=spk.channel_analog,
                               sys_delay_n=rec_delay,
                               gate_delay_n=gate_delay,
                               stim_length=stim.duration * 1000)
@@ -479,7 +480,8 @@ class SpeakerCalibrator:
                 if level_only:
                     raise RuntimeError('for hardware filters, level only equalization is not implemented')
                 # select corresponding hardware filter
-                self.device.configure(filter_select=spk.id)
+                self.device.configure(rx8_idx=spk.TDT_idx_analog,
+                                      filter_select=spk.id)
                 stim_final = stim
             res.append(self._play_record_custom(stim_final, spk))
         return slab.Sound(res, samplerate=self.calib_param['samplerate'])

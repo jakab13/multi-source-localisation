@@ -119,7 +119,7 @@ class RP2RX8SpeakerCal(Device):
                               'dtype': np.float32,
                               }
 
-    def _configure(self, **kwargs):
+    def _configure(self, rx8_idx, **kwargs):
         for param in self._changed_params:
             par_trait = self.setting.trait(param)
             if par_trait.tag_name:
@@ -131,13 +131,17 @@ class RP2RX8SpeakerCal(Device):
                 elif par_trait.device == 'RP2':
                     tdt.set_variable(par_trait.tag_name, getattr(self.setting, param), self.RP2)
                 elif par_trait.device == 'RX8':
-                    tdt.set_variable(par_trait.tag_name, getattr(self.setting, param), self.RX81)
-                    tdt.set_variable(par_trait.tag_name, getattr(self.setting, param), self.RX82)
+                    if rx8_idx == 1:
+                        tdt.set_variable(par_trait.tag_name, getattr(self.setting, param), self.RX81)
+                    elif rx8_idx == 2:
+                        tdt.set_variable(par_trait.tag_name, getattr(self.setting, param), self.RX82)
 
                     # special case for filter_on
                     if param == 'filter_on':
-                        tdt.set_variable('filter_off', not self.setting.filter_on, self.RX81)
-                        tdt.set_variable('filter_off', not self.setting.filter_on, self.RX82)
+                        if rx8_idx == 1:
+                            tdt.set_variable('filter_off', not self.setting.filter_on, self.RX81)
+                        elif rx8_idx == 2:
+                            tdt.set_variable('filter_off', not self.setting.filter_on, self.RX82)
 
                 else:
                     raise ValueError('device {} is not recognized'.format(par_trait.device))
