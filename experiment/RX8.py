@@ -29,6 +29,7 @@ class RX8Device(Device):
     handle = Any()  # device handle
     _output_specs = {'type': setting.type, 'sampling_freq': setting.sampling_freq,
                      'dtype': setting.dtype, "shape": setting.shape, "masker_speaker": Any,
+                     "masker_sound": Any,
                      "threshold": Float, "target": Any, "accuracy": Any, "actual": List, "perceived": List,
                      "signals_sample": Any, "speakers_sample": Any}
     # thread = Instance(threading.Thread)  # important for threading

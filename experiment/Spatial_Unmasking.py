@@ -131,6 +131,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.masker_speaker = self.speakers[self.sequence.this_trial]
         self.pick_masker_according_to_talker()
         self.masker_sound = random.choice(self.potential_maskers)
+        self.devices["RX8"]._output_specs["masker_sound"] = self.masker_speaker
         self.devices["RX8"]._output_specs["masker_speaker"] = self.masker_speaker
         # self._tosave_para["masker_speaker"] = self.masker_speaker
         log.info(f"Staircase number {self.sequence.this_n} out of {self.sequence.n_conditions}")
