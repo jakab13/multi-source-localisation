@@ -55,9 +55,8 @@ class RP2RX8SpeakerCalSetting(DeviceSetting):
     gate_delay_n = CInt(1, group='primary', dsec='gate delay w.r.t. stimulus buffer playing, needed when using hardware'
                                                  ' filter, n samples',
                         reinit=False, tag_name='gate_delay_n', device='RX8')
-
-    # AI1 is channel 128 and AI2 is channel 129
-    rec_ch = CInt(128, group='primary', dsec='analog input channel to be used to record the sound',
+    # 1 or 2 (not sure ask paul)
+    rec_ch = CInt(1, group='primary', dsec='analog input channel to be used to record the sound',
                   reinit=False, tag_name='rec_ch', device='RP2')
     sys_delay_n = CInt(1, group='primary', dsec='system delay from playing in RX8 to recording in RP2, n samples',
                        reinit=False, tag_name='sys_delay_n', device='RP2')
@@ -215,8 +214,8 @@ class RP2RX8SpeakerCal(Device):
             log.warning("stimulus length: {} is longer than maximum length allowed: {}. stimulus is chopped.".
                         format(self.stimulus.n_samples, self.setting.max_stim_length_n))
             data_length = self.setting.max_stim_length_n
-        self.RX81.WriteTagV('cust_stim', 0, self.stimulus.data[:data_length, 0])
-        self.RX82.WriteTagV('cust_stim', 0, self.stimulus.data[:data_length, 0])
+        tdt.set_variable('cust_stim', self.stimulus.data[:data_length, 0], ld.RX81)
+        tdt.set_variable('cust_stim', self.stimulus.data[:data_length, 0], ld.RX82)
 
 
     def load_filters(self, coefs, nTaps):
@@ -267,10 +266,10 @@ class RP2RX8SpeakerCal(Device):
 
 if __name__ == '__main__':
     log = logging.getLogger()
-    log.setLevel(logging.DEBUG)
+    log.setLevel(logging.WARNING)
     # create console handler and set level to debug
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(logging.WARNING)
     # create formatter
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # add formatter to ch
