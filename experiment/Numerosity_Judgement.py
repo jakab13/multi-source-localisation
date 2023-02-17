@@ -135,7 +135,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
             self.devices[device].pause()
         for data_idx in range(5):
             self.devices["RX8"].handle.write(tag=f"data{data_idx}",
-                                             value=0,
+                                             value=np.zeros(self.devices["RX8"].setting.sampling_freq),
                                              procs=["RX81", "RX82"])
         self.data.save()
         log.info(f"trial {self.setting.current_trial}/{self.setting.total_trial} end: {time.time() - self.time_0}")
