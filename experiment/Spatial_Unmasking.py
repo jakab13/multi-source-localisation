@@ -39,7 +39,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     time_0 = Float()
     speakers = List()
     signals = Dict()
-    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\440_tone.wav"))
+    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\400_tone.wav"))
     paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
     staircase_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\staircase_end.wav"))
     paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_end.wav"))
@@ -77,14 +77,6 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         pass
 
     def _stop(self, **kwargs):
-        self.devices["RX8"].handle.write(tag='bitmask',
-                                         value=0,
-                                         procs="RX81")  # turn off LED
-        # self.devices["RX8"].clear_buffers(buffer_length=len(self.staircase_end.data.flatten()))
-        self.devices["RX8"].handle.write("data0", self.paradigm_end.data.flatten(), procs="RX81")
-        self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
-        self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
-        self.devices["RX8"].wait_to_finish_playing()
         self.stairs.close_plot()
 
     def setup_experiment(self, info=None):
@@ -131,9 +123,10 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.masker_speaker = self.speakers[self.sequence.this_trial]
         self.pick_masker_according_to_talker()
         self.masker_sound = random.choice(self.potential_maskers)
-        self.devices["RX8"]._output_specs["masker_sound"] = self.masker_speaker
+        self.devices["RX8"]._output_specs["masker_sound"] = self.masker_sound
         self.devices["RX8"]._output_specs["masker_speaker"] = self.masker_speaker
         # self._tosave_para["masker_speaker"] = self.masker_speaker
+        self.stairs.print_trial_info()
         log.info(f"Staircase number {self.sequence.this_n} out of {self.sequence.n_conditions}")
 
     def _start_trial(self):
@@ -145,8 +138,8 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         target_sound_i = random.choice(range(len(self.selected_target_sounds)))
         target_sound = self.selected_target_sounds[target_sound_i]  # choose random number from sound_list
         target_sound.level = level
-        target_sound = self.target.apply_equalization(target_sound, level_only=False)
-        self.masker_sound = self.target.apply_equalization(self.masker_sound, level_only=False)
+        target_sound = self.target_speaker.apply_equalization(target_sound, level_only=False)
+        self.masker_sound = self.masker_speaker.apply_equalization(self.masker_sound, level_only=False)
         self.devices["RX8"].handle.write("chan0",
                                          self.target_speaker.channel_analog,
                                          f"{self.target_speaker.TDT_analog}{self.target_speaker.TDT_idx_analog}")
@@ -157,7 +150,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                                          self.masker_speaker.channel_analog,
                                          f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
         self.devices["RX8"].handle.write("data1",
-                                         self.masker_sound[0].data[:, 0].flatten(),
+                                         self.masker_sound.data[:, 0].flatten(),
                                          f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
         log.info(f'trial {self.stairs.this_trial_n} start: {time.time() - self.time_0}')
         # simulate response
@@ -193,6 +186,15 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         for device in self.devices.keys():
             self.devices[device].pause()
         self.data.save()
+        if self.setting.current_trial + 1 == self.setting.total_trial:
+            self.devices["RX8"].handle.write(tag='bitmask',
+                                             value=0,
+                                             procs="RX81")  # turn off LED
+            self.devices["RX8"].clear_channels()
+            self.devices["RX8"].handle.write("data0", self.paradigm_end.data.flatten(), procs="RX81")
+            self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
+            self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
+            self.devices["RX8"].wait_to_finish_playing()
 
     def load_signals(self, target_sounds_type="tts-numbers_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
@@ -222,11 +224,13 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             all_talkers[str(talker_id)] = talker_sorted
         self.maskers = all_talkers
 
-    def load_speakers(self, filename="dome_speakers.txt"):
+    def load_speakers(self, filename="dome_speakers.txt", calibration=True):
         basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
         filepath = os.path.join(basedir, filename)
         spk_array = SpeakerArray(file=filepath)
         spk_array.load_speaker_table()
+        if calibration:
+            spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), "calibration_labplatform_test.pkl"))
         if self.plane == "v":
             speakers = spk_array.pick_speakers([x for x in range(20, 27) if x != 23])
         elif self.plane == "h":
@@ -275,7 +279,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         while True:
             self.devices["ArUcoCam"].retrieve()
             try:
-                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 12.5:
+                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 15.0:
                     log.info("Subject is not looking straight ahead")
                     self.devices["RX8"].clear_channels()
                     self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
