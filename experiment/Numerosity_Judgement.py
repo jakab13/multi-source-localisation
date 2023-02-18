@@ -45,7 +45,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     time_0 = Float()
     speakers = List()
     signals = List()
-    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\440_tone.wav"))
+    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\400_tone.wav"))
     paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
     paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_end.wav"))
     plane = Str("v")
@@ -72,14 +72,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         pass
 
     def _stop(self, **kwargs):
-        self.devices["RX8"].handle.write(tag='bitmask',
-                                         value=0,
-                                         procs="RX81")  # turn off LED
-        self.devices["RX8"].clear_channels()
-        self.devices["RX8"].handle.write("data0", self.paradigm_end.data.flatten(), procs="RX81")
-        self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
-        self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
-        self.devices["RX8"].wait_to_finish_playing()
+        pass
 
     def setup_experiment(self, info=None):
         self._tosave_para["sequence"] = self.sequence
@@ -99,12 +92,12 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def _prepare_trial(self):
         self.check_headpose()
-        self.devices["RX8"].clear_buffer()
+        # self.devices["RX8"].clear_buffer()
         self.sequence.__next__()
         self.devices["RP2"]._output_specs["solution"] = self.sequence.this_trial
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
-        self.devices["RX8"].clear_channels()
+        # self.devices["RX8"].clear_channels()
         for idx, spk in enumerate(self.speakers_sample):
             sound = spk.apply_equalization(self.signals_sample[idx], level_only=False)
             self.devices["RX8"].handle.write(tag=f"data{idx}",
@@ -116,7 +109,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def _start_trial(self):
         self.time_0 = time.time()  # starting time of the trial
-        log.info(f'trial {self.setting.current_trial}/{self.setting.total_trial} start: {time.time() - self.time_0}')
+        log.info(f'trial {self.setting.current_trial}/{self.setting.total_trial-1} start: {time.time() - self.time_0}')
         self.devices["RX8"].start()
         self.devices["RP2"].start()
         self.devices["ArUcoCam"].start()
@@ -131,6 +124,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         # self.process_event({'trial_stop': 0})
 
     def _stop_trial(self):
+        log.info(f"trial {self.setting.current_trial}/{self.setting.total_trial-1} end: {time.time() - self.time_0}")
         for device in self.devices.keys():
             self.devices[device].pause()
         for data_idx in range(5):
@@ -138,7 +132,15 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                                              value=np.zeros(self.devices["RX8"].setting.sampling_freq),
                                              procs=["RX81", "RX82"])
         self.data.save()
-        log.info(f"trial {self.setting.current_trial}/{self.setting.total_trial} end: {time.time() - self.time_0}")
+        if self.setting.current_trial + 1 == self.setting.total_trial:
+            self.devices["RX8"].handle.write(tag='bitmask',
+                                             value=0,
+                                             procs="RX81")  # turn off LED
+            self.devices["RX8"].clear_channels()
+            self.devices["RX8"].handle.write("data0", self.paradigm_end.data.flatten(), procs="RX81")
+            self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
+            self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
+            self.devices["RX8"].wait_to_finish_playing()
 
     def load_signals(self, sound_type="tts-countries_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
@@ -146,12 +148,13 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
         self.signals = sound_list
 
-    def load_speakers(self, filename="dome_speakers.txt"):
+    def load_speakers(self, filename="dome_speakers.txt", calibration=True):
         basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
         filepath = os.path.join(basedir, filename)
         spk_array = SpeakerArray(file=filepath)
         spk_array.load_speaker_table()
-        spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), "calibration_labplatform_test.pkl"))
+        if calibration:
+            spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), "calibration_labplatform_test.pkl"))
         if self.plane == "v":
             speakers = spk_array.pick_speakers([x for x in range(20, 27)])
         elif self.plane == "h":
@@ -204,7 +207,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
             self.devices["ArUcoCam"].retrieve()
             # self.devices["ArUcoCam"].pause()
             try:
-                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 12.5:
+                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 15.0:
                     log.info("Subject is not looking straight ahead")
                     self.devices["RX8"].clear_channels()
                     self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
