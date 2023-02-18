@@ -42,7 +42,8 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
     all_speakers = List()
     target = Any()
     signals = Any()
-    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\440_tone.wav"))
+    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\400_tone.wav"))
+    off_center.level = 70
     paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
     paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_end.wav"))
     # pose = Any()
@@ -69,15 +70,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         pass
 
     def _stop(self, **kwargs):
-        self.devices["RX8"].handle.write(tag='bitmask',
-                                         value=0,
-                                         procs="RX81")  # turn off LED
-        self.devices["RX8"].clear_channels()
-        self.devices["RX8"].handle.write("data0", self.paradigm_end.data.flatten(), procs="RX81")
-        self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
-        self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
-        self.devices["RX8"].wait_to_finish_playing()
-        log.info(f"Mean error - azimuth: {np.mean(np.array(self.error)[:, 0])}, elevation: {np.mean(np.array(self.error)[:, 1])}")
+        log.info(f"Final mean error - azimuth: {np.mean(np.array(self.error)[:, 0])}, elevation: {np.mean(np.array(self.error)[:, 1])}")
 
     def setup_experiment(self, info=None):
         self._tosave_para["sequence"] = self.sequence
@@ -116,7 +109,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
 
     def _start_trial(self):
         self.time_0 = time.time()  # starting time of the trial
-        log.info(f'trial {self.setting.current_trial}/{self.setting.total_trial} start: {time.time() - self.time_0}')
+        log.info(f'trial {self.setting.current_trial}/{self.setting.total_trial-1} start: {time.time() - self.time_0}')
         for device in self.devices.keys():
             self.devices[device].start()
         self.devices["RP2"].wait_for_button()
@@ -138,10 +131,19 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
     def _stop_trial(self):
         #accuracy = np.abs(np.subtract([self.target.azimuth, self.target.elevation], self.pose))
         #log.warning(f"Accuracy azi: {accuracy[0]}, ele: {accuracy[1]}")
-        log.info(f"trial {self.setting.current_trial}/{self.setting.total_trial} end: {time.time() - self.time_0}")
+        log.info(f"trial {self.setting.current_trial}/{self.setting.total_trial-1} end: {time.time() - self.time_0}")
         for device in self.devices.keys():
             self.devices[device].pause()
         self.data.save()
+        if self.setting.current_trial + 1 == self.setting.total_trial:
+            self.devices["RX8"].handle.write(tag='bitmask',
+                                             value=0,
+                                             procs="RX81")  # turn off LED
+            self.devices["RX8"].clear_channels()
+            self.devices["RX8"].handle.write("data0", self.paradigm_end.data.flatten(), procs="RX81")
+            self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
+            self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
+            self.devices["RX8"].wait_to_finish_playing()
 
     def load_babble(self, sound_type="babble-numbers-reversed-shifted_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
@@ -151,18 +153,20 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
 
     def load_pinknoise(self):
         noise = slab.Sound.pinknoise(duration=0.025, level=90, samplerate=self.devices["RX8"].setting.sampling_freq)
-        noise = noise.ramp(when='both', duration=0.01)
         silence = slab.Sound.silence(duration=0.025, samplerate=self.devices["RX8"].setting.sampling_freq)
+        end_silence = slab.Sound.silence(duration=0.775, samplerate=self.devices["RX8"].setting.sampling_freq)
         stim = slab.Sound.sequence(noise, silence, noise, silence, noise,
-                                   silence, noise, silence, noise)
+                                   silence, noise, silence, noise, end_silence)
         stim = stim.ramp(when='both', duration=0.01)
         self.signals = [stim]
 
-    def load_speakers(self, filename="dome_speakers.txt"):
+    def load_speakers(self, filename="dome_speakers.txt", calibration=True):
         basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
         filepath = os.path.join(basedir, filename)
         spk_array = SpeakerArray(file=filepath)
         spk_array.load_speaker_table()
+        if calibration:
+            spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), "calibration_labplatform_test.pkl"))
         if self.plane == "v":
             speakers = spk_array.pick_speakers([x for x in range(20, 27)])
         elif self.plane == "h":
@@ -209,7 +213,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
             self.devices["ArUcoCam"].retrieve()
             # self.devices["ArUcoCam"].pause()
             try:
-                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 12.5:
+                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 15.0:
                     log.info("Subject is not looking straight ahead")
                     self.devices["RX8"].clear_channels()
                     self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
