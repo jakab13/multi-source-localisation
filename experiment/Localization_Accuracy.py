@@ -78,7 +78,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
         self.load_speakers()
-        self.load_pinknoise()
+        self.load_babble()
         self.devices["RX8"].handle.write("data0", self.paradigm_start.data.flatten(), procs="RX81")
         self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
         self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
@@ -101,7 +101,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         signal = random.choice(self.signals)
         sound = self.target.apply_equalization(signal, level_only=False)
         self.devices["RX8"].handle.write(tag=f"data0",
-                                         value=sound.data.flatten(),
+                                         value=sound.data[:, 0].flatten(),
                                          procs=f"{self.target.TDT_analog}{self.target.TDT_idx_analog}")
         self.devices["RX8"].handle.write(tag=f"chan0",
                                          value=self.target.channel_analog,
@@ -145,7 +145,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
             self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
             self.devices["RX8"].wait_to_finish_playing()
 
-    def load_babble(self, sound_type="babble-numbers-reversed-shifted_resamp_24414"):
+    def load_babble(self, sound_type="babble-numbers-reversed-n13-shifted_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
