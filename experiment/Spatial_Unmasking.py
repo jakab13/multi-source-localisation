@@ -83,7 +83,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.load_speakers()
         self.load_signals()
         self.load_maskers()
-        self.talker = random.choice(["229", "318", "256", "307", "243", "245", "284", "280"])
+        self.talker = random.choice(["229", "318", "256", "307", "248", "245", "284", "268"])
         self.pick_masker_according_to_talker()
         self.selected_target_sounds = self.signals[self.talker]  # select numbers 1-9 for one talker
         self._tosave_para["sequence"] = self.sequence
