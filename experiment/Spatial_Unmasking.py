@@ -167,11 +167,14 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         # self._tosave_para["reaction_time"] = reaction_time
         log.info(f"response: {response}")
         # self.stairs.add_response(response)
-        solution_converter = {"0": 5,
-                              "1": 4,
-                              "2": 1,
-                              "3": 3,
-                              "4": 2,
+        solution_converter = {"0": 8,
+                              "1": 5,
+                              "2": 4,
+                              "3": 9,
+                              "4": 1,
+                              "5": 6,
+                              "6": 3,
+                              "7": 2
                               }
         solution = solution_converter[str(target_sound_i)]
         self.devices["RP2"]._output_specs["solution"] = solution
@@ -199,7 +202,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
             self.devices["RX8"].wait_to_finish_playing()
 
-    def load_signals(self, target_sounds_type="tts-numbers_resamp_24414"):
+    def load_signals(self, target_sounds_type="tts-numbers_n13_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, target_sounds_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
@@ -213,7 +216,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             all_talkers[str(talker_id)] = talker_sorted
         self.signals = all_talkers
 
-    def load_maskers(self, sound_type="babble-numbers-reversed-shifted_resamp_24414"):
+    def load_maskers(self, sound_type="babble-numbers-reversed-n13-shifted_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
