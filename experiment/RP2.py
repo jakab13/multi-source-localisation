@@ -23,7 +23,7 @@ class RP2Setting(DeviceSetting):  # this class contains important settings for t
     shape = Tuple(1, group="status", dsec="Dimension of the device output")
     dtype = Int(int, group="status", dsec="data type of the output")
     type = Str("analog_signal", group="status", dsec="Type of the signal")
-    control_interval = Float(0.1, group="primary", dsec="Interval at which the device is checking its state")
+    control_interval = Float(0.01, group="primary", dsec="Interval at which the device is checking its state")
 
 
 class RP2Device(Device):
