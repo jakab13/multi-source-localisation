@@ -43,11 +43,11 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
     staircase_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\staircase_end.wav"))
     paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_end.wav"))
-    stairs = slab.Staircase(start_val=config.start_val,
-                            n_reversals=config.n_reversals,
-                            step_sizes=config.step_sizes,
-                            step_up_factor=config.step_up_factor,
-                            step_type="db")
+    stairs = Any(slab.Staircase(start_val=config.start_val,
+                                n_reversals=config.n_reversals,
+                                step_sizes=config.step_sizes,
+                                step_up_factor=config.step_up_factor,
+                                step_type=config.step_type))
     target_speaker = Any()
     selected_target_sounds = List()
     masker_speaker = Any()
@@ -84,6 +84,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.load_signals()
         self.load_maskers()
         self.talker = random.choice(["229", "318", "256", "307", "243", "245", "284", "280"])
+        self.pick_masker_according_to_talker()
         self.selected_target_sounds = self.signals[self.talker]  # select numbers 1-9 for one talker
         self._tosave_para["sequence"] = self.sequence
         self._tosave_para["talker"] = self.talker
@@ -111,17 +112,17 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                                          n_reversals=config.n_reversals,
                                          step_sizes=config.step_sizes,
                                          step_up_factor=config.step_up_factor,
-                                         step_type="db")
+                                         step_type=config.step_type)
             # self._tosave_para["stairs"] = self.stairs
-            self.sequence.__next__()
             self.devices["RX8"].handle.write("data0", self.staircase_end.data.flatten(), procs="RX81")
             self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
             self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
             self.devices["RX8"].wait_to_finish_playing()
+            self.devices["RX8"].clear_buffer()
+            self.sequence.__next__()
             # self.devices["RX8"].clear_channels()
             time.sleep(1.0)
         self.masker_speaker = self.speakers[self.sequence.this_trial]
-        self.pick_masker_according_to_talker()
         self.masker_sound = random.choice(self.potential_maskers)
         self.devices["RX8"]._output_specs["masker_sound"] = self.masker_sound
         self.devices["RX8"]._output_specs["masker_speaker"] = self.masker_speaker
@@ -186,7 +187,9 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         for device in self.devices.keys():
             self.devices[device].pause()
         self.data.save()
-        if self.setting.current_trial + 1 == self.setting.total_trial:
+        if self.sequence.n_remaining == 0 and self.stairs.finished:
+            self.setting.current_trial = self.setting.total_trial
+        if self.setting.current_trial == self.setting.total_trial:
             self.devices["RX8"].handle.write(tag='bitmask',
                                              value=0,
                                              procs="RX81")  # turn off LED
