@@ -1,6 +1,5 @@
 from labplatform.config import get_config
 import slab
-
 from dataclasses import dataclass
 from copy import deepcopy
 import os
@@ -65,7 +64,7 @@ def load_speaker_config(config=None):
     global _speaker_configs
     # load default configs into the global
     if not _speaker_configs:
-        from . import default_config as speaker_setting
+        from . import config as speaker_setting
         setting_names = [s for s in dir(speaker_setting) if s.upper() == s or s == '__spec__']
         setting_values = [getattr(speaker_setting, s) for s in setting_names]
         _speaker_configs = dict(zip(setting_names, setting_values))
@@ -75,7 +74,7 @@ def load_speaker_config(config=None):
             return _speaker_configs[config]
         else:
             # try to load non-default config specified
-            file_dir = get_config("CAL_ROOT")
+            file_dir = os.path.join(get_config("BASE_DIRECTORY"), "speakers")
             fname = "{}_speaker_config.json"
             with open(os.path.join(file_dir, fname), 'r') as fh:
                 params = json.load(fh)
@@ -237,7 +236,7 @@ class SpeakerArray:
         if not os.path.splitext(file)[1]:
             file = file + '.txt'
         if not os.path.isabs(file):
-            file = os.path.join(get_config('CAL_ROOT'), file)
+            file = os.path.join(get_config('BASE_DIRECTORY'), "speakers", file)
         return file
 
     def _filename_from_setup(self, setup):
@@ -250,7 +249,7 @@ class SpeakerArray:
         Returns:
             absolute file path
         """
-        return os.path.join(get_config('CAL_ROOT'), '{}_speakers.txt'.format(setup))
+        return os.path.join(get_config('BASE_DIRECTORY'), "speakers", '{}_speakers.txt'.format(setup))
 
     def add_speaker(self, **kwargs):
         """
@@ -444,7 +443,7 @@ class SpeakerArray:
             self._load_calib_file(file)
         else:
             folder = get_config('CAL_ROOT')
-            pattern = 'Calib_{}_*.pkl'.format(self.setup)
+            pattern = 'calibration.pkl'
             calib_files = []
             for f in os.listdir(folder):
                 if fnmatch.fnmatch(f, pattern):
@@ -520,7 +519,7 @@ class SpeakerArray:
             for idx, id in enumerate(self.calib_result['filters_spks']):
                 spk = self.pick_speakers(id)[0]
                 spk.filter = self.calib_result['filters'].channel(idx)
-                spk.filter_hardware = self.calib_result['filters_hardware'].channel(idx)
+                # spk.filter_hardware = self.calib_result['filters_hardware'].channel(idx)
 
 
 if __name__ == '__main__':
