@@ -88,7 +88,9 @@ class FFCalibrator:
         else:
             n_delay = 0
         rec_n_samples = int(sound.duration * recording_samplerate)
-        self.device.RX8.write(tag="playbuflen", value=rec_n_samples + n_delay, procs=["RX81", "RX82"])
+        print('buffer length', rec_n_samples + n_delay)
+        self.device.RX8.write(tag="playbuflen", value=sound.n_samples, procs=["RX81", "RX82"])
+        self.device.RP2.SetTagVal("playbuflen", rec_n_samples + n_delay)
         self.set_signal_and_speaker(sound, speaker, equalize)
         self.device.RX8.trigger("zBusA", proc=self.device.RX8)
         self.device.wait_to_finish_playing()
@@ -347,4 +349,4 @@ if __name__ == '__main__':
     log.addHandler(ch)
 
     cal = FFCalibrator('FREEFIELD')
-    cal.calibrate()
+   # cal.calibrate()
