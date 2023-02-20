@@ -236,7 +236,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         spk_array = SpeakerArray(file=filepath)
         spk_array.load_speaker_table()
         if calibration:
-            spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), "calibration_labplatform_test.pkl"))
+            spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), "calibration.pkl"))
         if self.plane == "v":
             speakers = spk_array.pick_speakers([x for x in range(20, 27) if x != 23])
         elif self.plane == "h":
