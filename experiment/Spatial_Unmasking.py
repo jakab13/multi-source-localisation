@@ -123,7 +123,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             self.sequence.__next__()
             # self.devices["RX8"].clear_channels()
             time.sleep(1.0)
-        self.masker_speaker = self.speakers[self.sequence.this_trial]
+        self.masker_speaker = self.speakers[self.sequence.this_trial - 1]
         self.masker_sound = random.choice(self.potential_maskers)
         self.devices["RX8"]._output_specs["masker_sound"] = self.masker_sound
         self.devices["RX8"]._output_specs["masker_speaker"] = self.masker_speaker
@@ -185,6 +185,8 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.devices["RP2"]._output_specs["is_correct"] = is_correct
         self.stairs.add_response(1) if response == solution else self.stairs.add_response(0)
         self.stairs.plot()
+        # print(response)
+        # print(solution)
 
     def _stop_trial(self):
         log.info(f"trial {self.setting.current_trial} end: {time.time() - self.time_0}")
@@ -231,7 +233,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             all_talkers[str(talker_id)] = talker_sorted
         self.maskers = all_talkers
 
-    def load_speakers(self, filename="dome_speakers.txt", calibration=True):
+    def load_speakers(self, filename=f"{setting.setup}_speakers.txt", calibration=True):
         basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
         filepath = os.path.join(basedir, filename)
         spk_array = SpeakerArray(file=filepath)
@@ -286,7 +288,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         while True:
             self.devices["ArUcoCam"].retrieve()
             try:
-                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 15.0:
+                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 12.5:
                     log.info("Subject is not looking straight ahead")
                     self.devices["RX8"].clear_channels()
                     self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
