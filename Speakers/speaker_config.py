@@ -423,11 +423,10 @@ class SpeakerArray:
                             SPEAKER_TABLE_COLS[idx][1](val))
             self.speakers.append(spk)
 
-    def load_calibration(self, file=None, newest=True):
+    def load_calibration(self, file=None):
         """
         load calibration results
         :param file: str, calibration file to be loaded
-        :param newest: bool, if only loads the newest calibration results
         :return: None
         """
         # TODO
@@ -443,18 +442,13 @@ class SpeakerArray:
             self._load_calib_file(file)
         else:
             folder = get_config('CAL_ROOT')
-            pattern = 'calibration.pkl'
+            pattern = f'{self.setup}_calibration.pkl'
             calib_files = []
             for f in os.listdir(folder):
                 if fnmatch.fnmatch(f, pattern):
                     calib_files.append(f)
             if not calib_files:
                 raise ValueError('no calibration result found')
-            if len(calib_files) == 1 or newest:
-                calib_dates = self._extract_dates(calib_files)
-                idx = calib_dates.index(max(calib_dates))
-                file = calib_files[idx]
-                self._load_calib_file(file)
             else:
                 while True:
                     print('multiple calibration files exist:')
@@ -475,6 +469,7 @@ class SpeakerArray:
                         break
                     except IndexError:
                         print('index: {} out of range!'.format(idx))
+
 
     @staticmethod
     def _extract_dates(str_list):

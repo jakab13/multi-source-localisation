@@ -35,8 +35,99 @@ class FFCalibrator:
         # initialize the device used to perform speaker calibration
         # the device should be an instance of Device class
         self.device = RP2RX8SpeakerCal()
-        self.ref_spk = self.config_param["ref_spk_id"]
+        self.calib_param = {"ref_spk_id": 23,
+                            "samplerate": 24414,
+                            "n_repeats": 20,
+                            "calib_db": 75,
+                            'filter_bank': {'length': 512,
+                                            'bandwidth': 0.125,
+                                            'low_cutoff': 20,
+                                            'high_cutoff': 12000,
+                                            'alpha': 1.0,
+                                            "threshold": 0.3},
+                            'ramp_dur': 0.005,
+                            "stim_dur": 0.1,
+                            "stim_type": "chirp",
+                            "speaker_distance": 1.4,
+                            }
 
+    def calibrate(self, speakers="all", save=True):
+        """
+        Equalize the loudspeaker array in two steps. First: equalize over all
+        level differences by a constant for each speaker. Second: remove spectral
+        difference by inverse filtering. For more details on how the
+        inverse filters are computed see the documentation of slab.Filter.equalizing_filterbank
+
+        Args:
+            speakers (list, string): Select speakers for equalization. Can be a list of speaker indices or 'all'
+            bandwidth (float): Width of the filters, used to divide the signal into subbands, in octaves. A small
+                bandwidth results in a fine tuned transfer function which is useful for equalizing small notches.
+            threshold (float): Threshold for level equalization. Correct level only for speakers that deviate more
+                than <threshold> dB from reference speaker
+            low_cutoff (int | float): The lower limit of frequency equalization range in Hz.
+            high_cutoff (int | float): The upper limit of frequency equalization range in Hz.
+            alpha (float): Filter regularization parameter. Values below 1.0 reduce the filter's effect, values above
+                amplify it. WARNING: large filter gains may result in temporal distortions of the sound
+            file_name (string): Name of the file to store equalization parameters.
+            save (Bool): saves the calibration file as .pkl when set True.
+
+        """
+        self.load_stimulus()
+        bandwidth = self.calib_param["filter_bank"]["bandwidth"]
+        threshold = self.calib_param["filter_bank"]["threshold"]
+        low_cutoff = self.calib_param["filter_bank"]["low_cutoff"]
+        high_cutoff = self.calib_param["filter_bank"]["high_cutoff"]
+        alpha = self.calib_param["filter_bank"]["alpha"]
+        stimlevel = self.calib_param["calib_db"]
+        whitenoise = slab.Sound.whitenoise(duration=10.0,
+                                           level=stimlevel,
+                                           samplerate=self.device.setting.device_freq)
+        self.set_signal_and_speaker(signal=whitenoise,
+                                    speaker=self.speakerArray.pick_speakers(23)[0], equalize=False)
+        self.device.RX8.trigger("zBusA", proc=self.device.RX8)
+        self.device.wait_to_finish_playing()
+        intensity = float(input("Enter measured sound intensity: "))
+        self.results["SPL_const"] = intensity - whitenoise.level
+        sound = self.stimulus
+        if speakers == "all":  # use the whole speaker table
+            speakers = self.speakerArray.pick_speakers(speakers)
+        else:
+            speakers = self.speakerArray.pick_speakers(picks=speakers)
+        reference_speaker = self.speakerArray.pick_speakers(self.calib_param["ref_spk_id"])[0]
+        self.results["SPL_ref"] = self.calib_param["ref_spk_id"]
+        target, equalization_levels_before = self._level_equalization(speakers, sound, reference_speaker, threshold)
+        print(equalization_levels_before)
+        filter_bank, rec = self._frequency_equalization(speakers, sound, target, equalization_levels_before,
+                                                        bandwidth, low_cutoff, high_cutoff, alpha)
+        target, equalization_levels_after = self._level_equalization(speakers, sound, reference_speaker, threshold)
+        print(equalization_levels_after)
+        self.results['filters'] = filter_bank
+        self.results['filters_spks'] = [spk.id for spk in speakers]
+        self.results["SPL_eq_spks"] = [spk.id for spk in speakers]
+        self.results["SPL_eq"] = equalization_levels_after
+        print(equalization_levels_before - equalization_levels_after)
+        if save:
+            self._save_result()
+
+    def _save_result(self, file_name=None):
+        if file_name is None:  # use the default filename and rename the existing file
+            file_name = Path(os.path.join(get_config("CAL_ROOT"), f'{self.config}_calibration.pkl'))
+        else:
+            file_name = Path(file_name)
+        if os.path.isfile(file_name):  # move the old calibration to the log folder
+            date = self._datestr
+            file_name.rename(file_name.parent / (file_name.stem + "_deprecated_" + date + file_name.suffix))
+        with open(file_name, 'wb') as f:  # save the newly recorded calibration
+            pickle.dump(self.results, f, pickle.HIGHEST_PROTOCOL)
+
+    def load_stimulus(self):
+        if self.calib_param["stim_type"] == "chirp":
+            self.stimulus = slab.Sound.chirp(duration=self.calib_param["stim_dur"],
+                                             samplerate=self.calib_param["samplerate"],
+                                             level=self.calib_param["calib_db"])
+            self.stimulus = self.stimulus.ramp(duration=self.calib_param["ramp_dur"])
+        else:
+            print("Stimulus type must be chirp!")
 
     def set_signal_and_speaker(self, signal, speaker, equalize=True):
         """
@@ -88,7 +179,7 @@ class FFCalibrator:
         else:
             n_delay = 0
         rec_n_samples = int(sound.duration * recording_samplerate)
-        print('buffer length', rec_n_samples + n_delay)
+        # print('buffer length', rec_n_samples + n_delay)
         self.device.RX8.write(tag="playbuflen", value=sound.n_samples, procs=["RX81", "RX82"])
         self.device.RP2.SetTagVal("playbuflen", rec_n_samples + n_delay)
         self.set_signal_and_speaker(sound, speaker, equalize)
@@ -107,7 +198,7 @@ class FFCalibrator:
                 rec.level = sound.level
         return rec
 
-    def get_recording_delay(self, distance=1.4, play_from=None, rec_from=None):
+    def get_recording_delay(self, play_from=None, rec_from=None):
         """
             Calculate the delay it takes for played sound to be recorded. Depends
             on the distance of the microphone from the speaker and on the device
@@ -120,6 +211,7 @@ class FFCalibrator:
                 rec_from (str): processor used for analog to digital conversion
 
         """
+        distance = self.calib_param["speaker_distance"]
         sample_rate = self.device.setting.device_freq
         n_sound_traveling = int(distance / 343 * sample_rate)
         if play_from:
@@ -170,68 +262,6 @@ class FFCalibrator:
             equalized_signal = speaker.filter.apply(equalized_signal)
         return equalized_signal
 
-    def calibrate(self, speakers="all", bandwidth=1/50, threshold=.3, low_cutoff=200,
-                  high_cutoff=12000, alpha=1.0, file_name=None, save=True):
-        """
-        Equalize the loudspeaker array in two steps. First: equalize over all
-        level differences by a constant for each speaker. Second: remove spectral
-        difference by inverse filtering. For more details on how the
-        inverse filters are computed see the documentation of slab.Filter.equalizing_filterbank
-
-        Args:
-            speakers (list, string): Select speakers for equalization. Can be a list of speaker indices or 'all'
-            bandwidth (float): Width of the filters, used to divide the signal into subbands, in octaves. A small
-                bandwidth results in a fine tuned transfer function which is useful for equalizing small notches.
-            threshold (float): Threshold for level equalization. Correct level only for speakers that deviate more
-                than <threshold> dB from reference speaker
-            low_cutoff (int | float): The lower limit of frequency equalization range in Hz.
-            high_cutoff (int | float): The upper limit of frequency equalization range in Hz.
-            alpha (float): Filter regularization parameter. Values below 1.0 reduce the filter's effect, values above
-                amplify it. WARNING: large filter gains may result in temporal distortions of the sound
-            file_name (string): Name of the file to store equalization parameters.
-
-        """
-        self.set_signal_and_speaker(signal=slab.Sound.whitenoise(duration=10.0,
-                                                                 level=80,
-                                                                 samplerate=self.device.setting.device_freq),
-                                    speaker=self.speakerArray.pick_speakers(23)[0], equalize=False)
-        self.device.RX8.trigger("zBusA", proc=self.device.RX8)
-        self.device.wait_to_finish_playing()
-        spl_const = float(input("Enter measured sound intensity: "))
-        self.results["SPL_const"] = spl_const
-        sound = slab.Sound.chirp(duration=0.1,
-                                 level=80,
-                                 from_frequency=200,
-                                 to_frequency=16000,
-                                 samplerate=self.device.setting.device_freq).ramp(duration=0.005)
-        if speakers == "all":  # use the whole speaker table
-            speakers = self.speakerArray.pick_speakers(speakers)
-        else:
-            speakers = self.speakerArray.pick_speakers(picks=speakers)
-        reference_speaker = self.speakerArray.pick_speakers(self.ref_spk)[0]
-        self.results["SPL_ref"] = self.ref_spk
-        target, equalization_levels_before = self._level_equalization(speakers, sound, reference_speaker, threshold)
-        print(equalization_levels_before)
-        filter_bank, rec = self._frequency_equalization(speakers, sound, target, equalization_levels_before,
-                                                        bandwidth, low_cutoff, high_cutoff, alpha)
-        target, equalization_levels_after = self._level_equalization(speakers, sound, reference_speaker, threshold)
-        print(equalization_levels_after)
-        self.results['filters'] = filter_bank
-        self.results['filters_spks'] = [spk.id for spk in speakers]
-        self.results["SPL_eq_spks"] = [spk.id for spk in speakers]
-        self.results["SPL_eq"] = equalization_levels_after
-        print(equalization_levels_before - equalization_levels_after)
-        if save:
-            if file_name is None:  # use the default filename and rename the existing file
-                file_name = Path(os.path.join(get_config("CAL_ROOT"), 'calibration.pkl'))
-            else:
-                file_name = Path(file_name)
-            if os.path.isfile(file_name):  # move the old calibration to the log folder
-                date = self._datestr
-                file_name.rename(file_name.parent / (file_name.stem + date + file_name.suffix))
-            with open(file_name, 'wb') as f:  # save the newly recorded calibration
-                pickle.dump(self.results, f, pickle.HIGHEST_PROTOCOL)
-
     def _level_equalization(self, speakers, sound, reference_speaker, threshold):
         """
         Record the signal from each speaker in the list and return the level of each
@@ -267,7 +297,8 @@ class FFCalibrator:
                 temp_recs.append(rec.data)
             recordings.append(slab.Sound(data=np.mean(temp_recs, axis=0), samplerate=self.device.setting.device_freq))
         recordings = slab.Sound(recordings, samplerate=self.device.setting.device_freq)
-        filter_bank = slab.Filter.equalizing_filterbank(reference_sound, recordings, length=1000, low_cutoff=low_cutoff,
+        length = self.calib_param["filter_bank"]["length"]
+        filter_bank = slab.Filter.equalizing_filterbank(reference_sound, recordings, length=length, low_cutoff=low_cutoff,
                                                         high_cutoff=high_cutoff, bandwidth=bandwidth, alpha=alpha)
         # check for notches in the filter:
         transfer_function = filter_bank.tf(show=False)[1][0:900, :]
@@ -279,20 +310,24 @@ class FFCalibrator:
         """
         Test the effectiveness of the speaker equalization
         """
-        not_equalized = slab.Sound.whitenoise(duration=.5)
+        if not self.speakerArray.calib_result:
+            self.speakerArray.calib_result = self.results
+            self.speakerArray._apply_calib_result()
+        stim = self.stimulus
+        stim.level = self.calib_param['calib_db']
+
         # the recordings from the un-equalized, the level equalized and the fully equalized sounds
         rec_raw, rec_level, rec_full = [], [], []
         speakers = self.speakerArray.pick_speakers(speakers)
         for speaker in speakers:
-            level_equalized = self.apply_equalization(not_equalized, speaker=speaker, level=True, frequency=False)
-            full_equalized = self.apply_equalization(not_equalized, speaker=speaker, level=True, frequency=True)
-            rec_raw.append(self.play_and_record(speaker, not_equalized, equalize=False))
+            level_equalized = self.apply_equalization(stim, speaker=speaker, level=True, frequency=False)
+            full_equalized = self.apply_equalization(stim, speaker=speaker, level=True, frequency=True)
+            rec_raw.append(self.play_and_record(speaker, stim, equalize=False))
             rec_level.append(self.play_and_record(speaker, level_equalized, equalize=False))
             rec_full.append(self.play_and_record(speaker, full_equalized, equalize=False))
         return slab.Sound(rec_raw), slab.Sound(rec_level), slab.Sound(rec_full)
 
-    def spectral_range(self, signal, bandwidth=1 / 5, low_cutoff=50, high_cutoff=20000, thresh=3,
-                       plot=True, log=True):
+    def spectral_range(self, signal, thresh=3, plot=True, log=False):
         """
         Compute the range of differences in power spectrum for all channels in
         the signal. The signal is devided into bands of equivalent rectangular
@@ -302,8 +337,12 @@ class FFCalibrator:
         across channels are computed. Can be used for example to check the
         effect of loud speaker equalization.
         """
+        bandwidth = self.calib_param["filter_bank"]["bandwidth"]
+        low_cutoff = self.calib_param["filter_bank"]["low_cutoff"]
+        high_cutoff = self.calib_param["filter_bank"]["high_cutoff"]
         # generate ERB-spaced filterbank:
-        filter_bank = slab.Filter.cos_filterbank(length=1000, bandwidth=bandwidth,
+        length = self.calib_param["filter_bank"]["length"]
+        filter_bank = slab.Filter.cos_filterbank(length=length, bandwidth=bandwidth,
                                                  low_cutoff=low_cutoff, high_cutoff=high_cutoff,
                                                  samplerate=signal.samplerate)
         center_freqs, _, _ = slab.Filter._center_freqs(low_cutoff, high_cutoff, bandwidth)
@@ -332,21 +371,9 @@ class FFCalibrator:
             for bad in bads:
                 ax.fill_between(center_freqs[bad - 1:bad + 1], max_level[bad - 1:bad + 1],
                                 min_level[bad - 1:bad + 1], color="red", alpha=.6)
+        plt.show()
         return difference
 
 if __name__ == '__main__':
-    import logging
-    log = logging.getLogger()
-    log.setLevel(logging.WARNING)
-    # create console handler and set level to debug
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.WARNING)
-    # create formatter
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    # add formatter to ch
-    ch.setFormatter(formatter)
-    # add ch to logger
-    log.addHandler(ch)
-
     cal = FFCalibrator('FREEFIELD')
    # cal.calibrate()
