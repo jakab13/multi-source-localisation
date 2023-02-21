@@ -93,12 +93,12 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def _prepare_trial(self):
         self.check_headpose()
-        # self.devices["RX8"].clear_buffer()
+        self.devices["RX8"].clear_buffer()
         self.sequence.__next__()
         self.devices["RP2"]._output_specs["solution"] = self.sequence.this_trial
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
-        # self.devices["RX8"].clear_channels()
+        self.devices["RX8"].clear_channels()
         for idx, spk in enumerate(self.speakers_sample):
             sound = spk.apply_equalization(self.signals_sample[idx], level_only=False)
             self.devices["RX8"].handle.write(tag=f"data{idx}",
@@ -149,7 +149,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
         self.signals = sound_list
 
-    def load_speakers(self, filename="dome_speakers.txt", calibration=True):
+    def load_speakers(self, filename=f"{setting.setup}_speakers.txt", calibration=True):
         basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
         filepath = os.path.join(basedir, filename)
         spk_array = SpeakerArray(file=filepath)
@@ -166,8 +166,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.speakers = speakers
 
     def pick_speakers_this_trial(self, n_speakers):
-        speakers_no_rep = list(x for x in self.speakers if x not in self.speakers_sample)
-        self.speakers_sample = random.sample(speakers_no_rep, n_speakers)
+        # speakers_no_rep = list(x for x in self.speakers if x not in self.speakers_sample)
+        self.speakers_sample = random.sample(self.speakers, n_speakers)
         self.devices["RX8"]._output_specs["speakers_sample"] = self.speakers_sample
 
     def pick_signals_this_trial(self, n_signals):
