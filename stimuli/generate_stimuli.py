@@ -101,18 +101,18 @@ countries = [
 tts_model = tts_models[16]
 tts_c_arg = tts_model["c_arg"]
 
-eight = ["three"]
-selected_speaker_ids = ['p243', 'p229', 'p318', 'p245', 'p256', 'p284', 'p307', 'p280']
+eight = ["8"]
+selected_speaker_ids = ['p248', 'p229', 'p318', 'p245', 'p256', 'p284', 'p307', 'p268']
 selected_speaker_ids_male = ['p229', 'p318', 'p256', 'p307']
-selected_speaker_ids_female = ['p243', 'p245', 'p284', 'p280']
+selected_speaker_ids_female = ['p248', 'p245', 'p284', 'p268']
 all_speaker_ids = list(tts_model["speaker_idxs"].keys())
 
 for text in eight:
-    for speaker_id in ['p307']:
+    for speaker_id in ['p268']:
         sex = tts_model["speaker_genders"][speaker_id]
         filepath = save_directory.parent / str("talker-" + speaker_id + "_" +
                                         "sex-" + sex + "_" +
-                                        "text-" + "'" + text + "'" + ".wav")
+                                        "text-" + "_" + text + "_" + ".wav")
         args = [
             "tts",
             "--text", text,
@@ -137,13 +137,13 @@ file_names = os.listdir(save_directory)
 #         os.rename(old_file_path, new_file_path)
 #         i += 1
 
-number_pool = ['one', 'two', 'three', 'four', 'five']
+number_pool = ['one', 'two', 'three', 'four', 'five', 'six', 'eight', 'nine']
 meter = pyln.Meter(22050, block_size=0.200)
 for i in range(200):
-    babble_ids_male = random.sample(selected_speaker_ids_male, 2)
-    babble_ids_female = random.sample(selected_speaker_ids_female, 2)
+    babble_ids_male = random.sample(selected_speaker_ids_male, 3)
+    babble_ids_female = random.sample(selected_speaker_ids_female, 3)
     babble_ids = babble_ids_male + babble_ids_female
-    babble_numbers = random.sample(number_pool, 4)
+    babble_numbers = random.sample(number_pool, 6)
     sounds = []
     babble_sound = slab.Binaural.silence(duration=2.0, samplerate=22050)
     prev_max_length = 0
@@ -173,5 +173,5 @@ for i in range(200):
     babble_sound = babble_sound.ramp(duration=0.2, when="offset")
     babble_sound = babble_sound.ramp(duration=0.01, when="onset")
     # babble_sound.play()
-    babble_file_name = "babble-reversed_" + "-".join([item for t in list(zip(babble_ids, babble_numbers)) for item in t]) + ".wav"
-    babble_sound.write(save_directory.parent / "babble-reversed-shifted" / babble_file_name)
+    babble_file_name = "babble-reversed_n13_" + "-".join([item for t in list(zip(babble_ids, babble_numbers)) for item in t]) + ".wav"
+    babble_sound.write(save_directory.parent / "babble-reversed-n13-shifted" / babble_file_name)
