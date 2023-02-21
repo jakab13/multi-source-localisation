@@ -113,12 +113,17 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         log.info(f'trial {self.setting.current_trial}/{self.setting.total_trial-1} start: {time.time() - self.time_0}')
         for device in self.devices.keys():
             self.devices[device].start()
+        self.devices["RX8"].handle.write(tag='bitmask',
+                                         value=0,
+                                         procs="RX81")  # illuminate central speaker LED
         self.devices["RP2"].wait_for_button()
+        self.devices["RX8"].handle.write(tag='bitmask',
+                                         value=1,
+                                         procs="RX81")  # illuminate central speaker LED
         self.devices["ArUcoCam"].retrieve()
         # reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
-        np.array(self.devices["ArUcoCam"]._output_specs["pose"])
         actual = np.array([self.target.azimuth, self.target.elevation])
-        perceived = self.devices["ArUcoCam"]._output_specs["pose"]
+        perceived = np.array(self.devices["ArUcoCam"]._output_specs["pose"])
         accuracy = np.abs(actual - perceived)
         self.devices["RX8"]._output_specs["actual"] = actual
         self.devices["RX8"]._output_specs["perceived"] = perceived
@@ -130,6 +135,9 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         # time.sleep(0.2)
 
     def _stop_trial(self):
+        self.devices["RX8"].handle.write(tag='bitmask',
+                                         value=0,
+                                         procs="RX81")  # illuminate central speaker LED
         #accuracy = np.abs(np.subtract([self.target.azimuth, self.target.elevation], self.pose))
         #log.warning(f"Accuracy azi: {accuracy[0]}, ele: {accuracy[1]}")
         log.info(f"trial {self.setting.current_trial}/{self.setting.total_trial-1} end: {time.time() - self.time_0}")
@@ -161,7 +169,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         stim = stim.ramp(when='both', duration=0.01)
         self.signals = [stim]
 
-    def load_speakers(self, filename="dome_speakers.txt", calibration=True):
+    def load_speakers(self, filename=f"{setting.setup}_speakers.txt", calibration=True):
         basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
         filepath = os.path.join(basedir, filename)
         spk_array = SpeakerArray(file=filepath)
@@ -214,7 +222,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
             self.devices["ArUcoCam"].retrieve()
             # self.devices["ArUcoCam"].pause()
             try:
-                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 15.0:
+                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 12.5:
                     log.info("Subject is not looking straight ahead")
                     self.devices["RX8"].clear_channels()
                     self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
