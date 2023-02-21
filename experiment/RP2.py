@@ -61,7 +61,7 @@ class RP2Device(Device):
             time.sleep(0.1)  # sleeps while the response tag in the rcx circuit does not yield 1
         self.button_press_count += 1
         if self.experiment:
-            self._output_specs["reaction_time"] = int(round(time.time() - self.experiment().time_0, 3) * 1000)
+            self._output_specs["rt"] = int(round(time.time() - self.experiment().time_0, 3) * 1000)
         print(self.button_press_count)
 
     def get_response(self):  # collects response, preferably called right after wait_for_button
