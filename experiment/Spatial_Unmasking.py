@@ -28,6 +28,7 @@ class SpatialUnmaskingSetting(ExperimentSetting):
     n_conditions = Int(config.n_conditions, group="status", dsec="Number of masker speaker positions in the experiment")
     trial_number = Int(1000, group='status', dsec='Number of trials in each condition')
     stim_duration = Float(config.trial_duration, group='status', dsec='Duration of one trial, (s)')
+    setup = Str("FREEFIELD", group="status", dsec="Name of the experiment setup")
 
 
 class SpatialUnmaskingExperiment(ExperimentLogic):
@@ -236,7 +237,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         spk_array = SpeakerArray(file=filepath)
         spk_array.load_speaker_table()
         if calibration:
-            spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), "calibration.pkl"))
+            spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), f"{self.setting.setup}_calibration.pkl"))
         if self.plane == "v":
             speakers = spk_array.pick_speakers([x for x in range(20, 27) if x != 23])
         elif self.plane == "h":

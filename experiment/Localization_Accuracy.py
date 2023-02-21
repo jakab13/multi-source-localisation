@@ -27,6 +27,7 @@ class LocalizationAccuracySetting(ExperimentSetting):
     conditions = Int(config.conditions, group="status", dsec="Number of total speakers")
     trial_number = Int(config.trial_number, group='status', dsec='Number of trials in each condition')
     stim_duration = Float(config.trial_duration, group='status', dsec='Duration of each trial, (s)')
+    setup = Str("FREEFIELD", group="status", dsec="Name of the experiment setup")
 
     def _get_total_trial(self):
         return self.trial_number * self.conditions
@@ -166,7 +167,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         spk_array = SpeakerArray(file=filepath)
         spk_array.load_speaker_table()
         if calibration:
-            spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), "calibration.pkl"))
+            spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), f"{self.setting.setup}_calibration.pkl"))
         if self.plane == "v":
             speakers = spk_array.pick_speakers([x for x in range(20, 27)])
         elif self.plane == "h":
