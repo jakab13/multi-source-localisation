@@ -1,6 +1,6 @@
 /CRM/
 /samples/
-/Results/
+/tobedeleted/Results/
 # pycharm metadata
 /.idea/
 
@@ -8,7 +8,7 @@
 /__pycache__/
 
 # Results
-/Results
+/tobedeleted/Results
 
 # trash
 /tobedeleted
