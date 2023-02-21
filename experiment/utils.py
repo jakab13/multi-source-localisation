@@ -1,4 +1,4 @@
-from labplatform.core.Subject import Subject, SubjectList
+from labplatform.core.Subject import Subject
 from labplatform.config import get_config
 import os
 import logging
@@ -26,39 +26,39 @@ def setup_experiment():
     # Verzweigung "= None:"-> add_subject...() else: read_from...()
     try:
         if is_example == "y":
-            name = "99"
-            subject = Subject(name=f"msl{name}",
+            name = 99
+            subject = Subject(name=f"sub_{name}",
                               group=group,
                               species="Human",
                               sex=sex,
                               cohort=cohort)
         elif is_example == "n":
-            subject = Subject(name=f"msl{name}",
+            subject = Subject(name=f"sub_{name}",
                               group=group,
                               species="Human",
                               sex=sex,
                               cohort=cohort)
-        subject.add_subject_to_h5file(os.path.join(get_config("SUBJECT_ROOT"), f"sub{name}.h5"))
+        subject.add_subject_to_h5file(os.path.join(get_config("SUBJECT_ROOT"), f"sub_{name}.h5"))
     except ValueError:
         # read the subject information
-        subject = Subject(name=f"msl{name}",
+        subject = Subject(name=f"sub_{name}",
                           group=group,
                           species="Human",
                           sex=sex,
                           cohort=cohort)
-        subject.read_from_h5file()
-    subject.data_path = os.path.join(get_config("DATA_ROOT"), f"sub{name}.h5")
+        subject.read_info_from_h5file(file=os.path.join(get_config("SUBJECT_ROOT"), f"sub_{name}.h5"))
+    subject.data_path = subject._get_data_path()
     if is_example == "n":
         if exp_type == "su":
-            exp = SpatialUnmaskingExperiment(subject=name, experimenter=experimenter)
+            exp = SpatialUnmaskingExperiment(subject=subject, experimenter=experimenter)
             exp.plane = group
             return exp
         elif exp_type == "nm":
-            exp = NumerosityJudgementExperiment(subject=name, experimenter=experimenter)
+            exp = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
             exp.plane = group
             return exp
         elif exp_type == "la":
-            exp = LocalizationAccuracyExperiment(subject=name, experimenter=experimenter)
+            exp = LocalizationAccuracyExperiment(subject=subject, experimenter=experimenter)
             exp.plane = group
             return exp
         else:
@@ -66,15 +66,15 @@ def setup_experiment():
 
     elif is_example == "y":
         if exp_type == "su":
-            exp = SpatialUnmaskingExperiment_exmp(subject=name, experimenter=experimenter)
+            exp = SpatialUnmaskingExperiment_exmp(subject=subject, experimenter=experimenter)
             exp.plane = group
             return exp
         elif exp_type == "nm":
-            exp = NumerosityJudgementExperiment_exmp(subject=name, experimenter=experimenter)
+            exp = NumerosityJudgementExperiment_exmp(subject=subject, experimenter=experimenter)
             exp.plane = group
             return exp
         elif exp_type == "la":
-            exp = LocalizationAccuracyExperiment_exmp(subject=name, experimenter=experimenter)
+            exp = LocalizationAccuracyExperiment_exmp(subject=subject, experimenter=experimenter)
             exp.plane = group
             return exp
         else:
@@ -86,3 +86,18 @@ def run_experiment(experiment, n_blocks):
         #input("Enter any key to start experiment")
         experiment.start()
 
+
+def set_logger(level, report=True):
+    """
+    Set the logger to a specific level.
+    Parameters:
+        level: logging level. Only events of this level and above will be tracked. Can be 'DEBUG', 'INFO', 'WARNING',
+         'ERROR' or 'CRITICAL'. Set level to '
+    """
+    try:
+        logger = logging.getLogger()
+        eval(f"logger.setLevel(logging.{level.upper()})")
+        if report:
+            print(f"logger.setLevel(logging.{level.upper()})")
+    except AttributeError:
+        raise AttributeError("Choose from 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'")
