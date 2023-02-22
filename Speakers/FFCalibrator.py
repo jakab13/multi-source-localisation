@@ -106,7 +106,7 @@ class FFCalibrator:
         self.results['filters_spks'] = [spk.id for spk in speakers]
         self.results["SPL_eq_spks"] = [spk.id for spk in speakers]
         self.results["SPL_eq"] = equalization_levels_after
-        print(f"equalization difference before - after: {equalization_levels_before - equalization_levels_after}")
+        # print(f"level equalization difference: {(equalization_levels_before - equalization_levels_after).mean()}")
         if save:
             self._save_result()
 
@@ -123,7 +123,7 @@ class FFCalibrator:
                 hour = datetime.datetime.now().hour
                 minute = datetime.datetime.now().minute
                 extended_date = date + "-" + str(hour) + "-" + str(minute)
-                file_name.rename(file_name.parent / (file_name.stem + "_deprecated_since_" + date + file_name.suffix))
+                file_name.rename(file_name.parent / (file_name.stem + "_deprecated_since_" + extended_date + file_name.suffix))
         with open(file_name, 'wb') as f:  # save the newly recorded calibration
             pickle.dump(self.results, f, pickle.HIGHEST_PROTOCOL)
 
