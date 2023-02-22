@@ -13,7 +13,9 @@ log = logging.getLogger(__name__)
 
 
 def setup_experiment():
-    exp_type = input("What is the paradigm? Enter la, su or nm ").lower()
+    exp_type = input("What is the paradigm? Enter la (LocaAccu), su (SpatMask) or nm (NumJudge): ").lower()
+    if exp_type == "la":
+        la_mode = input("LocaAccu selected: use babble or noise? Enter b or sn")
     name = input("Enter subject id: ").lower()
     group = input("Vertical or horizontal? Insert v or h").lower()
     sex = input("m or f? ").upper()
@@ -58,7 +60,12 @@ def setup_experiment():
             exp.plane = group
             return exp
         elif exp_type == "la":
-            exp = LocalizationAccuracyExperiment(subject=subject, experimenter=experimenter)
+            if la_mode == "b":
+                exp = LocalizationAccuracyExperiment(subject=subject, experimenter=experimenter)
+                exp.mode = "babble"
+            elif la_mode == "sn":
+                exp = LocalizationAccuracyExperiment(subject=subject, experimenter=experimenter)
+                exp.mode = "noise"
             exp.plane = group
             return exp
         else:
@@ -74,7 +81,12 @@ def setup_experiment():
             exp.plane = group
             return exp
         elif exp_type == "la":
-            exp = LocalizationAccuracyExperiment_exmp(subject=subject, experimenter=experimenter)
+            if la_mode == "b":
+                exp = LocalizationAccuracyExperiment_exmp(subject=subject, experimenter=experimenter)
+                exp.mode = "babble"
+            elif la_mode == "sn":
+                exp = LocalizationAccuracyExperiment_exmp(subject=subject, experimenter=experimenter)
+                exp.mode = "noise"
             exp.plane = group
             return exp
         else:

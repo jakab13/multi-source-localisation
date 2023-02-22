@@ -1,6 +1,6 @@
 from experiment.utils import setup_experiment, set_logger
 
-set_logger("WARNING")
+set_logger("INFO")
 
 # STEP 1: set up experiment settings
 exp = setup_experiment()

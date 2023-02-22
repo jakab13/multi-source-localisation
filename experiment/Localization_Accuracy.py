@@ -50,6 +50,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
     # pose = Any()
     error = List()
     plane = Str("v")
+    mode = Str()
 
     def _devices_default(self):
         rp2 = RP2Device()
@@ -79,7 +80,12 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
         self.load_speakers()
-        self.load_babble()
+        if self.mode == "babble":
+            self.load_babble()
+        elif self.mode == "noise":
+            self.load_pinknoise()
+        else:
+            log.error("Unable to load stimuli! Abort experiment ... ")
         self.devices["RX8"].handle.write("data0", self.paradigm_start.data.flatten(), procs="RX81")
         self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
         self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
@@ -161,7 +167,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         self.signals = sound_list
 
     def load_pinknoise(self):
-        noise = slab.Sound.pinknoise(duration=0.025, level=90, samplerate=self.devices["RX8"].setting.sampling_freq)
+        noise = slab.Sound.pinknoise(duration=0.025, samplerate=self.devices["RX8"].setting.sampling_freq)
         silence = slab.Sound.silence(duration=0.025, samplerate=self.devices["RX8"].setting.sampling_freq)
         end_silence = slab.Sound.silence(duration=0.775, samplerate=self.devices["RX8"].setting.sampling_freq)
         stim = slab.Sound.sequence(noise, silence, noise, silence, noise,
