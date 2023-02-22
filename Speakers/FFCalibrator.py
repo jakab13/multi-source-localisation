@@ -1,5 +1,6 @@
 from labplatform.config import get_config
 from Speakers.speaker_config import SpeakerArray, load_speaker_config
+from Speakers.utilities import get_system_delay
 from pathlib import Path
 from matplotlib import pyplot as plt
 import slab
@@ -37,14 +38,14 @@ class FFCalibrator:
         self.device = RP2RX8SpeakerCal()
         self.calib_param = {"ref_spk_id": 23,
                             "samplerate": 24414,
-                            "n_repeats": 20,
+                            "n_repeats": 30,
                             "calib_db": 75,
                             'filter_bank': {'length': 512,
                                             'bandwidth': 0.125,
                                             'low_cutoff': 20,
                                             'high_cutoff': 12000,
                                             'alpha': 1.0,
-                                            "threshold": 0.3},
+                                            "threshold": 0.0},
                             'ramp_dur': 0.005,
                             "stim_dur": 0.1,
                             "stim_type": "chirp",
@@ -116,7 +117,13 @@ class FFCalibrator:
             file_name = Path(file_name)
         if os.path.isfile(file_name):  # move the old calibration to the log folder
             date = self._datestr
-            file_name.rename(file_name.parent / (file_name.stem + "_deprecated_" + date + file_name.suffix))
+            try:
+                file_name.rename(file_name.parent / (file_name.stem + "_deprecated_since_" + date + file_name.suffix))
+            except FileExistsError:
+                hour = datetime.datetime.now().hour
+                minute = datetime.datetime.now().minute
+                extended_date = date + "-" + str(hour) + "-" + str(minute)
+                file_name.rename(file_name.parent / (file_name.stem + "_deprecated_since_" + date + file_name.suffix))
         with open(file_name, 'wb') as f:  # save the newly recorded calibration
             pickle.dump(self.results, f, pickle.HIGHEST_PROTOCOL)
 
@@ -174,8 +181,8 @@ class FFCalibrator:
         recording_samplerate = self.device.setting.device_freq
         # self.device.RX8.write(tag="playbuflen", value=sound.n_samples, procs=["RX81", "RX82"])
         if compensate_delay:
-            n_delay = self.get_recording_delay(play_from="RX8", rec_from="RP2")
-            n_delay += 50  # make the delay a bit larger to avoid missing the sound's onset
+            n_delay = self.get_recording_delay()
+            # n_delay += 50  # make the delay a bit larger to avoid missing the sound's onset
         else:
             n_delay = 0
         rec_n_samples = int(sound.duration * recording_samplerate)
@@ -198,43 +205,17 @@ class FFCalibrator:
                 rec.level = sound.level
         return rec
 
-    def get_recording_delay(self, play_from=None, rec_from=None):
+    def get_recording_delay(self):
         """
-            Calculate the delay it takes for played sound to be recorded. Depends
-            on the distance of the microphone from the speaker and on the device
-            digital-to-analog and analog-to-digital conversion delays.
-
-            Args:
-                distance (float): distance between listener and speaker array in meters
-                sample_rate (int): sample rate under which the system is running
-                play_from (str): processor used for digital to analog conversion
-                rec_from (str): processor used for analog to digital conversion
-
+        get system delay in n samples for a given speaker
+        :param spk: a Speaker instance
+        :param temp: float, temperature in celsius
+        :return: int
         """
-        distance = self.calib_param["speaker_distance"]
-        sample_rate = self.device.setting.device_freq
-        n_sound_traveling = int(distance / 343 * sample_rate)
-        if play_from:
-            if play_from == "RX8":
-                n_da = 24
-            elif play_from == "RP2":
-                n_da = 30
-            else:
-                logging.warning(f"dont know D/A-delay for processor type {play_from}...")
-                n_da = 0
-        else:
-            n_da = 0
-        if rec_from:
-            if rec_from == "RX8":
-                n_ad = 47
-            elif rec_from == "RP2":
-                n_ad = 65
-            else:
-                logging.warning(f"dont know A/D-delay for processor type {rec_from}...")
-                n_ad = 0
-        else:
-            n_ad = 0
-        return n_sound_traveling + n_da + n_ad
+        return get_system_delay(speaker_distance=self.calib_param["speaker_distance"],
+                                sampling_freq=self.calib_param['samplerate'],
+                                play_device=self.config_param['TDT_aud'],
+                                rec_device=self.config_param['TDT_rec'])
 
     def apply_equalization(self, signal, speaker, level=True, frequency=True):
         """
@@ -294,7 +275,7 @@ class FFCalibrator:
             for i in range(10):
                 rec = self.play_and_record(speaker, attenuated, equalize=False)
                 # rec = slab.Sound.ramp(rec, when='offset', duration=0.01)
-                temp_recs.append(rec.data)
+                temp_recs.append(rec.data - rec.data.mean())
             recordings.append(slab.Sound(data=np.mean(temp_recs, axis=0), samplerate=self.device.setting.device_freq))
         recordings = slab.Sound(recordings, samplerate=self.device.setting.device_freq)
         length = self.calib_param["filter_bank"]["length"]
