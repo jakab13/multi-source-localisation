@@ -39,7 +39,7 @@ class FFCalibrator:
         self.calib_param = {"ref_spk_id": 23,
                             "samplerate": 24414,
                             "n_repeats": 30,
-                            "calib_db": 75,
+                            "calib_db": 70,
                             'filter_bank': {'length': 512,
                                             'bandwidth': 0.125,
                                             'low_cutoff': 20,
@@ -85,10 +85,11 @@ class FFCalibrator:
                                            samplerate=self.device.setting.device_freq)
         self.set_signal_and_speaker(signal=whitenoise,
                                     speaker=self.speakerArray.pick_speakers(23)[0], equalize=False)
+        self.device.RX8.write(tag="playbuflen", value=whitenoise.n_samples, procs="RX81")
         self.device.RX8.trigger("zBusA", proc=self.device.RX8)
         self.device.wait_to_finish_playing()
         intensity = float(input("Enter measured sound intensity: "))
-        self.results["SPL_const"] = intensity - whitenoise.level
+        self.results["SPL_const"] = intensity - stimlevel
         sound = self.stimulus
         if speakers == "all":  # use the whole speaker table
             speakers = self.speakerArray.pick_speakers(speakers)
