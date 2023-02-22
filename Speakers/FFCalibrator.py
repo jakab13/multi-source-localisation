@@ -97,16 +97,16 @@ class FFCalibrator:
         reference_speaker = self.speakerArray.pick_speakers(self.calib_param["ref_spk_id"])[0]
         self.results["SPL_ref"] = self.calib_param["ref_spk_id"]
         target, equalization_levels_before = self._level_equalization(speakers, sound, reference_speaker, threshold)
-        print(equalization_levels_before)
+        print(f"equalization levels before: {equalization_levels_before}")
         filter_bank, rec = self._frequency_equalization(speakers, sound, target, equalization_levels_before,
                                                         bandwidth, low_cutoff, high_cutoff, alpha)
         target, equalization_levels_after = self._level_equalization(speakers, sound, reference_speaker, threshold)
-        print(equalization_levels_after)
+        print(f"equalization levels after: {equalization_levels_after}")
         self.results['filters'] = filter_bank
         self.results['filters_spks'] = [spk.id for spk in speakers]
         self.results["SPL_eq_spks"] = [spk.id for spk in speakers]
         self.results["SPL_eq"] = equalization_levels_after
-        print(equalization_levels_before - equalization_levels_after)
+        print(f"equalization difference: {equalization_levels_before - equalization_levels_after}")
         if save:
             self._save_result()
 
