@@ -106,7 +106,7 @@ class FFCalibrator:
         self.results['filters_spks'] = [spk.id for spk in speakers]
         self.results["SPL_eq_spks"] = [spk.id for spk in speakers]
         self.results["SPL_eq"] = equalization_levels_after
-        print(f"equalization difference: {equalization_levels_before - equalization_levels_after}")
+        print(f"equalization difference before - after: {equalization_levels_before - equalization_levels_after}")
         if save:
             self._save_result()
 
