@@ -23,13 +23,13 @@ log.addHandler(ch)
 rp2 = RP2Device()
 rx8 = RX8Device()
 
-filename = "dome_speakers.txt"
+filename = "FREEFIELD_speakers.txt"
 basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
 filepath = os.path.join(basedir, filename)
 spk_array = SpeakerArray(file=filepath)
 spk_array.load_speaker_table()
-spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), "calibration.pkl"))
-noise = slab.Sound.pinknoise(duration=0.5, samplerate=24414)
+spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), "FREEFIELD_calibration.pkl"))
+noise = slab.Sound.pinknoise(duration=5.0, samplerate=24414)
 rx8.handle.write("playbuflen", noise.samplerate*noise.duration, procs=rx8.handle.procs)
 
 
@@ -48,8 +48,8 @@ def clear_channels():
 
 if __name__ == "__main__":
     random.shuffle(spk_array.speakers)
-    for speaker in spk_array.speakers:
-        speaker.apply_equalization(signal=noise, level_only=False)
+    for speaker in spk_array.pick_speakers(19):
+        # speaker.apply_equalization(signal=noise, level_only=False)
         play_sound(speaker)
         time.sleep(0.1)
 
