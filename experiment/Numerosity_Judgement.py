@@ -8,7 +8,7 @@ from experiment.RX8 import RX8Device
 from experiment.Camera import ArUcoCam
 from Speakers.speaker_config import SpeakerArray
 import os
-from traits.api import List, Str, Int, Dict, Float, Any
+from traits.api import List, Str, Int, Dict, Float, Any, Bool
 import random
 import slab
 import pathlib
@@ -40,6 +40,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     setting = NumerosityJudgementSetting()
     data = ExperimentData()
     sequence = slab.Trialsequence(conditions=setting.conditions, n_reps=setting.trial_number)
+    results = Any()
     devices = Dict()
     speakers_sample = List()
     signals_sample = Dict()
@@ -52,6 +53,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     plane = Str("v")
     response = Any()
     solution = Any()
+    rt = Any()
+    is_correct = Bool()
 
     def _devices_default(self):
         rp2 = RP2Device()
@@ -77,7 +80,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         pass
 
     def setup_experiment(self, info=None):
-        self._tosave_para["sequence"] = self.sequence
+        self.results.write(self.sequence, "sequence")
+        self.results.write(np.ndarray.tolist(np.array(self.devices["ArUcoCam"].offset)), "offset")
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
@@ -94,12 +98,12 @@ class NumerosityJudgementExperiment(ExperimentLogic):
 
     def _prepare_trial(self):
         self.check_headpose()
-        self.devices["RX8"].clear_buffer()
+        self.devices["RX8"].clear_buffers(n_buffers=1, proc="RX81")
+        self.devices["RX8"].clear_channels(n_channels=1, proc="RX81")
         self.sequence.__next__()
         self.solution = self.sequence.this_trial
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
-        self.devices["RX8"].clear_channels()
         for idx, spk in enumerate(self.speakers_sample):
             sound = spk.apply_equalization(list(self.signals_sample.values())[idx], level_only=False)
             self.devices["RX8"].handle.write(tag=f"data{idx}",
@@ -117,31 +121,31 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.devices["ArUcoCam"].start()
         self.devices["RP2"].wait_for_button()
         self.response = self.devices["RP2"].get_response()
-        # reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
-        # self._tosave_para["reaction_time"] = reaction_time
-        # is_correct = True if self.sequence.this_trial == self._devices_output_params()["RP2"]["response"] else False
-        # self._tosave_para["is_correct"] = is_correct
-        # self.response = self.devices["RP2"].get_response()
-        # self.devices["RX8"].pause()
-        # self.process_event({'trial_stop': 0})
+        self.rt = int(round(time.time() - self.time_0, 3) * 1000)
+        self.is_correct = True if self.response == self.solution else False
 
     def _stop_trial(self):
         log.info(f"trial {self.setting.current_trial}/{self.setting.total_trial-1} end: {time.time() - self.time_0}")
         for device in self.devices.keys():
             self.devices[device].pause()
-        for data_idx in range(5):
-            self.devices["RX8"].handle.write(tag=f"data{data_idx}",
-                                             value=np.zeros(self.devices["RX8"].setting.sampling_freq),
-                                             procs=["RX81", "RX82"])
+        self.devices["RX8"].clear_buffers(n_buffers=self.sequence.this_trial,
+                                          buffer_length=self.devices["RX8"].setting.sampling_freq, proc=["RX81", "RX82"])
         if self.setting.current_trial + 1 == self.setting.total_trial:
             self.devices["RX8"].handle.write(tag='bitmask',
                                              value=0,
                                              procs="RX81")  # turn off LED
-            self.devices["RX8"].clear_channels()
+            self.devices["RX8"].clear_channels(n_channels=5, proc=["RX81", "RX82"])
             self.devices["RX8"].handle.write("data0", self.paradigm_end.data.flatten(), procs="RX81")
             self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
             self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
             self.devices["RX8"].wait_to_finish_playing()
+        self.results.write(self.response, "response")
+        self.results.write(self.solution, "solution")
+        self.results.write(self.rt, "rt")
+        self.results.write(self.is_correct, "is_correct")
+        self.results.write(np.ndarray.tolist(np.array(self.devices["ArUcoCam"].pose)), "headpose")
+        self.results.write([x.id for x in self.speakers_sample], "speakers_sample")
+        self.results.write([x for x in self.signals_sample.keys()], "signals_sample")
 
     def load_signals(self, sound_type="tts-countries_n13_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
@@ -218,9 +222,9 @@ class NumerosityJudgementExperiment(ExperimentLogic):
             self.devices["ArUcoCam"].retrieve()
             # self.devices["ArUcoCam"].pause()
             try:
-                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 12.5:
+                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].pose) ** 2)) > 12.5:
                     log.info("Subject is not looking straight ahead")
-                    self.devices["RX8"].clear_channels()
+                    self.devices["RX8"].clear_channels(n_channels=1, proc=["RX81", "RX82"])
                     self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
                     self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
                     #self.devices["RX8"].start()
@@ -267,6 +271,7 @@ if __name__ == "__main__":
     # subject.file_path
     experimenter = "Max"
     nj = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
+    nj.results = slab.ResultsFile(subject=subject.name)
     # nj.devices["RP2"].experiment = nj
     nj.calibrate_camera()
     nj.start()

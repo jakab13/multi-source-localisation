@@ -35,6 +35,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
 
     setting = SpatialUnmaskingSetting()
     data = ExperimentData()
+    results = Any()
     sequence = slab.Trialsequence(setting.n_conditions, n_reps=1, kind="random_permutation")
     devices = Dict()
     time_0 = Float()
@@ -62,6 +63,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     solution = Int()
     response = Int()
     is_correct = Bool()
+    rt = Any()
 
     def _devices_default(self):
         rp2 = RP2Device()
@@ -92,13 +94,13 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.talker = random.choice(["229", "318", "256", "307", "248", "245", "284", "268"])
         self.pick_masker_according_to_talker()
         self.selected_target_sounds = self.signals[self.talker]  # select numbers 1-9 for one talker
-        self._tosave_para["sequence"] = self.sequence
-        self._tosave_para["talker"] = self.talker
-        self._tosave_para["offset"] = self.devices["ArUcoCam"].offset
+        self.results.write(self.sequence, "sequence")
+        self.results.write(self.talker, "talker")
+        self.results.write(np.ndarray.tolist(np.array(self.devices["ArUcoCam"].pose)), "offset")
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
-        self._tosave_para["stairs"] = self.stairs
+        self.results.write(self.stairs, "stairs")
         # self._tosave_para["reaction_time"] = Any
         self.sequence.__next__()
         self.devices["RX8"].handle.write("data0", self.paradigm_start.data.flatten(), procs="RX81")
@@ -113,8 +115,9 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     def _prepare_trial(self):
         if self.stairs.finished:
             self.threshold = self.stairs.threshold()
+            self.results.write(self.threshold, "threshold")
             self.stairs.close_plot()
-            self.devices["RX8"].clear_channels()
+            self.devices["RX8"].clear_channels(n_channels=5, proc=["RX81", "RX82"])
             self.stairs = slab.Staircase(start_val=config.start_val,
                                          n_reversals=config.n_reversals,
                                          step_sizes=config.step_sizes,
@@ -125,9 +128,8 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
             self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
             self.devices["RX8"].wait_to_finish_playing()
-            self.devices["RX8"].clear_buffer()
+            self.devices["RX8"].clear_buffers(n_buffers=1, proc="RX81")
             self.sequence.__next__()
-            # self.devices["RX8"].clear_channels()
             time.sleep(1.0)
         self.masker_speaker = self.speakers[self.sequence.this_trial - 1]
         self.masker_sound_id = random.sample(self.potential_maskers.keys(), 1)[0]
@@ -168,7 +170,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         # self.devices["RX8"].wait_to_finish_playing()
         self.devices["RP2"].wait_for_button()
         self.response = self.devices["RP2"].get_response()
-        # reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
+        self.rt = int(round(time.time() - self.time_0, 3) * 1000)
         # self._tosave_para["reaction_time"] = reaction_time
         log.info(f"response: {self.response}")
         # self.stairs.add_response(response)
@@ -200,11 +202,15 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             self.devices["RX8"].handle.write(tag='bitmask',
                                              value=0,
                                              procs="RX81")  # turn off LED
-            self.devices["RX8"].clear_channels()
+            self.devices["RX8"].clear_channels(n_channels=5, proc=["RX81", "RX82"])
             self.devices["RX8"].handle.write("data0", self.paradigm_end.data.flatten(), procs="RX81")
             self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
             self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
             self.devices["RX8"].wait_to_finish_playing()
+        self.results.write(self.response, "response")
+        self.results.write(self.solution, "solution")
+        self.results.write(self.rt, "rt")
+        self.results.write(self.is_correct, "is_correct")
 
     def load_signals(self, target_sounds_type="tts-numbers_n13_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
@@ -271,7 +277,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         log.info('Point towards led and press button to start calibration')
         self.devices["RP2"].wait_for_button()  # start calibration after button press
         self.devices["ArUcoCam"].retrieve()
-        offset = self.devices["ArUcoCam"]._output_specs["pose"]
+        offset = self.devices["ArUcoCam"].pose
         self.devices["ArUcoCam"].offset = offset
         # self.devices["ArUcoCam"].pause()
         for i, v in enumerate(self.devices["ArUcoCam"].offset):  # check for NoneType in offset
@@ -288,11 +294,13 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
 
     def check_headpose(self):
         while True:
+            #self.devices["ArUcoCam"].configure()
             self.devices["ArUcoCam"].retrieve()
+            # self.devices["ArUcoCam"].pause()
             try:
-                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 12.5:
+                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].pose) ** 2)) > 12.5:
                     log.info("Subject is not looking straight ahead")
-                    self.devices["RX8"].clear_channels()
+                    self.devices["RX8"].clear_channels(n_channels=1, proc=["RX81", "RX82"])
                     self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
                     self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
                     #self.devices["RX8"].start()
@@ -338,6 +346,7 @@ if __name__ == "__main__":
     # subject.file_path
     experimenter = "Max"
     su = SpatialUnmaskingExperiment(subject=subject, experimenter=experimenter)
+    su.results = slab.ResultsFile(subject=f"{subject.name}_{su.setting.experiment_name}")
     su.calibrate_camera()
     su.start()
     # su.configure_traits()

@@ -86,7 +86,8 @@ def setup_experiment():
             exp.plane = group
         else:
             log.info("Paradigm not found, aborting ...")
-    exp.results = slab.ResultsFile(subject=exp.subject.name, folder=exp.data.data_file_path)
+    exp.results = slab.ResultsFile(subject=f"{exp.subject.name}",
+                                   filename=f"{exp.setting.experiment_name}_{group}_{cohort}")
     return exp
 
 

@@ -82,6 +82,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
 
     def setup_experiment(self, info=None):
         self.results.write(self.sequence, "sequence")
+        self.results.write(np.ndarray.tolist(np.array(self.devices["ArUcoCam"].pose)), "offset")
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
