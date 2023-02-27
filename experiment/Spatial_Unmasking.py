@@ -8,7 +8,7 @@ from experiment.RX8 import RX8Device
 from experiment.Camera import ArUcoCam
 from Speakers.speaker_config import SpeakerArray
 import os
-from traits.api import List, Str, Int, Dict, Float, Any
+from traits.api import List, Str, Int, Dict, Float, Any, Bool
 import random
 import slab
 import pathlib
@@ -55,8 +55,13 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     maskers = Dict()
     plane = Str("v")
     masker_sound = Any()  # slab.Sound.pinknoise(duration=setting.trial_duration, samplerate=24414)
+    masker_sound_id = Any()
     talker = Any()
     potential_maskers = Any()
+    threshold = Any()
+    solution = Int()
+    response = Int()
+    is_correct = Bool()
 
     def _devices_default(self):
         rp2 = RP2Device()
@@ -89,6 +94,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.selected_target_sounds = self.signals[self.talker]  # select numbers 1-9 for one talker
         self._tosave_para["sequence"] = self.sequence
         self._tosave_para["talker"] = self.talker
+        self._tosave_para["offset"] = self.devices["ArUcoCam"].offset
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
@@ -106,9 +112,9 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
 
     def _prepare_trial(self):
         if self.stairs.finished:
+            self.threshold = self.stairs.threshold()
             self.stairs.close_plot()
             self.devices["RX8"].clear_channels()
-            self.devices["RX8"]._output_specs["threshold"] = self.stairs.threshold()
             self.stairs = slab.Staircase(start_val=config.start_val,
                                          n_reversals=config.n_reversals,
                                          step_sizes=config.step_sizes,
@@ -124,10 +130,8 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             # self.devices["RX8"].clear_channels()
             time.sleep(1.0)
         self.masker_speaker = self.speakers[self.sequence.this_trial - 1]
-        self.masker_sound = random.choice(self.potential_maskers)
-        self.devices["RX8"]._output_specs["masker_sound"] = self.masker_sound
-        self.devices["RX8"]._output_specs["masker_speaker"] = self.masker_speaker
-        # self._tosave_para["masker_speaker"] = self.masker_speaker
+        self.masker_sound_id = random.sample(self.potential_maskers.keys(), 1)[0]
+        self.masker_sound = self.potential_maskers[self.masker_sound_id]
         self.stairs.print_trial_info()
         log.info(f"Staircase number {self.sequence.this_n} out of {self.sequence.n_conditions}")
 
@@ -163,10 +167,10 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         # self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
         # self.devices["RX8"].wait_to_finish_playing()
         self.devices["RP2"].wait_for_button()
-        response = self.devices["RP2"].get_response()
+        self.response = self.devices["RP2"].get_response()
         # reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         # self._tosave_para["reaction_time"] = reaction_time
-        log.info(f"response: {response}")
+        log.info(f"response: {self.response}")
         # self.stairs.add_response(response)
         solution_converter = {"0": 8,
                               "1": 5,
@@ -177,13 +181,11 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                               "6": 3,
                               "7": 2
                               }
-        solution = solution_converter[str(target_sound_i)]
-        self.devices["RP2"]._output_specs["solution"] = solution
-        log.info(f"solution: {solution}")
+        self.solution = solution_converter[str(target_sound_i)]
+        log.info(f"solution: {self.solution}")
         # self._tosave_para["solution"] = solution
-        is_correct = True if solution == response else False
-        self.devices["RP2"]._output_specs["is_correct"] = is_correct
-        self.stairs.add_response(1) if response == solution else self.stairs.add_response(0)
+        self.is_correct = True if self.solution == self.response else False
+        self.stairs.add_response(1) if self.response == self.solution else self.stairs.add_response(0)
         self.stairs.plot()
         # print(response)
         # print(solution)
@@ -192,7 +194,6 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         log.info(f"trial {self.setting.current_trial} end: {time.time() - self.time_0}")
         for device in self.devices.keys():
             self.devices[device].pause()
-        self.data.save()
         if self.sequence.n_remaining == 0 and self.stairs.finished:
             self.setting.current_trial = self.setting.total_trial
         if self.setting.current_trial == self.setting.total_trial:
@@ -230,7 +231,8 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             for i, sound in enumerate(os.listdir(sound_fp)):
                 if str(talker_id) in sound:
                     talker_sorted.append(sound_list[i])
-            all_talkers[str(talker_id)] = talker_sorted
+            if talker_sorted.__len__():
+                all_talkers[str(talker_id)] = talker_sorted
         self.maskers = all_talkers
 
     def load_speakers(self, filename=f"{setting.setup}_speakers.txt", calibration=True):
@@ -251,10 +253,10 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.target_speaker = spk_array.pick_speakers(23)[0]
 
     def pick_masker_according_to_talker(self):
-        potential_maskers = list()
-        for masker in self.maskers.values():
+        potential_maskers = dict()
+        for key, masker in self.maskers.items():
             if self.talker not in masker:
-                potential_maskers.append(masker)
+                potential_maskers[key] = masker
         self.potential_maskers = potential_maskers
 
     def calibrate_camera(self, report=True):
