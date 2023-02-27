@@ -37,6 +37,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
 
     setting = LocalizationAccuracySetting()
     data = ExperimentData()
+    results = Any()
     sequence = slab.Trialsequence(conditions=setting.conditions, n_reps=setting.trial_number)
     devices = Dict()
     time_0 = Float()
@@ -51,6 +52,12 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
     error = List()
     plane = Str("v")
     mode = Str()
+    actual = Any()
+    perceived = Any()
+    accuracy = Any()
+    rt = Any()
+    response = Any()
+    solution = Any()
 
     def _devices_default(self):
         rp2 = RP2Device()
@@ -102,9 +109,8 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         self.devices["RX8"].clear_channels()
         self.devices["RX8"].clear_buffer()
         self.sequence.__next__()
-        solution = self.sequence.this_trial - 1
-        self.devices["RP2"]._output_specs["solution"] = solution
-        self.pick_speaker_this_trial(speaker_id=solution)
+        self.solution = self.sequence.this_trial - 1
+        self.pick_speaker_this_trial(speaker_id=self.solution)
         signal = random.choice(self.signals)
         sound = self.target.apply_equalization(signal, level_only=False)
         self.devices["RX8"].handle.write(tag=f"data0",
@@ -123,21 +129,19 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
                                          value=0,
                                          procs="RX81")  # illuminate central speaker LED
         self.devices["RP2"].wait_for_button()
+        self.rt = int(round(time.time() - self.time_0, 3) * 1000)
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
         self.devices["ArUcoCam"].retrieve()
         # reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
-        actual = np.array([self.target.azimuth, self.target.elevation])
-        perceived = np.array(self.devices["ArUcoCam"]._output_specs["pose"])
-        accuracy = np.abs(actual - perceived)
-        self.devices["RX8"]._output_specs["actual"] = actual
-        self.devices["RX8"]._output_specs["perceived"] = perceived
-        self.error.append(accuracy)
-        # self._tosave_para["reaction_time"] = reaction_time
+        self.actual = np.array([self.target.azimuth, self.target.elevation])
+        self.perceived = np.array(self.devices["ArUcoCam"]._output_specs["pose"])
+        self.accuracy = np.abs(self.actual - self.perceived)
+        self.error.append(self.accuracy)
         time.sleep(1)
         self.devices["RP2"].wait_for_button()
-        log.info(f"Trial {self.setting.current_trial} error - azimuth: {accuracy[0]}, elevation: {accuracy[1]}")
+        log.info(f"Trial {self.setting.current_trial} error - azimuth: {self.accuracy[0]}, elevation: {self.accuracy[1]}")
         # time.sleep(0.2)
 
     def _stop_trial(self):
@@ -149,7 +153,6 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         log.info(f"trial {self.setting.current_trial}/{self.setting.total_trial-1} end: {time.time() - self.time_0}")
         for device in self.devices.keys():
             self.devices[device].pause()
-        self.data.save()
         if self.setting.current_trial + 1 == self.setting.total_trial:
             self.devices["RX8"].handle.write(tag='bitmask',
                                              value=0,
@@ -159,6 +162,11 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
             self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
             self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
             self.devices["RX8"].wait_to_finish_playing()
+        self.results.write(self.actual, "actual")
+        self.results.write(self.perceived, "perceived")
+        self.results.write(self.accuracy, "accuracy")
+        self.results.write(self.error, "error")
+        self.results.write(self.rt, "rt")
 
     def load_babble(self, sound_type="babble-numbers-reversed-n13-shifted_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
