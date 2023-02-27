@@ -1,3 +1,4 @@
+import slab
 from labplatform.core.Subject import Subject
 from labplatform.config import get_config
 import os
@@ -49,16 +50,14 @@ def setup_experiment():
                           sex=sex,
                           cohort=cohort)
         subject.read_info_from_h5file(file=os.path.join(get_config("SUBJECT_ROOT"), f"sub_{name}.h5"))
-    subject.data_path = subject._get_data_path()
+    subject.data_path = os.path.join(get_config("DATA_ROOT"), f"sub_{name}.h5")
     if is_example == "n":
         if exp_type == "su":
             exp = SpatialUnmaskingExperiment(subject=subject, experimenter=experimenter)
             exp.plane = group
-            return exp
         elif exp_type == "nm":
             exp = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
             exp.plane = group
-            return exp
         elif exp_type == "la":
             if la_mode == "b":
                 exp = LocalizationAccuracyExperiment(subject=subject, experimenter=experimenter)
@@ -67,7 +66,6 @@ def setup_experiment():
                 exp = LocalizationAccuracyExperiment(subject=subject, experimenter=experimenter)
                 exp.mode = "noise"
             exp.plane = group
-            return exp
         else:
             log.info("Paradigm not found, aborting ...")
 
@@ -75,11 +73,9 @@ def setup_experiment():
         if exp_type == "su":
             exp = SpatialUnmaskingExperiment_exmp(subject=subject, experimenter=experimenter)
             exp.plane = group
-            return exp
         elif exp_type == "nm":
             exp = NumerosityJudgementExperiment_exmp(subject=subject, experimenter=experimenter)
             exp.plane = group
-            return exp
         elif exp_type == "la":
             if la_mode == "b":
                 exp = LocalizationAccuracyExperiment_exmp(subject=subject, experimenter=experimenter)
@@ -88,18 +84,13 @@ def setup_experiment():
                 exp = LocalizationAccuracyExperiment_exmp(subject=subject, experimenter=experimenter)
                 exp.mode = "noise"
             exp.plane = group
-            return exp
         else:
             log.info("Paradigm not found, aborting ...")
+    exp.results = slab.ResultsFile(subject=exp.subject.name, folder=exp.data.data_file_path)
+    return exp
 
 
-def run_experiment(experiment, n_blocks):
-    for _ in range(n_blocks):
-        #input("Enter any key to start experiment")
-        experiment.start()
-
-
-def set_logger(level, report=True):
+def set_logger(level):
     """
     Set the logger to a specific level.
     Parameters:
@@ -109,7 +100,5 @@ def set_logger(level, report=True):
     try:
         logger = logging.getLogger()
         eval(f"logger.setLevel(logging.{level.upper()})")
-        if report:
-            print(f"logger.setLevel(logging.{level.upper()})")
     except AttributeError:
-        raise AttributeError("Choose from 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'")
+        raise AttributeError("Could not set level. Choose 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'")

@@ -31,10 +31,7 @@ class RX8Device(Device):
     setting = RX8Setting()  # device setting
     handle = Any()  # device handle
     _output_specs = {'type': setting.type, 'sampling_freq': setting.sampling_freq,
-                     'dtype': setting.dtype, "shape": setting.shape, "masker_speaker": Any,
-                     "masker_sound": Any,
-                     "threshold": Float, "target": Any, "accuracy": Any, "actual": List, "perceived": List,
-                     "signals_sample": Any, "speakers_sample": Any}
+                     'dtype': setting.dtype, "shape": setting.shape}
     # thread = Instance(threading.Thread)  # important for threading
 
     def _initialize(self, **kwargs):
@@ -87,12 +84,13 @@ class RX8Device(Device):
             time.sleep(0.01)
         log.info('Done waiting.')
 
-    def clear_channels(self):
-        for idx in range(5):  # clear all speakers before loading warning tone
-            self.handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
+    def clear_channels(self, n_channels, proc):
+        for idx in range(n_channels):  # clear all speakers before loading warning tone
+            self.handle.write(f"chan{idx}", 99, procs=proc)
 
-    def clear_buffer(self, buffer_length=24414):
-        self.handle.write(f"data0", np.zeros(buffer_length), procs=["RX81", "RX82"])
+    def clear_buffers(self, n_buffers, proc, buffer_length=24414):
+        for idx in range(n_buffers):
+            self.handle.write(f"data{idx}", np.zeros(buffer_length), procs=proc)
 
 if __name__ == "__main__":
     log = logging.getLogger()
