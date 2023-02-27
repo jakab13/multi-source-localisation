@@ -8,7 +8,7 @@ from experiment.RX8 import RX8Device
 from experiment.Camera import ArUcoCam
 from Speakers.speaker_config import SpeakerArray
 import os
-from traits.api import List, Str, Int, Dict, Float
+from traits.api import List, Str, Int, Dict, Float, Any
 import random
 import slab
 import pathlib
@@ -42,15 +42,16 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     sequence = slab.Trialsequence(conditions=setting.conditions, n_reps=setting.trial_number)
     devices = Dict()
     speakers_sample = List()
-    signals_sample = List()
+    signals_sample = Dict()
     time_0 = Float()
     speakers = List()
-    signals = List()
+    signals = Dict()
     off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\400_tone.wav"))
     paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
     paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_end.wav"))
     plane = Str("v")
-    # response = Int()
+    response = Any()
+    solution = Any()
 
     def _devices_default(self):
         rp2 = RP2Device()
@@ -95,12 +96,12 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.check_headpose()
         self.devices["RX8"].clear_buffer()
         self.sequence.__next__()
-        self.devices["RP2"]._output_specs["solution"] = self.sequence.this_trial
+        self.solution = self.sequence.this_trial
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
         self.devices["RX8"].clear_channels()
         for idx, spk in enumerate(self.speakers_sample):
-            sound = spk.apply_equalization(self.signals_sample[idx], level_only=False)
+            sound = spk.apply_equalization(list(self.signals_sample.values())[idx], level_only=False)
             self.devices["RX8"].handle.write(tag=f"data{idx}",
                                              value=sound.data.flatten(),
                                              procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
@@ -115,7 +116,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.devices["RP2"].start()
         self.devices["ArUcoCam"].start()
         self.devices["RP2"].wait_for_button()
-        self.devices["RP2"].get_response()
+        self.response = self.devices["RP2"].get_response()
         # reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
         # self._tosave_para["reaction_time"] = reaction_time
         # is_correct = True if self.sequence.this_trial == self._devices_output_params()["RP2"]["response"] else False
@@ -132,7 +133,6 @@ class NumerosityJudgementExperiment(ExperimentLogic):
             self.devices["RX8"].handle.write(tag=f"data{data_idx}",
                                              value=np.zeros(self.devices["RX8"].setting.sampling_freq),
                                              procs=["RX81", "RX82"])
-        self.data.save()
         if self.setting.current_trial + 1 == self.setting.total_trial:
             self.devices["RX8"].handle.write(tag='bitmask',
                                              value=0,
@@ -147,7 +147,16 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
-        self.signals = sound_list
+        all_talkers = dict()
+        talker_id_range = range(225, 377)
+        for talker_id in talker_id_range:
+            talker_sorted = list()
+            for i, sound in enumerate(os.listdir(sound_fp)):
+                if str(talker_id) in sound:
+                    talker_sorted.append(sound_list[i])
+            if talker_sorted.__len__():
+                all_talkers[str(talker_id)] = talker_sorted
+        self.signals = all_talkers
 
     def load_speakers(self, filename=f"{setting.setup}_speakers.txt", calibration=True):
         basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
@@ -168,12 +177,13 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     def pick_speakers_this_trial(self, n_speakers):
         # speakers_no_rep = list(x for x in self.speakers if x not in self.speakers_sample)
         self.speakers_sample = random.sample(self.speakers, n_speakers)
-        self.devices["RX8"]._output_specs["speakers_sample"] = self.speakers_sample
 
     def pick_signals_this_trial(self, n_signals):
-        signals_no_rep = list(x for x in self.signals if x not in self.signals_sample)
-        self.signals_sample = random.sample(signals_no_rep, n_signals)
-        self.devices["RX8"]._output_specs["signals_sample"] = self.signals_sample
+        randsamp = random.sample(list(self.signals.keys()), n_signals)
+        sample = dict()
+        for samp in randsamp:
+            sample[samp] = self.signals[samp][random.choice(range(n_signals))]
+            self.signals_sample = sample
 
     def calibrate_camera(self, report=True):
         """
@@ -187,7 +197,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         log.info('Point towards led and press button to start calibration')
         self.devices["RP2"].wait_for_button()  # start calibration after button press
         self.devices["ArUcoCam"].retrieve()
-        offset = self.devices["ArUcoCam"]._output_specs["pose"]
+        offset = self.devices["ArUcoCam"].pose
         self.devices["ArUcoCam"].offset = offset
         # self.devices["ArUcoCam"].pause()
         for i, v in enumerate(self.devices["ArUcoCam"].offset):  # check for NoneType in offset
