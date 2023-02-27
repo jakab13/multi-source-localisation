@@ -21,7 +21,7 @@ class RP2Setting(DeviceSetting):  # this class contains important settings for t
     device_name = Str("RP2", group="status", dsec="Name of the device")
     device_type = Str("Processor", group='status', dsec='type of the device')
     shape = Tuple(1, group="status", dsec="Dimension of the device output")
-    dtype = Int(group="status", dsec="data type of the output")
+    dtype = Int(int, group="status", dsec="data type of the output")
     type = Str("analog_signal", group="status", dsec="Type of the signal")
     control_interval = Float(0.1, group="primary", dsec="Interval at which the device is checking its state")
 

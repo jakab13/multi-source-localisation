@@ -56,7 +56,6 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
     perceived = Any()
     accuracy = Any()
     rt = Any()
-    response = Any()
     solution = Any()
 
     def _devices_default(self):
@@ -82,7 +81,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         log.info(f"Final mean error - azimuth: {np.mean(np.array(self.error)[:, 0])}, elevation: {np.mean(np.array(self.error)[:, 1])}")
 
     def setup_experiment(self, info=None):
-        self._tosave_para["sequence"] = self.sequence
+        self.results.write(self.sequence, "sequence")
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
@@ -104,10 +103,10 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         time.sleep(1)
 
     def _prepare_trial(self):
-        self.devices["RX8"].clear_channels()
+        self.devices["RX8"].clear_channels(n_channels=1, proc=["RX81", "RX82"])
         self.check_headpose()
-        self.devices["RX8"].clear_channels()
-        self.devices["RX8"].clear_buffer()
+        self.devices["RX8"].clear_channels(n_channels=1, proc="RX81")
+        self.devices["RX8"].clear_buffers(n_buffers=1, proc=["RX81", "RX82"])
         self.sequence.__next__()
         self.solution = self.sequence.this_trial - 1
         self.pick_speaker_this_trial(speaker_id=self.solution)
@@ -135,9 +134,9 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
                                          procs="RX81")  # illuminate central speaker LED
         self.devices["ArUcoCam"].retrieve()
         # reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
-        self.actual = np.array([self.target.azimuth, self.target.elevation])
-        self.perceived = np.array(self.devices["ArUcoCam"]._output_specs["pose"])
-        self.accuracy = np.abs(self.actual - self.perceived)
+        self.actual = np.ndarray.tolist(np.array([self.target.azimuth, self.target.elevation]))
+        self.perceived = np.ndarray.tolist(np.array(self.devices["ArUcoCam"].pose))
+        self.accuracy = np.ndarray.tolist(np.abs(np.subtract(self.actual, self.perceived)))
         self.error.append(self.accuracy)
         time.sleep(1)
         self.devices["RP2"].wait_for_button()
@@ -157,7 +156,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
             self.devices["RX8"].handle.write(tag='bitmask',
                                              value=0,
                                              procs="RX81")  # turn off LED
-            self.devices["RX8"].clear_channels()
+            self.devices["RX8"].clear_channels(n_channels=1, proc=["RX81", "RX82"])
             self.devices["RX8"].handle.write("data0", self.paradigm_end.data.flatten(), procs="RX81")
             self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
             self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
@@ -165,8 +164,8 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         self.results.write(self.actual, "actual")
         self.results.write(self.perceived, "perceived")
         self.results.write(self.accuracy, "accuracy")
-        self.results.write(self.error, "error")
         self.results.write(self.rt, "rt")
+        self.results.write(self.target.id, "target_spk_id")
 
     def load_babble(self, sound_type="babble-numbers-reversed-n13-shifted_resamp_24414"):
         sound_root = get_config(setting="SOUND_ROOT")
@@ -201,7 +200,6 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
 
     def pick_speaker_this_trial(self, speaker_id):
         self.target = self.all_speakers[speaker_id]
-        self.devices["RX8"]._output_specs["target"] = self.target
 
     def calibrate_camera(self, report=True):
         """
@@ -215,7 +213,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         log.info('Point towards led and press button to start calibration')
         self.devices["RP2"].wait_for_button()  # start calibration after button press
         self.devices["ArUcoCam"].retrieve()
-        offset = self.devices["ArUcoCam"]._output_specs["pose"]
+        offset = self.devices["ArUcoCam"].pose
         self.devices["ArUcoCam"].offset = offset
         # self.devices["ArUcoCam"].pause()
         for i, v in enumerate(self.devices["ArUcoCam"].offset):  # check for NoneType in offset
@@ -236,9 +234,9 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
             self.devices["ArUcoCam"].retrieve()
             # self.devices["ArUcoCam"].pause()
             try:
-                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"]._output_specs["pose"]) ** 2)) > 12.5:
+                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].pose) ** 2)) > 12.5:
                     log.info("Subject is not looking straight ahead")
-                    self.devices["RX8"].clear_channels()
+                    self.devices["RX8"].clear_channels(n_channels=1, proc=["RX81", "RX82"])
                     self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
                     self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
                     #self.devices["RX8"].start()
@@ -285,6 +283,8 @@ if __name__ == "__main__":
     # subject.file_path
     experimenter = "Max"
     la = LocalizationAccuracyExperiment(subject=subject, experimenter=experimenter)
+    la.load_pinknoise()
     la.calibrate_camera()
+    la.results = slab.ResultsFile(subject=subject.name)
     la.start()
     # nj.configure_traits()
