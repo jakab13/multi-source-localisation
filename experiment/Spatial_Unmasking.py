@@ -19,7 +19,6 @@ import datetime
 
 log = logging.getLogger(__name__)
 config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "spatmask_config.txt"))
-slab.set_default_samplerate(24414)
 
 
 class SpatialUnmaskingSetting(ExperimentSetting):
@@ -41,10 +40,10 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     time_0 = Float()
     speakers = List()
     signals = Dict()
-    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\400_tone.wav"))
-    paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
-    staircase_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\staircase_end.wav"))
-    paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_end.wav"))
+    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\400_tone.wav"))
+    paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\paradigm_start.wav"))
+    staircase_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\staircase_end.wav"))
+    paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\paradigm_end.wav"))
     stairs = Any(slab.Staircase(start_val=config.start_val,
                                 n_reversals=config.n_reversals,
                                 step_sizes=config.step_sizes,
@@ -208,12 +207,13 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
             self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
             self.devices["RX8"].wait_to_finish_playing()
+        self.results.write(np.ndarray.tolist(np.array(self.devices["ArUcoCam"].pose)), "headpose")
         self.results.write(self.response, "response")
         self.results.write(self.solution, "solution")
         self.results.write(self.rt, "rt")
         self.results.write(self.is_correct, "is_correct")
 
-    def load_signals(self, target_sounds_type="tts-numbers_n13_resamp_24414"):
+    def load_signals(self, target_sounds_type="tts-numbers_n13_resamp_48828"):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, target_sounds_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
@@ -227,7 +227,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             all_talkers[str(talker_id)] = talker_sorted
         self.signals = all_talkers
 
-    def load_maskers(self, sound_type="babble-numbers-reversed-n13-shifted_resamp_24414"):
+    def load_maskers(self, sound_type="babble-numbers-reversed-n13-shifted_resamp_48828"):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
@@ -250,7 +250,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         if calibration:
             spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), f"{self.setting.setup}_calibration.pkl"))
         if self.plane == "v":
-            speakers = spk_array.pick_speakers([x for x in range(20, 27) if x != 23])
+            speakers = spk_array.pick_speakers([x for x in range(20, 28) if x != 23])
         elif self.plane == "h":
             speakers = spk_array.pick_speakers([2, 8, 15, 31, 38, 44])
         else:

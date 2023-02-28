@@ -47,9 +47,9 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     time_0 = Float()
     speakers = List()
     signals = Dict()
-    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\400_tone.wav"))
-    paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
-    paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_end.wav"))
+    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\400_tone.wav"))
+    paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\paradigm_start.wav"))
+    paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\paradigm_end.wav"))
     plane = Str("v")
     response = Any()
     solution = Any()
@@ -104,6 +104,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.devices["RX8"].clear_buffers(n_buffers=1, proc="RX81")
         self.devices["RX8"].clear_channels(n_channels=1, proc="RX81")
         self.sequence.__next__()
+        self.sequence.print_trial_info()
         self.solution = self.sequence.this_trial
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
@@ -150,7 +151,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.results.write([x.id for x in self.speakers_sample], "speakers_sample")
         self.results.write([x for x in self.signals_sample.keys()], "signals_sample")
 
-    def load_signals(self, sound_type="tts-countries_n13_resamp_24414"):
+    def load_signals(self, sound_type="tts-countries_n13_resamp_48828"):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
@@ -173,7 +174,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         if calibration:
             spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), f"{self.setting.setup}_calibration.pkl"))
         if self.plane == "v":
-            speakers = spk_array.pick_speakers([x for x in range(20, 27)])
+            speakers = spk_array.pick_speakers([x for x in range(20, 28)])
         elif self.plane == "h":
             speakers = spk_array.pick_speakers([2, 8, 15, 23, 31, 38, 44])
         else:

@@ -37,15 +37,15 @@ class FFCalibrator:
         # the device should be an instance of Device class
         self.device = RP2RX8SpeakerCal()
         self.calib_param = {"ref_spk_id": 23,
-                            "samplerate": 24414,
+                            "samplerate": 48828,
                             "n_repeats": 30,
                             "calib_db": 65,
                             'filter_bank': {'length': 512,
                                             'bandwidth': 0.125,
                                             'low_cutoff': 20,
-                                            'high_cutoff': 12000,
+                                            'high_cutoff': 20000,
                                             'alpha': 1.0,
-                                            "threshold": 0.0},
+                                            "threshold": 0.1},
                             'ramp_dur': 0.005,
                             "stim_dur": 0.1,
                             "stim_type": "chirp",
@@ -97,16 +97,19 @@ class FFCalibrator:
             speakers = self.speakerArray.pick_speakers(picks=speakers)
         reference_speaker = self.speakerArray.pick_speakers(self.calib_param["ref_spk_id"])[0]
         self.results["SPL_ref"] = self.calib_param["ref_spk_id"]
-        target, equalization_levels_before = self._level_equalization(speakers, sound, reference_speaker, threshold)
-        print(f"equalization levels before: {equalization_levels_before}")
-        filter_bank, rec = self._frequency_equalization(speakers, sound, target, equalization_levels_before,
+        target, equalization_levels_first = self._level_equalization(speakers, sound, reference_speaker, threshold)
+        print(f"equalization levels first: {equalization_levels_first}")
+        filter_bank, rec = self._frequency_equalization(speakers, sound, target, equalization_levels_first,
                                                         bandwidth, low_cutoff, high_cutoff, alpha)
-        target, equalization_levels_after = self._level_equalization(speakers, sound, reference_speaker, threshold)
-        print(f"equalization levels after: {equalization_levels_after}")
+        target, equalization_levels_second = self._level_equalization(speakers, sound, reference_speaker, threshold)
+        print(f"equalization levels second: {equalization_levels_second}")
+        #filter_bank, rec = self._frequency_equalization(speakers, sound, target, equalization_levels_second,
+                                                        #bandwidth, low_cutoff, high_cutoff, alpha)
+
         self.results['filters'] = filter_bank
         self.results['filters_spks'] = [spk.id for spk in speakers]
         self.results["SPL_eq_spks"] = [spk.id for spk in speakers]
-        self.results["SPL_eq"] = equalization_levels_after
+        self.results["SPL_eq"] = equalization_levels_second
         # print(f"level equalization difference: {(equalization_levels_before - equalization_levels_after).mean()}")
         if save:
             self._save_result()

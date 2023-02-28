@@ -19,7 +19,7 @@ class RP2RX8SpeakerCalSetting(DeviceSetting):
     # 1 is the left entry channel
     rec_ch = CInt(1, group='primary', dsec='analog input channel to be used to record the sound',
                   reinit=False, tag_name='rec_ch', device='RP2')
-    device_freq = CFloat(24414, group='status', dsec='sampling frequency of the device (Hz)')
+    device_freq = CFloat(48828, group='status', dsec='sampling frequency of the device (Hz)')
     rcx_file_RP2 = Str('calibration\\RP2_rec_buf.rcx', group='status', dsec='the rcx file for RP2')
     rcx_file_RX8 = Str('calibration\\RX8_play_buf.rcx', group='status', dsec='the rcx file for RX8')
     processor_RP2 = Str('RP2', group='status', dsec='name of the processor')

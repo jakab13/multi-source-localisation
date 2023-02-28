@@ -16,7 +16,7 @@ import numpy as np
 import logging
 
 log = logging.getLogger(__name__)
-slab.set_default_samplerate(24414)
+slab.set_default_samplerate(48828)
 
 
 class SpatialUnmaskingSetting(ExperimentSetting):
@@ -38,10 +38,10 @@ class SpatialUnmaskingExperiment_exmp(ExperimentLogic):
     time_0 = Float()
     speakers = List()
     signals = Dict()
-    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\400_tone.wav"))
-    paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
-    staircase_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\staircase_end.wav"))
-    paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_end.wav"))
+    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\400_tone.wav"))
+    paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\paradigm_start.wav"))
+    staircase_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\staircase_end.wav"))
+    paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\paradigm_end.wav"))
     stairs = Any(slab.Staircase(start_val=70,
                                 n_reversals=2,
                                 step_sizes=[3, 1],
@@ -100,6 +100,7 @@ class SpatialUnmaskingExperiment_exmp(ExperimentLogic):
         self.results.write(self.stairs, "stairs")
         # self._tosave_para["reaction_time"] = Any
         self.sequence.__next__()
+        self.sequence.print_trial_info()
         self.devices["RX8"].handle.write("data0", self.paradigm_start.data.flatten(), procs="RX81")
         self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
         self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
@@ -204,12 +205,13 @@ class SpatialUnmaskingExperiment_exmp(ExperimentLogic):
             self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
             self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
             self.devices["RX8"].wait_to_finish_playing()
+        self.results.write(np.ndarray.tolist(np.array(self.devices["ArUcoCam"].pose)), "headpose")
         self.results.write(self.response, "response")
         self.results.write(self.solution, "solution")
         self.results.write(self.rt, "rt")
         self.results.write(self.is_correct, "is_correct")
 
-    def load_signals(self, target_sounds_type="tts-numbers_n13_resamp_24414"):
+    def load_signals(self, target_sounds_type="tts-numbers_n13_resamp_48828"):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, target_sounds_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
@@ -223,7 +225,7 @@ class SpatialUnmaskingExperiment_exmp(ExperimentLogic):
             all_talkers[str(talker_id)] = talker_sorted
         self.signals = all_talkers
 
-    def load_maskers(self, sound_type="babble-numbers-reversed-n13-shifted_resamp_24414"):
+    def load_maskers(self, sound_type="babble-numbers-reversed-n13-shifted_resamp_48828"):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
@@ -334,9 +336,9 @@ class NumerosityJudgementExperiment_exmp(ExperimentLogic):
     time_0 = Float()
     speakers = List()
     signals = Dict()
-    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\400_tone.wav"))
-    paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
-    paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_end.wav"))
+    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\400_tone.wav"))
+    paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\paradigm_start.wav"))
+    paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\paradigm_end.wav"))
     plane = Str("v")
     response = Any()
     solution = Any()
@@ -388,6 +390,7 @@ class NumerosityJudgementExperiment_exmp(ExperimentLogic):
         self.devices["RX8"].clear_buffers(n_buffers=1, proc="RX81")
         self.devices["RX8"].clear_channels(n_channels=1, proc="RX81")
         self.sequence.__next__()
+        self.sequence.print_trial_info()
         self.solution = self.sequence.this_trial
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
         self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
@@ -434,7 +437,7 @@ class NumerosityJudgementExperiment_exmp(ExperimentLogic):
         self.results.write([x.id for x in self.speakers_sample], "speakers_sample")
         self.results.write([x for x in self.signals_sample.keys()], "signals_sample")
 
-    def load_signals(self, sound_type="tts-countries_n13_resamp_24414"):
+    def load_signals(self, sound_type="tts-countries_n13_resamp_48828"):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
@@ -560,10 +563,10 @@ class LocalizationAccuracyExperiment_exmp(ExperimentLogic):
     all_speakers = List()
     target = Any()
     signals = Any()
-    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\400_tone.wav"))
-    off_center.level = 70
-    paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
-    paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_end.wav"))
+    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\400_tone.wav"))
+    # off_center.level = 70
+    paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\paradigm_start.wav"))
+    paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\paradigm_end.wav"))
     # pose = Any()
     error = List()
     plane = Str("v")
@@ -625,6 +628,7 @@ class LocalizationAccuracyExperiment_exmp(ExperimentLogic):
         self.devices["RX8"].clear_channels(n_channels=1, proc="RX81")
         self.devices["RX8"].clear_buffers(n_buffers=1, proc=["RX81", "RX82"])
         self.sequence.__next__()
+        self.sequence.print_trial_info()
         self.solution = self.sequence.this_trial - 1
         self.pick_speaker_this_trial(speaker_id=self.solution)
         signal = random.choice(self.signals)
@@ -684,7 +688,7 @@ class LocalizationAccuracyExperiment_exmp(ExperimentLogic):
         self.results.write(self.rt, "rt")
         self.results.write(self.target.id, "target_spk_id")
 
-    def load_babble(self, sound_type="babble-numbers-reversed-n13-shifted_resamp_24414"):
+    def load_babble(self, sound_type="babble-numbers-reversed-n13-shifted_resamp_48828"):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))

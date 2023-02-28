@@ -44,10 +44,10 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
     all_speakers = List()
     target = Any()
     signals = Any()
-    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\400_tone.wav"))
+    off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\400_tone.wav"))
     off_center.level = 70
-    paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_start.wav"))
-    paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc\\paradigm_end.wav"))
+    paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\paradigm_start.wav"))
+    paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\paradigm_end.wav"))
     # pose = Any()
     error = List()
     plane = Str("v")
@@ -111,6 +111,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         self.devices["RX8"].clear_channels(n_channels=1, proc="RX81")
         self.devices["RX8"].clear_buffers(n_buffers=1, proc=["RX81", "RX82"])
         self.sequence.__next__()
+        self.sequence.print_trial_info()
         self.solution = self.sequence.this_trial - 1
         self.pick_speaker_this_trial(speaker_id=self.solution)
         signal = random.choice(self.signals)
@@ -170,7 +171,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         self.results.write(self.rt, "rt")
         self.results.write(self.target.id, "target_spk_id")
 
-    def load_babble(self, sound_type="babble-numbers-reversed-n13-shifted_resamp_24414"):
+    def load_babble(self, sound_type="babble-numbers-reversed-n13-shifted_resamp_48828"):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
@@ -193,7 +194,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         if calibration:
             spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), f"{self.setting.setup}_calibration.pkl"))
         if self.plane == "v":
-            speakers = spk_array.pick_speakers([x for x in range(20, 27)])
+            speakers = spk_array.pick_speakers([x for x in range(20, 28)])
         elif self.plane == "h":
             speakers = spk_array.pick_speakers([2, 8, 15, 23, 31, 38, 44])
         else:

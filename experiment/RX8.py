@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 
 class RX8Setting(DeviceSetting):  # this class contains settings for the device and sits in RX8.setting
-    sampling_freq = Float(24414, group='status', dsec='Sampling frequency of the device (Hz)')
+    sampling_freq = Float(48828, group='status', dsec='Sampling frequency of the device (Hz)')
     # buffer_size_max = Int(50000, group='status', dsec='Max buffer size')
     file = Str('MSL\\RCX\\play_buf_msl.rcx', group='status', dsec='Name of the rcx file to load')
     processor = Str('RX8', group='status', dsec='Name of the processor')
@@ -88,7 +88,7 @@ class RX8Device(Device):
         for idx in range(n_channels):  # clear all speakers before loading warning tone
             self.handle.write(f"chan{idx}", 99, procs=proc)
 
-    def clear_buffers(self, n_buffers, proc, buffer_length=24414):
+    def clear_buffers(self, n_buffers, proc, buffer_length=48828):
         for idx in range(n_buffers):
             self.handle.write(f"data{idx}", np.zeros(buffer_length), procs=proc)
 
