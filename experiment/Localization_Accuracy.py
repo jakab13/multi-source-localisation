@@ -81,6 +81,8 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         log.info(f"Final mean error - azimuth: {np.mean(np.array(self.error)[:, 0])}, elevation: {np.mean(np.array(self.error)[:, 1])}")
 
     def setup_experiment(self, info=None):
+        self.results.write(self.plane, "plane")
+        self.results.write(self.mode, "mode")
         self.results.write(self.sequence, "sequence")
         self.results.write(np.ndarray.tolist(np.array(self.devices["ArUcoCam"].pose)), "offset")
         self.devices["RX8"].handle.write(tag='bitmask',

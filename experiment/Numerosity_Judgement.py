@@ -55,6 +55,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     solution = Any()
     rt = Any()
     is_correct = Bool()
+    reversed_speech = Bool(False)
 
     def _devices_default(self):
         rp2 = RP2Device()
@@ -80,6 +81,8 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         pass
 
     def setup_experiment(self, info=None):
+        self.results.write(self.reversed_speech, "reversed_speech")
+        self.results.write(self.plane, "plane")
         self.results.write(self.sequence, "sequence")
         self.results.write(np.ndarray.tolist(np.array(self.devices["ArUcoCam"].offset)), "offset")
         self.devices["RX8"].handle.write(tag='bitmask',

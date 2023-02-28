@@ -88,6 +88,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.stairs.close_plot()
 
     def setup_experiment(self, info=None):
+        self.results.write(self.plane, "plane")
         self.load_speakers()
         self.load_signals()
         self.load_maskers()
