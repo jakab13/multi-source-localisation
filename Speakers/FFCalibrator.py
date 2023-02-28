@@ -39,7 +39,7 @@ class FFCalibrator:
         self.calib_param = {"ref_spk_id": 23,
                             "samplerate": 24414,
                             "n_repeats": 30,
-                            "calib_db": 70,
+                            "calib_db": 65,
                             'filter_bank': {'length': 512,
                                             'bandwidth': 0.125,
                                             'low_cutoff': 20,
