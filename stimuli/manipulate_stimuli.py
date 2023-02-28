@@ -129,15 +129,18 @@ def concatenate(sounds, n_concatenate=5):
 
 
 if __name__ == "__main__":
-    DIR = pathlib.Path("C:\labplatform\sound_files\\babble-numbers-reversed-shifted_resamp_24414")
+    DIR = pathlib.Path("C:\labplatform\sound_files\\babble-numbers-reversed-n13-shifted_resamp_24414")
+    DIR_resamp = pathlib.Path("C:\labplatform\sound_files\\babble-numbers-reversed-n13-shifted_resamp_48828")
+    if not os.path.isdir(DIR_resamp):
+        os.mkdir(DIR_resamp)
     sounds_data = load(DIR)
     # pattern = "p227"
     # talker_files = pick_talker(data=sounds_data, pattern=pattern, DIR=DIR)
     # sequence = concatenate(talker_files, n_concatenate=len(talker_files))
     dir_names = os.listdir(DIR)
-    sound_list_resamp = resample(sounds_data, samplerate=int(48828/2))
+    sound_list_resamp = resample(sounds_data, samplerate=48828)
     for i, sound in enumerate(sound_list_resamp):
-        slab.Sound.write(sound, filename=DIR/dir_names[i])
+        slab.Sound.write(sound, filename=DIR_resamp/dir_names[i])
 
     # sort signals
     sound_type = "tts-countries_resamp_24414"
