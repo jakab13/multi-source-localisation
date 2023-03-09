@@ -24,7 +24,7 @@ config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "
 class LocalizationAccuracySetting(ExperimentSetting):
 
     experiment_name = Str('LocaAccu', group='status', dsec='name of the experiment', noshow=True)
-    conditions = Int(config.conditions, group="status", dsec="Number of total speakers")
+    conditions = Int(config.conditions, group="primary", dsec="Number of total speakers")
     trial_number = Int(config.trial_number, group='status', dsec='Number of trials in each condition')
     stim_duration = Float(config.trial_duration, group='status', dsec='Duration of each trial, (s)')
     setup = Str("FREEFIELD", group="status", dsec="Name of the experiment setup")
@@ -58,6 +58,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
     rt = Any()
     solution = Any()
 
+
     def _devices_default(self):
         rp2 = RP2Device()
         rx8 = RX8Device()
@@ -81,8 +82,6 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         log.info(f"Final mean error - azimuth: {np.mean(np.array(self.error)[:, 0])}, elevation: {np.mean(np.array(self.error)[:, 1])}")
 
     def setup_experiment(self, info=None):
-        self.results.write(self.plane, "plane")
-        self.results.write(self.mode, "mode")
         self.results.write(self.sequence, "sequence")
         self.results.write(np.ndarray.tolist(np.array(self.devices["ArUcoCam"].pose)), "offset")
         self.devices["RX8"].handle.write(tag='bitmask',
@@ -103,6 +102,8 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         # self.devices["RX8"].handle.write("playbuflen",
                                          # self.devices["RX8"].setting.sampling_freq*self.setting.stim_duration,
                                          # procs=self.devices["RX8"].handle.procs)
+        self.results.write(self.plane, "plane")
+        self.results.write(self.mode, "mode")
         time.sleep(1)
 
     def _prepare_trial(self):
@@ -178,7 +179,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         self.signals = sound_list
 
     def load_pinknoise(self):
-        noise = slab.Sound.pinknoise(duration=0.025, samplerate=self.devices["RX8"].setting.sampling_freq)
+        noise = slab.Sound.pinknoise(duration=0.025, samplerate=self.devices["RX8"].setting.sampling_freq, level=65)
         silence = slab.Sound.silence(duration=0.025, samplerate=self.devices["RX8"].setting.sampling_freq)
         end_silence = slab.Sound.silence(duration=0.775, samplerate=self.devices["RX8"].setting.sampling_freq)
         stim = slab.Sound.sequence(noise, silence, noise, silence, noise,
@@ -194,7 +195,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         if calibration:
             spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), f"{self.setting.setup}_calibration.pkl"))
         if self.plane == "v":
-            speakers = spk_array.pick_speakers([x for x in range(20, 28)])
+            speakers = spk_array.pick_speakers([x for x in range(20, 27)])
         elif self.plane == "h":
             speakers = spk_array.pick_speakers([2, 8, 15, 23, 31, 38, 44])
         else:
@@ -238,7 +239,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
             self.devices["ArUcoCam"].retrieve()
             # self.devices["ArUcoCam"].pause()
             try:
-                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].pose) ** 2)) > 12.5:
+                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].pose) ** 2)) > 15:
                     log.info("Subject is not looking straight ahead")
                     self.devices["RX8"].clear_channels(n_channels=1, proc=["RX81", "RX82"])
                     self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")

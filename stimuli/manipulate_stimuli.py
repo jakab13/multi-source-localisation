@@ -129,7 +129,8 @@ def concatenate(sounds, n_concatenate=5):
 
 
 if __name__ == "__main__":
-    DIR = pathlib.Path("C:\labplatform\sound_files\\babble-numbers-reversed-n13-shifted_resamp_24414")
+    # DIR = pathlib.Path("C:\labplatform\sound_files\\babble-numbers-reversed-n13-shifted_resamp_24414")
+    DIR = pathlib.Path("C:\labplatform\sound_files\\tts-countries-reversed_n13_resamp_48828")
     DIR_resamp = pathlib.Path("C:\labplatform\sound_files\\babble-numbers-reversed-n13-shifted_resamp_48828")
     if not os.path.isdir(DIR_resamp):
         os.mkdir(DIR_resamp)

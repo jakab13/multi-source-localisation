@@ -48,7 +48,9 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                                 n_reversals=config.n_reversals,
                                 step_sizes=config.step_sizes,
                                 step_up_factor=config.step_up_factor,
-                                step_type=config.step_type))
+                                step_type=config.step_type,
+                                n_down=config.n_down,
+                                n_up=config.n_up))
     target_speaker = Any()
     selected_target_sounds = List()
     masker_speaker = Any()
@@ -115,6 +117,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
     def _prepare_trial(self):
         if self.stairs.finished:
             self.threshold = self.stairs.threshold()
+            self.results.write(self.stairs, "stairs")
             self.results.write(self.threshold, "threshold")
             self.stairs.close_plot()
             self.devices["RX8"].clear_channels(n_channels=5, proc=["RX81", "RX82"])
@@ -132,6 +135,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             self.sequence.__next__()
             time.sleep(1.0)
         self.masker_speaker = self.speakers[self.sequence.this_trial - 1]
+        self.results.write(self.masker_speaker.id, "masker_speaker_id")
         self.masker_sound_id = random.sample(self.potential_maskers.keys(), 1)[0]
         self.masker_sound = self.potential_maskers[self.masker_sound_id]
         self.stairs.print_trial_info()
@@ -145,9 +149,13 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         # self.devices["RX8"].clear_buffer()
         target_sound_i = random.choice(range(len(self.selected_target_sounds)))
         target_sound = self.selected_target_sounds[target_sound_i]  # choose random number from sound_list
-        target_sound.level = level
         target_sound = self.target_speaker.apply_equalization(target_sound, level_only=False)
+        target_sound.level += level
+        self.results.write(target_sound.level, "target_sound_level")
         self.masker_sound = self.masker_speaker.apply_equalization(self.masker_sound, level_only=False)
+        self.results.write(self.masker_sound.level.mean(), "masker_sound_level")
+        print('masker level', self.masker_sound.level)
+        print('target level', target_sound.level)
         self.devices["RX8"].handle.write("chan0",
                                          self.target_speaker.channel_analog,
                                          f"{self.target_speaker.TDT_analog}{self.target_speaker.TDT_idx_analog}")
@@ -250,7 +258,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         if calibration:
             spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), f"{self.setting.setup}_calibration.pkl"))
         if self.plane == "v":
-            speakers = spk_array.pick_speakers([x for x in range(20, 28) if x != 23])
+            speakers = spk_array.pick_speakers([x for x in range(20, 27) if x != 23])
         elif self.plane == "h":
             speakers = spk_array.pick_speakers([2, 8, 15, 31, 38, 44])
         else:
@@ -299,9 +307,9 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             self.devices["ArUcoCam"].retrieve()
             # self.devices["ArUcoCam"].pause()
             try:
-                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].pose) ** 2)) > 12.5:
+                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].pose) ** 2)) > 15:
                     log.info("Subject is not looking straight ahead")
-                    self.devices["RX8"].clear_channels(n_channels=1, proc=["RX81", "RX82"])
+                    self.devices["RX8"].clear_channels(n_channels=2, proc=["RX81", "RX82"])
                     self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
                     self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
                     #self.devices["RX8"].start()

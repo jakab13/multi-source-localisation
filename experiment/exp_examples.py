@@ -299,7 +299,7 @@ class SpatialUnmaskingExperiment_exmp(ExperimentLogic):
             try:
                 if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].pose) ** 2)) > 12.5:
                     log.info("Subject is not looking straight ahead")
-                    self.devices["RX8"].clear_channels(n_channels=1, proc=["RX81", "RX82"])
+                    self.devices["RX8"].clear_channels(n_channels=2, proc=["RX81", "RX82"])
                     self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
                     self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
                     #self.devices["RX8"].start()
