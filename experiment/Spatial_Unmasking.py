@@ -125,7 +125,9 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
                                          n_reversals=config.n_reversals,
                                          step_sizes=config.step_sizes,
                                          step_up_factor=config.step_up_factor,
-                                         step_type=config.step_type)
+                                         step_type=config.step_type,
+                                         n_down=config.n_down,
+                                         n_up=config.n_up)
             # self._tosave_para["stairs"] = self.stairs
             self.devices["RX8"].handle.write("data0", self.staircase_end.data.flatten(), procs="RX81")
             self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
