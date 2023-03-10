@@ -100,7 +100,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         time.sleep(1)
 
     def _prepare_trial(self):
-        # self.check_headpose()
+        self.check_headpose()
         # self.devices["RX8"].clear_buffers(n_buffers=1, proc="RX81")
         # self.devices["RX8"].clear_channels(n_channels=5, proc=["RX81", "RX82"])
         for idx in range(5):  # clear all speakers before loading warning tone
