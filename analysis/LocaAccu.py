@@ -23,11 +23,11 @@ fig, ax = mosaic_plot(layout=[["A", "B"],
                               ["E", "E"]])
 
 # horizontal
-draw_lineplot_actual_vs_perceived(data=dfh, sub_ids=sub_ids_h, ax=ax["A"])
+draw_lineplot_actual_vs_perceived(data=dfh, plane="horizontal", sub_ids=sub_ids_h, ax=ax["A"])
 ax["A"].set_title("Horizontal localization accuracy")
 
 # vertical
-draw_lineplot_actual_vs_perceived(data=dfv, sub_ids=sub_ids_v, ax=ax["B"])
+draw_lineplot_actual_vs_perceived(data=dfv, plane="vertical", sub_ids=sub_ids_v, ax=ax["B"])
 ax["B"].set_title("Vertical localization accuracy")
 
 # plot regression line horizontal and vertical
