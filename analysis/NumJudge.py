@@ -1,4 +1,5 @@
 from analysis.utils.misc import *
+from analysis.utils.plotting import *
 import os
 from labplatform.config import get_config
 import seaborn as sns
@@ -14,25 +15,19 @@ dfh = load_dataframe(fp, exp_name=exp_name, plane="h")
 sub_ids_h = extract_subject_ids_from_dataframe(dfh)
 sub_ids_v = extract_subject_ids_from_dataframe(dfv)
 
+layout = [["A", "B"],
+          ["C", "C"]]
+
 # create mosaic plot
-fig, ax = plt.subplot_mosaic(layout=[["A", "B"],
-                                     ["C", "C"]])
-for idx, sub_id in enumerate(sub_ids_h):
-    sub = dfh.loc[sub_id].reset_index()
-    sns.lineplot(x=sub.solution,
-                 y=sub.response,
-                 err_style="bars",
-                 errorbar=("se", 1),
-                 label=sub_id,
-                 ax=ax["A"]).set(title="Horizontal")
-for idx, sub_id in enumerate(sub_ids_v):
-    sub = dfv.loc[sub_id].reset_index()
-    sns.lineplot(x=sub.solution,
-                 y=sub.response,
-                 err_style="bars",
-                 errorbar=("se", 1),
-                 label=sub_id,
-                 ax=ax["B"]).set(title='Vertical')
+fig, ax = mosaic_plot(layout)
+
+# plot response vs solution lineplot
+draw_lineplot_solution_vs_response(data=dfh, sub_ids=sub_ids_h, ax=ax["A"])
+ax["A"].set(title="Horizontal")
+
+# vertical
+draw_lineplot_solution_vs_response(data=dfv, sub_ids=sub_ids_v, ax=ax["B"])
+ax["B"].set(title="Vertical")
 
 # plot mean
 sns.lineplot(x=dfv.solution.reset_index(drop=True),
@@ -55,6 +50,8 @@ lims = [max(x0, y0), min(x1, y1)]
 sns.lineplot(x=lims, y=lims, color='grey', linestyle="dashed", ax=ax["C"])
 for val in ax.values():
     val.invert_yaxis()
+
+
 plt.tight_layout()
 plt.legend()
 plt.show()
