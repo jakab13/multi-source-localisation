@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 from analysis.utils.misc import *
 
 
-def mosaic_plot(layout):
-    fig, ax = plt.subplot_mosaic(layout=layout)
+def mosaic_plot(layout, **kwargs):
+    fig, ax = plt.subplot_mosaic(layout=layout, **kwargs)
     return fig, ax
 
 
@@ -126,10 +126,3 @@ def draw_linear_regression_actual_vs_perceived(data, plane, ax=None, axlim=(-75,
                         y=y,
                         ax=ax,
                         **kwargs)
-
-
-def replace_in_array(x, to_replace_val=None, replace_with_val=0):
-    for i, val in enumerate(x):
-        if val == to_replace_val:
-            x[i] = replace_with_val
-    return x

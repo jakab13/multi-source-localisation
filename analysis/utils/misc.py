@@ -70,6 +70,12 @@ def get_elevation_from_df(dataset):
             elevation.append(x[1])
     return elevation
 
+def replace_in_array(x, to_replace_val=None, replace_with_val=0):
+    for i, val in enumerate(x):
+        if val == to_replace_val:
+            x[i] = replace_with_val
+    return x
+
 if __name__ == "__main__":
     from labplatform.config import get_config
     data_dir = os.path.join(get_config("DATA_ROOT"), "MSL")
