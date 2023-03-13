@@ -115,7 +115,10 @@ abs_distance_h[35.0] = pd.concat([threshs_all_subjects_h[-35.0],
 abs_distance_h[52.5] = pd.concat([threshs_all_subjects_h[-52.5],
                                 threshs_all_subjects_h[52.5]])
 
-fig, ax = plt.subplots(2, sharey=True)
-sns.boxplot(abs_distance_h, ax=ax[0]).set(title="Horizontal absolute distance all subjects")
-sns.boxplot(abs_distance_v, ax=ax[1]).set(title="Vertical absolute distance all subjects")
+
+fig, ax = mosaic_plot(layout=[["A"], ["B"]])
+ax["A"].sharey(ax["B"])
+sns.boxplot(abs_distance_h, ax=ax["A"]).set(title="Horizontal absolute distance all subjects")
+sns.boxplot(abs_distance_v, ax=ax["B"]).set(title="Vertical absolute distance all subjects")
 fig.tight_layout()
+plt.show()
