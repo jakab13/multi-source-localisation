@@ -102,7 +102,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
-        self.results.write(self.stairs, "stairs")
+        # self.results.write(self.stairs, "stairs")
         # self._tosave_para["reaction_time"] = Any
         self.sequence.__next__()
         self.devices["RX8"].handle.write("data0", self.paradigm_start.data.flatten(), procs="RX81")
@@ -116,9 +116,6 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
 
     def _prepare_trial(self):
         if self.stairs.finished:
-            self.threshold = self.stairs.threshold()
-            self.results.write(self.stairs, "stairs")
-            self.results.write(self.threshold, "threshold")
             self.stairs.close_plot()
             self.devices["RX8"].clear_channels(n_channels=5, proc=["RX81", "RX82"])
             self.stairs = slab.Staircase(start_val=config.start_val,
@@ -208,6 +205,10 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
             self.devices[device].pause()
         if self.sequence.n_remaining == 0 and self.stairs.finished:
             self.setting.current_trial = self.setting.total_trial
+        if self.stairs.finished:
+            self.threshold = self.stairs.threshold()
+            self.results.write(self.stairs, "stairs")
+            self.results.write(self.threshold, "threshold")
         if self.setting.current_trial == self.setting.total_trial:
             self.devices["RX8"].handle.write(tag='bitmask',
                                              value=0,
