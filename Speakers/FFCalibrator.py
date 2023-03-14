@@ -46,7 +46,7 @@ class FFCalibrator:
                                             'high_cutoff': 20000,
                                             'alpha': 1.0,
                                             "threshold": 0.1},
-                            'ramp_dur': 0.005,
+                            'ramp_dur': 0.05,
                             "stim_dur": 0.1,
                             "stim_type": "chirp",
                             "speaker_distance": 1.4,
