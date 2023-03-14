@@ -28,8 +28,9 @@ layout = [["A", "B"],
 fig, ax = mosaic_plot(layout=layout)
 
 # horizontal
-draw_boxplot_actual_vs_perceived(data=dfh, plane="horizontal", sub_ids=sub_ids_h, ax=ax["A"])
+draw_lineplot_actual_vs_perceived(data=dfh, plane="horizontal", sub_ids=sub_ids_h, ax=ax["A"])
 ax["A"].set_title("Horizontal localization accuracy")
+ax["A"].sharey(ax["B"])
 
 # vertical
 draw_lineplot_actual_vs_perceived(data=dfv, plane="vertical", sub_ids=sub_ids_v, ax=ax["B"])

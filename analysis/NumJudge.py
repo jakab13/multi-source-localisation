@@ -51,7 +51,8 @@ sns.lineplot(x=lims, y=lims, color='grey', linestyle="dashed", ax=ax["C"])
 for val in ax.values():
     val.invert_yaxis()
 
-
+ax["A"].sharex(ax["B"])
+ax["A"].sharey(ax["B"])
 plt.tight_layout()
 plt.legend()
 plt.show()
