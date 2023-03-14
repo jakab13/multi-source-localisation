@@ -103,7 +103,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.check_headpose()
         # self.devices["RX8"].clear_buffers(n_buffers=1, proc="RX81")
         # self.devices["RX8"].clear_channels(n_channels=5, proc=["RX81", "RX82"])
-        for idx in range(5):  # clear all speakers before loading warning tone
+        for idx in range(6):  # clear all speakers before loading warning tone
             self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
         self.sequence.__next__()
         self.sequence.print_trial_info()
@@ -146,7 +146,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                                              value=0,
                                              procs="RX81")  # turn off LED
             # self.devices["RX8"].clear_channels(n_channels=5, proc=["RX81", "RX82"])
-            for idx in range(5):  # clear all speakers before loading warning tone
+            for idx in range(6):  # clear all speakers before loading warning tone
                 self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
             self.devices["RX8"].handle.write("data0", self.paradigm_end.data.flatten(), procs="RX81")
             self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
@@ -242,7 +242,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                 if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].pose) ** 2)) > 12.5:
                     log.info("Subject is not looking straight ahead")
                     # self.devices["RX8"].clear_channels(n_channels=5, proc=["RX81", "RX82"])
-                    for idx in range(5):  # clear all speakers before loading warning tone
+                    for idx in range(6):  # clear all speakers before loading warning tone
                         self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
                     self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
                     self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
