@@ -284,8 +284,9 @@ class FFCalibrator:
             recordings.append(slab.Sound(data=np.mean(temp_recs, axis=0), samplerate=self.device.setting.device_freq))
         recordings = slab.Sound(recordings, samplerate=self.device.setting.device_freq)
         length = self.calib_param["filter_bank"]["length"]
-        filter_bank = slab.Filter.equalizing_filterbank(reference_sound, recordings, length=length, low_cutoff=low_cutoff,
-                                                        high_cutoff=high_cutoff, bandwidth=bandwidth, alpha=alpha)
+        filter_bank = slab.Filter.equalizing_filterbank(reference_sound, recordings, length=length,
+                                                        low_cutoff=low_cutoff, high_cutoff=high_cutoff,
+                                                        bandwidth=bandwidth, alpha=alpha)
         # check for notches in the filter:
         transfer_function = filter_bank.tf(show=False)[1][0:900, :]
         if (transfer_function < -30).sum() > 0:
