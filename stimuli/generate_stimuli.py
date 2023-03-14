@@ -22,7 +22,7 @@ import pyloudnorm as pyln
 import numpy as np
 
 DIR = pathlib.Path(os.getcwd())
-save_directory = DIR / "samples" / "TTS" / "numbers"
+save_directory = DIR / "samples" / "TTS" / "tts-countries_n13_resamp_48828"
 
 tts_models = models["tts_models"]  # Between 1-58
 vocoder_models = models["vocoder_models"]  # Between 1-16
@@ -175,3 +175,14 @@ for i in range(200):
     # babble_sound.play()
     babble_file_name = "babble-reversed_n13_" + "-".join([item for t in list(zip(babble_ids, babble_numbers)) for item in t]) + ".wav"
     babble_sound.write(save_directory.parent / "babble-reversed-n13-shifted" / babble_file_name)
+
+# Align reversed sounds
+for file_name in file_names:
+    if file_name == ".DS_Store":
+        continue
+    sound = slab.Binaural(save_directory / file_name)
+    sound.data = sound.data[::-1]
+    sound_first_non_zero = next((i for i, x in enumerate(sound[:, 0]) if abs(x) > 0.03), None)
+    print(file_name, sound_first_non_zero)
+    sound.data = np.roll(sound.data, -sound_first_non_zero, axis=0)
+    sound.write(DIR / "samples" / "TTS" / "tts-countries-reversed_n13_resamp_48828" / str(file_name[:-4] + "reversed.wav"), normalise=False)
