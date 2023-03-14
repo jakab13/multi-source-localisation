@@ -277,7 +277,7 @@ class FFCalibrator:
             attenuated = deepcopy(sound)
             attenuated.level += level
             temp_recs = []
-            for i in range(10):
+            for i in range(self.calib_param["n_repeats"]):
                 rec = self.play_and_record(speaker, attenuated, equalize=False)
                 # rec = slab.Sound.ramp(rec, when='offset', duration=0.01)
                 temp_recs.append(rec.data - rec.data.mean())
