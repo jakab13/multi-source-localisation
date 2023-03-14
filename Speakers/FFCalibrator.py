@@ -90,6 +90,7 @@ class FFCalibrator:
         self.device.wait_to_finish_playing()
         intensity = float(input("Enter measured sound intensity: "))
         self.results["SPL_const"] = intensity - stimlevel
+        slab.set_calibration_intensity(self.results["SPL_const"])
         sound = self.stimulus
         if speakers == "all":  # use the whole speaker table
             speakers = self.speakerArray.pick_speakers(speakers)
