@@ -162,7 +162,7 @@ class Speaker:
             if self.level is None:
                 raise ValueError("speaker not level-equalized! Load an existing "
                                  "equalization of calibrate the setup!")
-            equalized_signal.level -= self.level
+            equalized_signal.level += self.level
             return equalized_signal
         else:
             if self.filter is None:
