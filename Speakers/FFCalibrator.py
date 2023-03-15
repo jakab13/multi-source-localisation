@@ -38,16 +38,17 @@ class FFCalibrator:
         self.device = RP2RX8SpeakerCal()
         self.calib_param = {"ref_spk_id": 23,
                             "samplerate": 48828,
-                            "n_repeats": 30,
-                            "calib_db": 85,
-                            'filter_bank': {'length': 3052,
-                                            'bandwidth': 1/16,
-                                            'low_cutoff': 20,
+                            "n_repeats": 20,
+                            "calib_db": 75,
+                            'filter_bank': {'length': 1000,
+                                            'bandwidth': 0.04,
+                                            'low_cutoff': 200,
                                             'high_cutoff': 20000,
                                             'alpha': 1.0,
-                                            "threshold": 0.1},
+                                            "threshold": 0.3},
                             'ramp_dur': 0.005,
                             "stim_dur": 0.1,
+                            "stim_kind": "linear",
                             "stim_type": "chirp",
                             "speaker_distance": 1.4,
                             }
@@ -136,7 +137,10 @@ class FFCalibrator:
         if self.calib_param["stim_type"] == "chirp":
             self.stimulus = slab.Sound.chirp(duration=self.calib_param["stim_dur"],
                                              samplerate=self.calib_param["samplerate"],
-                                             level=self.calib_param["calib_db"])
+                                             level=self.calib_param["calib_db"],
+                                             from_frequency=self.calib_param["filter_bank"]["low_cutoff"],
+                                             to_frequency=self.calib_param["filter_bank"]["high_cutoff"],
+                                             kind=self.calib_param["stim_kind"])
             self.stimulus = self.stimulus.ramp(duration=self.calib_param["ramp_dur"])
         else:
             print("Stimulus type must be chirp!")
@@ -187,7 +191,7 @@ class FFCalibrator:
         # self.device.RX8.write(tag="playbuflen", value=sound.n_samples, procs=["RX81", "RX82"])
         if compensate_delay:
             n_delay = self.get_recording_delay()
-            # n_delay += 50  # make the delay a bit larger to avoid missing the sound's onset
+            n_delay += 50  # make the delay a bit larger to avoid missing the sound's onset
         else:
             n_delay = 0
         rec_n_samples = int(sound.duration * recording_samplerate)
@@ -197,10 +201,10 @@ class FFCalibrator:
         self.set_signal_and_speaker(sound, speaker, equalize)
         self.device.RX8.trigger("zBusA", proc=self.device.RX8)
         self.device.wait_to_finish_playing()
-        rec = self.device.RP2.ReadTagV('data', 0, rec_n_samples)[n_delay:]
+        rec = self.device.RP2.ReadTagV('data', 0, rec_n_samples + n_delay)[n_delay:]
         rec = slab.Sound(np.array(rec), samplerate=recording_samplerate)
         if sound.samplerate != recording_samplerate:
-            rec = rec.resample(recording_samplerate)
+            rec = rec.resample(sound.samplerate)
         if compensate_attenuation:
             if isinstance(rec, slab.Binaural):
                 iid = rec.left.level - rec.right.level
@@ -280,7 +284,7 @@ class FFCalibrator:
             for i in range(self.calib_param["n_repeats"]):
                 rec = self.play_and_record(speaker, attenuated, equalize=False)
                 # rec = slab.Sound.ramp(rec, when='offset', duration=0.01)
-                temp_recs.append(rec.data - rec.data.mean())
+                temp_recs.append(rec.data)
             recordings.append(slab.Sound(data=np.mean(temp_recs, axis=0), samplerate=self.device.setting.device_freq))
         recordings = slab.Sound(recordings, samplerate=self.device.setting.device_freq)
         length = self.calib_param["filter_bank"]["length"]
@@ -314,7 +318,7 @@ class FFCalibrator:
             rec_full.append(self.play_and_record(speaker, full_equalized, equalize=False))
         return slab.Sound(rec_raw), slab.Sound(rec_level), slab.Sound(rec_full)
 
-    def spectral_range(self, signal, thresh=3, plot=True, log=False):
+    def spectral_range(self, signal, thresh=3, plot=True, log=False, bandwidth=1/5, ):
         """
         Compute the range of differences in power spectrum for all channels in
         the signal. The signal is devided into bands of equivalent rectangular
@@ -324,7 +328,7 @@ class FFCalibrator:
         across channels are computed. Can be used for example to check the
         effect of loud speaker equalization.
         """
-        bandwidth = self.calib_param["filter_bank"]["bandwidth"]
+        bandwidth = bandwidth
         low_cutoff = self.calib_param["filter_bank"]["low_cutoff"]
         high_cutoff = self.calib_param["filter_bank"]["high_cutoff"]
         # generate ERB-spaced filterbank:
