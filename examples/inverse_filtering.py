@@ -24,9 +24,18 @@ inverse = slab.Filter.equalizing_filterbank(reference=chirp, sound=recording, le
 inverse.tf()
 equalized = inverse.apply(recording)
 
-fix, ax = plt.subplots(2, sharex=True)
-chirp.spectrum(axis=ax[0], show=False)
-equalized.spectrum(axis=ax[1], show=False)
-ax[0].set(title="Original")
-ax[1].set(title="Reconstructed")
+layout = """
+ab
+cc
+dd
+"""
+fig, ax = plt.subplot_mosaic(layout)
+chirp.spectrum(show=False, axis=ax["a"])
+recording.spectrum(show=False, axis=ax["b"])
+inverse.tf(show=False, axis=ax["c"])
+equalized.spectrum(show=False, axis=ax["d"])
+fig.tight_layout()
+ax["a"].sharex(ax["d"])
+ax["b"].sharex(ax["d"])
+ax["c"].sharex(ax["d"])
 plt.show()
