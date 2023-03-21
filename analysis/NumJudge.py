@@ -1,4 +1,3 @@
-from analysis.utils.misc import *
 from analysis.utils.plotting import *
 import os
 from labplatform.config import get_config
@@ -42,8 +41,8 @@ sns.lineplot(x=dfh.solution.reset_index(drop=True),
              errorbar=("se", 1),
              label="horizontal",
              ax=ax["C"])
-plt.xticks(range(2, 6))
-plt.yticks(range(2, 6))
+plt.xticks(range(2, 7))
+plt.yticks(range(2, 7))
 x0, x1 = plt.xlim()
 y0, y1 = plt.ylim()
 lims = [max(x0, y0), min(x1, y1)]
@@ -56,3 +55,19 @@ ax["A"].sharey(ax["B"])
 plt.tight_layout()
 plt.legend()
 plt.show()
+
+# plot confusion matrix
+layout = """
+ab
+"""
+fig, ax = mosaic_plot(layout)
+
+# vertical
+cmv = confusion_matrix(index=dfv["response"], columns=dfv["solution"], rownames=["response"], colnames=["solution"])
+cmv = cmv.drop(index=1)
+sns.heatmap(cmv, annot=True, ax=ax["a"])
+
+# horizontal
+cmh = confusion_matrix(index=dfh["response"], columns=dfh["solution"], rownames=["response"], colnames=["solution"])
+cmh = cmh.drop(index=8)
+sns.heatmap(cmh, annot=True, ax=ax["b"])
