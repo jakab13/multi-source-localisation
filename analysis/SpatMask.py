@@ -4,7 +4,6 @@ import os
 from labplatform.config import get_config
 import seaborn as sns
 import matplotlib.pyplot as plt
-import numpy as np
 from Speakers.speaker_config import SpeakerArray
 sns.set_theme()
 
@@ -100,20 +99,20 @@ plt.show()
 # Merge columns
 abs_distance_v = pd.DataFrame()
 abs_distance_v[12.5] = pd.concat([threshs_all_subjects_v[-12.5],
-                               threshs_all_subjects_v[12.5]])
+                                  threshs_all_subjects_v[12.5]])
 abs_distance_v[25] = pd.concat([threshs_all_subjects_v[-25.0],
-                              threshs_all_subjects_v[25.0]])
+                                threshs_all_subjects_v[25.0]])
 abs_distance_v[37.5] = pd.concat([threshs_all_subjects_v[-37.5],
-                                threshs_all_subjects_v[37.5]])
+                                  threshs_all_subjects_v[37.5]])
 
 # horizontal
 abs_distance_h = pd.DataFrame()
 abs_distance_h[17.5] = pd.concat([threshs_all_subjects_h[-17.5],
-                               threshs_all_subjects_h[17.5]])
+                                  threshs_all_subjects_h[17.5]])
 abs_distance_h[35.0] = pd.concat([threshs_all_subjects_h[-35.0],
-                              threshs_all_subjects_h[35.0]])
+                                  threshs_all_subjects_h[35.0]])
 abs_distance_h[52.5] = pd.concat([threshs_all_subjects_h[-52.5],
-                                threshs_all_subjects_h[52.5]])
+                                  threshs_all_subjects_h[52.5]])
 
 
 fig, ax = mosaic_plot(layout=[["A"], ["B"]])
