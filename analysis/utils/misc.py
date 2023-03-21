@@ -37,11 +37,11 @@ def search_for_files(data_dir, exp_name, plane):
 def _extract_subject_ids_from_files(files):
     subject_ids = []
     for file in files:
-        for i in range(1, 100):
+        for i in range(100):
             if i < 10:
                 if f"sub_0{i}" in file:
                     subject_ids.append(f"sub_0{i}")
-            if i > 10:
+            if i >= 10:
                 if f"sub_{i}" in file:
                     subject_ids.append(f"sub_{i}")
     return subject_ids
@@ -70,11 +70,20 @@ def get_elevation_from_df(dataset):
             elevation.append(x[1])
     return elevation
 
+
 def replace_in_array(x, to_replace_val=None, replace_with_val=0):
     for i, val in enumerate(x):
         if val == to_replace_val:
             x[i] = replace_with_val
     return x
+
+
+def confusion_matrix(index, columns, values=None, rownames=None, colnames=None, aggfunc=None, margins=True,
+                     normalize=True):
+    cm = pd.crosstab(index, columns, values=values, rownames=rownames, colnames=colnames, margins=margins,
+                     normalize=normalize, aggfunc=aggfunc)
+    return cm
+
 
 if __name__ == "__main__":
     from labplatform.config import get_config
