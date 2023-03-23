@@ -61,13 +61,16 @@ layout = """
 ab
 """
 fig, ax = mosaic_plot(layout)
+fig.suptitle("NumJudge Crosstab")
 
 # vertical
-cmv = confusion_matrix(index=dfv["response"], columns=dfv["solution"], rownames=["response"], colnames=["solution"])
+cmv = crosstab(index=dfv["response"], columns=dfv["solution"], rownames=["response"], colnames=["solution"])
 cmv = cmv.drop(index=1)
 sns.heatmap(cmv, annot=True, ax=ax["a"])
+ax["a"].set_title("Vertical")
 
 # horizontal
-cmh = confusion_matrix(index=dfh["response"], columns=dfh["solution"], rownames=["response"], colnames=["solution"])
+cmh = crosstab(index=dfh["response"], columns=dfh["solution"], rownames=["response"], colnames=["solution"])
 cmh = cmh.drop(index=8)
 sns.heatmap(cmh, annot=True, ax=ax["b"])
+ax["b"].set_title("Horizontal")
