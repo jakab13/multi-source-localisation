@@ -78,8 +78,8 @@ def replace_in_array(x, to_replace_val=None, replace_with_val=0):
     return x
 
 
-def confusion_matrix(index, columns, values=None, rownames=None, colnames=None, aggfunc=None, margins=True,
-                     normalize=True):
+def crosstab(index, columns, values=None, rownames=None, colnames=None, aggfunc=None, margins=True,
+             normalize=True):
     cm = pd.crosstab(index, columns, values=values, rownames=rownames, colnames=colnames, margins=margins,
                      normalize=normalize, aggfunc=aggfunc)
     return cm
