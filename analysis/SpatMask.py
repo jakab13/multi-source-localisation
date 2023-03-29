@@ -103,8 +103,11 @@ fig.suptitle("SpatMask Crosstab")
 
 cmv = crosstab(index=dfv["response"], columns=dfv["solution"], rownames=["response"], colnames=["solution"])
 cmh = crosstab(index=dfh["response"], columns=dfh["solution"], rownames=["response"], colnames=["solution"])
+cmh = cmh.drop(columns=0, index=0)
+cmv = cmv.drop(columns=0, index=0)
+above_val = np.where(cmv > 0.05, False, True)
 
-sns.heatmap(cmh, annot=True, ax=ax["a"])
+sns.heatmap(cmh, annot=True, ax=ax["a"], mask=above_val)
 ax["a"].set_title("Horizontal")
-sns.heatmap(cmv, annot=True, ax=ax["b"])
+sns.heatmap(cmv, annot=True, ax=ax["b"], mask=above_val)
 ax["b"].set_title("Vertical")
