@@ -71,15 +71,15 @@ def get_elevation_from_df(dataset):
     return elevation
 
 
-def replace_in_array(x, to_replace_val=None, replace_with_val=0):
-    for i, val in enumerate(x):
+def replace_in_array(array, to_replace_val=None, replace_with_val=0):
+    for i, val in enumerate(array):
         if val == to_replace_val:
-            x[i] = replace_with_val
-    return x
+            array[i] = replace_with_val
+    return array
 
 
-def confusion_matrix(index, columns, values=None, rownames=None, colnames=None, aggfunc=None, margins=True,
-                     normalize=True):
+def crosstab(index, columns, values=None, rownames=None, colnames=None, aggfunc=None, margins=True,
+             normalize=True):
     cm = pd.crosstab(index, columns, values=values, rownames=rownames, colnames=colnames, margins=margins,
                      normalize=normalize, aggfunc=aggfunc)
     return cm
