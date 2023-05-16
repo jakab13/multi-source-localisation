@@ -105,7 +105,7 @@ cmv = crosstab(index=dfv["response"], columns=dfv["solution"], rownames=["respon
 cmh = crosstab(index=dfh["response"], columns=dfh["solution"], rownames=["response"], colnames=["solution"])
 cmh = cmh.drop(columns=0, index=0)
 cmv = cmv.drop(columns=0, index=0)
-above_val = np.where(cmv > 0.05, False, True)
+above_val = np.where(cmv > 0.05, False, True)  # mask if cmv < 0.05
 
 sns.heatmap(cmh, annot=True, ax=ax["a"], mask=above_val)
 ax["a"].set_title("Horizontal")

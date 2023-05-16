@@ -52,7 +52,7 @@ for val in ax.values():
 
 ax["A"].sharex(ax["B"])
 ax["A"].sharey(ax["B"])
-plt.tight_layout()
+# plt.tight_layout()
 plt.legend()
 plt.show()
 
@@ -72,5 +72,7 @@ ax["a"].set_title("Vertical")
 # horizontal
 cmh = crosstab(index=dfh["response"], columns=dfh["solution"], rownames=["response"], colnames=["solution"])
 cmh = cmh.drop(index=8)
+cmh = cmh.drop(index=1)
+cmh = cmh.drop(index=9)
 sns.heatmap(cmh, annot=True, ax=ax["b"])
 ax["b"].set_title("Horizontal")
