@@ -8,7 +8,7 @@ def mosaic_plot(layout, **kwargs):
     return fig, ax
 
 
-def draw_lineplot_actual_vs_perceived(data, sub_ids, plane, ax=None, errorbar=("se", 1), **kwargs):
+def draw_lineplot_actual_vs_perceived(data, sub_ids, plane, ax=None, errorbar=("sd", 1), **kwargs):
     for sub_id in sub_ids:
         sub = data.loc[sub_id].reset_index()
         if plane == "horizontal":
@@ -36,7 +36,7 @@ def draw_lineplot_actual_vs_perceived(data, sub_ids, plane, ax=None, errorbar=("
                          **kwargs)
 
 
-def draw_lineplot_solution_vs_response(data, sub_ids, ax=None, errorbar=("se", 1), **kwargs):
+def draw_lineplot_solution_vs_response(data, sub_ids, ax=None, errorbar=("sd", 1), **kwargs):
     for sub_id in sub_ids:
         sub = data.loc[sub_id].reset_index()
         if ax:
