@@ -19,7 +19,7 @@ sub_ids_v = extract_subject_ids_from_dataframe(dfv)
 # get speaker coordinates
 speaker_ids = [2, 8, 15, 31, 38, 44]
 basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
-filepath = os.path.join(basedir, "dome_speakers.txt")
+filepath = os.path.join(basedir, "FREEFIELD_speakers.txt")
 spks = SpeakerArray(file=filepath)
 spks.load_speaker_table()
 spks = spks.pick_speakers(picks=speaker_ids)
@@ -44,7 +44,7 @@ threshs_all_subjects_h = pd.concat(threshs_h)
 # Vertical
 speaker_ids = [x for x in range(20, 27) if x != 23]
 basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
-filepath = os.path.join(basedir, "dome_speakers.txt")
+filepath = os.path.join(basedir, "FREEFIELD_speakers.txt")
 spks = SpeakerArray(file=filepath)
 spks.load_speaker_table()
 spks = spks.pick_speakers(picks=speaker_ids)
@@ -105,7 +105,7 @@ cmv = crosstab(index=dfv["response"], columns=dfv["solution"], rownames=["respon
 cmh = crosstab(index=dfh["response"], columns=dfh["solution"], rownames=["response"], colnames=["solution"])
 cmh = cmh.drop(columns=0, index=0)
 cmv = cmv.drop(columns=0, index=0)
-above_val = np.where(cmv > 0.05, False, True)  # mask if cmv < 0.05
+above_val = np.where(cmv > 0.04, False, True)  # mask if cmv < 0.05
 
 sns.heatmap(cmh, annot=True, ax=ax["a"], mask=above_val)
 ax["a"].set_title("Horizontal")

@@ -53,7 +53,8 @@ for val in ax.values():
 ax["A"].sharex(ax["B"])
 ax["A"].sharey(ax["B"])
 # plt.tight_layout()
-plt.legend()
+ax["A"].legend("")
+ax["B"].legend("")
 plt.show()
 
 # plot confusion matrix
@@ -76,3 +77,10 @@ cmh = cmh.drop(index=1)
 cmh = cmh.drop(index=9)
 sns.heatmap(cmh, annot=True, ax=ax["b"])
 ax["b"].set_title("Horizontal")
+
+
+# divide reversed speech blocks from clear speech
+filled = dfh.reversed_speech.ffill()
+revspeech = dfh[np.where(filled==True, True, False)]
+clearspeech = dfh[np.where(filled==False, True, False)]
+
