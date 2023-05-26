@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import slab
 import numpy as np
+from Speakers.speaker_config import SpeakerArray
 
 
 def load_dataframe(data_dir, exp_name="NumJudge", plane="h"):
@@ -225,6 +226,13 @@ def crosstab(index, columns, values=None, rownames=None, colnames=None, aggfunc=
 
     return cm
 
+
+def load_freefield_speakertable(speakertablepath, picks=None):
+    spks = SpeakerArray(file=speakertablepath)
+    spks.load_speaker_table()
+    if picks:
+        spks = spks.pick_speakers(picks=picks)
+    return spks
 
 
 if __name__ == "__main__":
