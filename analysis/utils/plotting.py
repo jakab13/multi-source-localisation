@@ -4,7 +4,7 @@ from analysis.utils.misc import *
 
 
 def mosaic_plot(layout, **kwargs):
-    fig, ax = plt.subplot_mosaic(layout=layout, **kwargs)
+    fig, ax = plt.subplot_mosaic(mosaic=layout, **kwargs)
     return fig, ax
 
 
