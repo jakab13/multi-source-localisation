@@ -58,5 +58,4 @@ ax["A"].sharex(ax["B"])
 ax["A"].sharey(ax["B"])
 ax["A"].legend("")
 ax["B"].legend("")
-plt.tight_layout
 plt.show()
