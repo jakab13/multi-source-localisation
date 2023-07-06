@@ -16,9 +16,13 @@ import os
 import pathlib
 import ast
 from stimuli.tts_models import models, get_from_c_arg
+import slab
+import random
+import pyloudnorm as pyln
+import numpy as np
 
 DIR = pathlib.Path(os.getcwd())
-save_directory = DIR / "samples" / "TTS"
+save_directory = DIR / "samples" / "TTS" / "tts-countries_n13_resamp_48828"
 
 tts_models = models["tts_models"]  # Between 1-58
 vocoder_models = models["vocoder_models"]  # Between 1-16
@@ -52,7 +56,7 @@ for tts_model_id, tts_model in tts_models.items():
         tts_models[tts_model_id]["speker_idxs"] = speaker_idxs_obj
 
 
-numbers = ["one", "two", "three", "four", "five"]
+numbers = ["six", "seven", "eight", "nine"]
 sentences = [
     "A king ruled the state in the early days.",
     "The ship was torn apart on the sharp reef.",
@@ -67,11 +71,48 @@ sentences = [
 ]
 sentences = ["One and two and three and four and five and.",
              "Six and eight and nine and."]
+countries = [
+    "Belgium",
+    "Britain",
+    "Burma",
+    "China",
+    "Congo",
+    "Cuba",
+    "Haiti",
+    "Japan",
+    "Korea",
+    "Libya",
+    "Mali",
+    "Mexico",
+    "Nauru",
+    "Norway",
+    "Oman",
+    "Peru",
+    "Russia",
+    "Sudan",
+    "Syria",
+    "Togo",
+    "Tonga",
+    "Turkey",
+    "Yemen",
+    "Zambia"
+]
+
 tts_model = tts_models[16]
 tts_c_arg = tts_model["c_arg"]
-for text in sentences:
-    for speaker_id in list(tts_model["speaker_idxs"].keys())[:10]:
-        filepath = save_directory / str("talker-" + speaker_id + "_" + "text-" + "'" + text + "'" + ".wav")
+
+eight = ["8"]
+selected_speaker_ids = ['p248', 'p229', 'p318', 'p245', 'p256', 'p284', 'p307', 'p268']
+selected_speaker_ids_male = ['p229', 'p318', 'p256', 'p307']
+selected_speaker_ids_female = ['p248', 'p245', 'p284', 'p268']
+all_speaker_ids = list(tts_model["speaker_idxs"].keys())
+
+for text in eight:
+    for speaker_id in ['p268']:
+        sex = tts_model["speaker_genders"][speaker_id]
+        filepath = save_directory.parent / str("talker-" + speaker_id + "_" +
+                                        "sex-" + sex + "_" +
+                                        "text-" + "_" + text + "_" + ".wav")
         args = [
             "tts",
             "--text", text,
@@ -80,3 +121,68 @@ for text in sentences:
             "--speaker_idx", speaker_id
             ]
         subprocess.run(args)
+
+file_names = os.listdir(save_directory)
+# i = 0
+# for file_name in file_names:
+#     old_file_path = save_directory / file_name
+#     if "sex" not in file_name:
+#         speaker_id = file_name[file_name.find("talker-") + len("talker-"):file_name.rfind('_text')]
+#         sex = tts_model["speaker_genders"][speaker_id]
+#         sex_string = "_sex-" + sex
+#         new_file_name = file_name[:file_name.rfind('_text')] + sex_string + file_name[file_name.rfind('_text'):]
+#         new_file_path = save_directory / new_file_name
+#         print(old_file_path, new_file_path)
+#         print(i)
+#         os.rename(old_file_path, new_file_path)
+#         i += 1
+
+number_pool = ['one', 'two', 'three', 'four', 'five', 'six', 'eight', 'nine']
+meter = pyln.Meter(22050, block_size=0.200)
+for i in range(200):
+    babble_ids_male = random.sample(selected_speaker_ids_male, 3)
+    babble_ids_female = random.sample(selected_speaker_ids_female, 3)
+    babble_ids = babble_ids_male + babble_ids_female
+    babble_numbers = random.sample(number_pool, 6)
+    sounds = []
+    babble_sound = slab.Binaural.silence(duration=2.0, samplerate=22050)
+    prev_max_length = 0
+    max_length = 0
+    for idx, babble_id in enumerate(babble_ids):
+        file_name = [f for f in file_names if babble_id in f and babble_numbers[idx] in f][0]
+        sound = slab.Binaural(save_directory / file_name)
+        env = sound.envelope()
+        sound.data = sound.data[::-1]
+        sound_first_non_zero = next((i for i, x in enumerate(sound[:, 0]) if x), None)
+        sound.data = sound.data[sound_first_non_zero:]
+        shift = int(random.randint(0, sound.n_samples))
+        sound.data = np.roll(sound.data, -shift)
+        sound = sound.ramp(duration=0.05)
+        max_length = max(prev_max_length, sound.n_samples)
+        prev_max_length = max_length
+        loudness = meter.integrated_loudness(sound.data)
+        sound = slab.Binaural(pyln.normalize.loudness(sound.data, loudness, -25), samplerate=sound.samplerate)
+        length_diff = babble_sound.n_samples - sound.n_samples
+        silence = slab.Binaural.silence(duration=length_diff, samplerate=sound.samplerate)
+        sound = slab.Binaural.sequence(sound, silence)
+        babble_sound.data += sound.data
+    first_non_zero = next((i for i, x in enumerate(babble_sound[:, 0]) if x), None)
+    babble_sound.data = babble_sound.data[first_non_zero:max_length]
+    babble_loudness = meter.integrated_loudness(babble_sound.data)
+    babble_sound = slab.Binaural(pyln.normalize.loudness(babble_sound.data, babble_loudness, -25), samplerate=babble_sound.samplerate)
+    babble_sound = babble_sound.ramp(duration=0.2, when="offset")
+    babble_sound = babble_sound.ramp(duration=0.01, when="onset")
+    # babble_sound.play()
+    babble_file_name = "babble-reversed_n13_" + "-".join([item for t in list(zip(babble_ids, babble_numbers)) for item in t]) + ".wav"
+    babble_sound.write(save_directory.parent / "babble-reversed-n13-shifted" / babble_file_name)
+
+# Align reversed sounds
+for file_name in file_names:
+    if file_name == ".DS_Store":
+        continue
+    sound = slab.Binaural(save_directory / file_name)
+    sound.data = sound.data[::-1]
+    sound_first_non_zero = next((i for i, x in enumerate(sound[:, 0]) if abs(x) > 0.03), None)
+    print(file_name, sound_first_non_zero)
+    sound.data = np.roll(sound.data, -sound_first_non_zero, axis=0)
+    sound.write(DIR / "samples" / "TTS" / "tts-countries-reversed_n13_resamp_48828" / str(file_name[:-4] + "reversed.wav"), normalise=False)
