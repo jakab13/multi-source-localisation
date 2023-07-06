@@ -45,22 +45,17 @@ talker_files_path = os.path.join(get_config("SOUND_ROOT"), "numjudge_talker_file
 with open(talker_files_path, "rb") as files:
     sounds_reversed = pkl.load(files)
 
-
 # get info from trials horizontal
-speakers_sample_clear_h = clearspeech_h.speakers_sample  # indices of speakers from speakertable
 signals_sample_clear_h = clearspeech_h.signals_sample  # talker IDs
 country_idxs_clear_h = clearspeech_h.country_idxs  # indices of the country names from a talker
 
-speakers_sample_reversed_h = revspeech_h.speakers_sample  # indices of speakers from speakertable
 signals_sample_reversed_h = revspeech_h.signals_sample  # talker IDs
 country_idxs_reversed_h = revspeech_h.country_idxs  # indices of the country names from a talker
 
 # get info from trials vertical
-speakers_sample_clear_v = clearspeech_v.speakers_sample  # indices of speakers from speakertable
 signals_sample_clear_v = clearspeech_v.signals_sample  # talker IDs
 country_idxs_clear_v = clearspeech_v.country_idxs  # indices of the country names from a talker
 
-speakers_sample_reversed_v = revspeech_v.speakers_sample  # indices of speakers from speakertable
 signals_sample_reversed_v = revspeech_v.signals_sample  # talker IDs
 country_idxs_reversed_v = revspeech_v.country_idxs  # indices of the country names from a talker
 
@@ -105,8 +100,8 @@ for trial_n in range(revspeech_v.__len__()):
     country_idx = country_idxs_reversed_v[trial_n]
     trial_composition = [sounds_reversed[x][y].resize(1.0) for x, y in zip(signals, country_idx)]
     percentage_filled = spectemp_coverage(trial_composition, dyn_range)
-    revspeech_data_h["sound"].append(sum(trial_composition))
-    revspeech_data_h["coverage"].append(percentage_filled)
+    revspeech_data_v["sound"].append(sum(trial_composition))
+    revspeech_data_v["coverage"].append(percentage_filled)
 
 # make list of dicts
 dicts = list()
@@ -116,7 +111,7 @@ dicts.append(clearspeech_data_v)
 dicts.append(revspeech_data_v)
 
 df = pd.DataFrame(dicts, index=["clearspeech_h", "revspeech_h", "clearspeech_v", "revspeech_v"])
-filename = "coverage_dataframe.pkl"
+filename = "Results/coverage_dataframe.pkl"
 pickle.dump(df, open(filename, "wb"))
 
 
