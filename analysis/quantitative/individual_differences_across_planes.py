@@ -162,6 +162,8 @@ plt.scatter(reversed_data_h["gain"], reversed_data_v["gain"])
 plt.title("Numerosity Judgement performance gain")
 plt.xlabel("Horizontal")
 plt.ylabel("Vertical")
+plt.xlim(0, 1)
+plt.ylim(0, 1)
 plt.legend(["Forward speech", "Reversed speech"])
 
 plt.scatter(clear_data_h["correct"], clear_data_v["correct"])
