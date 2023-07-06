@@ -1,18 +1,19 @@
 from labplatform.config import get_config
 from labplatform.core.Device import Device
 from labplatform.core.Setting import DeviceSetting
-from traits.api import Float, Str, Any, List
+from traits.api import Float, Str, Any, List, Int, Tuple
 import threading
 from labplatform.core import TDTblackbox as tdt
 import logging
 import os
 import time
+import numpy as np
 
 log = logging.getLogger(__name__)
 
 
 class RX8Setting(DeviceSetting):  # this class contains settings for the device and sits in RX8.setting
-    sampling_freq = Float(24144.0625, group='status', dsec='Sampling frequency of the device (Hz)')
+    sampling_freq = Float(48828, group='status', dsec='Sampling frequency of the device (Hz)')
     # buffer_size_max = Int(50000, group='status', dsec='Max buffer size')
     file = Str('MSL\\RCX\\play_buf_msl.rcx', group='status', dsec='Name of the rcx file to load')
     processor = Str('RX8', group='status', dsec='Name of the processor')
@@ -20,13 +21,17 @@ class RX8Setting(DeviceSetting):  # this class contains settings for the device 
     index = List([1, 2], group='status', dsec='Index of the device to connect to')
     device_name = Str("RX8", group="status", dsec="Name of the device")
     device_type = Str("Processor", group='status', dsec='type of the device')
+    type = Str("data_storage", group="status", dsec="Type of the signal")
+    dtype = Int(int, group="status", dsec="data type of the output")
+    shape = Tuple(1, group="status", dsec="Dimension of the device output")
 
 
 class RX8Device(Device):
 
     setting = RX8Setting()  # device setting
     handle = Any()  # device handle
-
+    _output_specs = {'type': setting.type, 'sampling_freq': setting.sampling_freq,
+                     'dtype': setting.dtype, "shape": setting.shape}
     # thread = Instance(threading.Thread)  # important for threading
 
     def _initialize(self, **kwargs):
@@ -79,6 +84,13 @@ class RX8Device(Device):
             time.sleep(0.01)
         log.info('Done waiting.')
 
+    def clear_channels(self, n_channels, proc):
+        for idx in range(n_channels):  # clear all speakers before loading warning tone
+            self.handle.write(f"chan{idx}", 99, procs=proc)
+
+    def clear_buffers(self, n_buffers, proc, buffer_length=48828):
+        for idx in range(n_buffers):
+            self.handle.write(f"data{idx}", np.zeros(buffer_length), procs=proc)
 
 if __name__ == "__main__":
     log = logging.getLogger()

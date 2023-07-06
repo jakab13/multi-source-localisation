@@ -8,54 +8,56 @@ from experiment.RX8 import RX8Device
 from experiment.Camera import ArUcoCam
 from Speakers.speaker_config import SpeakerArray
 import os
-from traits.api import List, Str, Int, Dict, Float, Any, Bool
-import random
+from traits.api import List, Str, Int, Dict, Float, Any
 import slab
-import pathlib
 import time
 import numpy as np
 import logging
 import datetime
+import pathlib
+import random
 
 log = logging.getLogger(__name__)
-config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "numjudge_config.txt"))
-
-#TODO: I think the experiment skips the last trial
+config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "locaaccu_config.txt"))
 
 
-class NumerosityJudgementSetting(ExperimentSetting):
+class LocalizationAccuracySetting(ExperimentSetting):
 
-    experiment_name = Str('NumJudge', group='status', dsec='name of the experiment', noshow=True)
-    conditions = List(config.conditions, group="status", dsec="Number of simultaneous talkers in the experiment")
+    experiment_name = Str('LocaAccu', group='status', dsec='name of the experiment', noshow=True)
+    conditions = Int(config.conditions, group="primary", dsec="Number of total speakers")
     trial_number = Int(config.trial_number, group='status', dsec='Number of trials in each condition')
     stim_duration = Float(config.trial_duration, group='status', dsec='Duration of each trial, (s)')
     setup = Str("FREEFIELD", group="status", dsec="Name of the experiment setup")
 
     def _get_total_trial(self):
-        return self.trial_number * len(self.conditions)
+        return self.trial_number * self.conditions
 
 
-class NumerosityJudgementExperiment(ExperimentLogic):
+class LocalizationAccuracyExperiment(ExperimentLogic):
 
-    setting = NumerosityJudgementSetting()
+    setting = LocalizationAccuracySetting()
     data = ExperimentData()
-    sequence = slab.Trialsequence(conditions=list(setting.conditions), n_reps=setting.trial_number)
     results = Any()
+    sequence = slab.Trialsequence(conditions=setting.conditions, n_reps=setting.trial_number)
     devices = Dict()
-    speakers_sample = List()
-    signals_sample = Dict()
     time_0 = Float()
-    speakers = List()
-    signals = Dict()
+    all_speakers = List()
+    target = Any()
+    signals = Any()
     off_center = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\400_tone.wav"))
+    off_center.level = 70
     paradigm_start = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\paradigm_start.wav"))
     paradigm_end = slab.Sound.read(os.path.join(get_config("SOUND_ROOT"), "misc_48828\\paradigm_end.wav"))
+    # pose = Any()
+    error = List()
     plane = Str("v")
-    response = Any()
-    solution = Any()
+    mode = Str()
+    actual = Any()
+    perceived = Any()
+    accuracy = Any()
     rt = Any()
-    is_correct = Bool()
-    reversed_speech = Bool(False)
+    solution = Any()
+
 
     def _devices_default(self):
         rp2 = RP2Device()
@@ -74,107 +76,116 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         pass
 
     def _pause(self, **kwargs):
-        # self.devices["RX8"].pause()
         pass
 
     def _stop(self, **kwargs):
-        pass
+        log.info(f"Final mean error - azimuth: {np.mean(np.array(self.error)[:, 0])}, elevation: {np.mean(np.array(self.error)[:, 1])}")
 
     def setup_experiment(self, info=None):
-        self.results.write(self.reversed_speech, "reversed_speech")
-        self.results.write(self.plane, "plane")
         self.results.write(self.sequence, "sequence")
-        self.results.write(np.ndarray.tolist(np.array(self.devices["ArUcoCam"].offset)), "offset")
+        self.results.write(np.ndarray.tolist(np.array(self.devices["ArUcoCam"].pose)), "offset")
         self.devices["RX8"].handle.write(tag='bitmask',
                                          value=1,
                                          procs="RX81")  # illuminate central speaker LED
         self.load_speakers()
-        self.load_signals()
+        if self.mode == "babble":
+            self.load_babble()
+        elif self.mode == "noise":
+            self.load_pinknoise()
+        else:
+            log.error("Unable to load stimuli! Abort experiment ... ")
         self.devices["RX8"].handle.write("data0", self.paradigm_start.data.flatten(), procs="RX81")
         self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
         self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
         self.devices["RX8"].wait_to_finish_playing()
+        self.devices["RX8"].handle.write("data0", np.zeros(len(self.paradigm_start.data.flatten())), procs="RX81")
         # self.devices["RX8"].handle.write("playbuflen",
                                          # self.devices["RX8"].setting.sampling_freq*self.setting.stim_duration,
                                          # procs=self.devices["RX8"].handle.procs)
+        self.results.write(self.plane, "plane")
+        self.results.write(self.mode, "mode")
         time.sleep(1)
 
     def _prepare_trial(self):
+        self.devices["RX8"].clear_channels(n_channels=1, proc=["RX81", "RX82"])
         self.check_headpose()
-        # self.devices["RX8"].clear_buffers(n_buffers=1, proc="RX81")
-        # self.devices["RX8"].clear_channels(n_channels=5, proc=["RX81", "RX82"])
-        for idx in range(6):  # clear all speakers before loading warning tone
-            self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
+        self.devices["RX8"].clear_channels(n_channels=1, proc="RX81")
+        self.devices["RX8"].clear_buffers(n_buffers=1, proc=["RX81", "RX82"])
         self.sequence.__next__()
         self.sequence.print_trial_info()
-        self.solution = self.sequence.this_trial
-        self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
-        self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
-        for idx, spk in enumerate(self.speakers_sample):
-            sound = spk.apply_equalization(list(self.signals_sample.values())[idx], level_only=False)
-            self.devices["RX8"].handle.write(tag=f"data{idx}",
-                                             value=sound.data.flatten(),
-                                             procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
-            self.devices["RX8"].handle.write(tag=f"chan{idx}",
-                                             value=spk.channel_analog,
-                                             procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
-            print(self.devices["RX8"].handle.read(tag=f"chan{idx}",
-                                                  proc=f"{spk.TDT_analog}{spk.TDT_idx_analog}"))
-            print(self.devices["RX8"].handle.read(tag=f"data{idx}",
-                                                  proc=f"{spk.TDT_analog}{spk.TDT_idx_analog}",
-                                                  n_samples=sound.n_samples))
+        self.solution = self.sequence.this_trial - 1
+        self.pick_speaker_this_trial(speaker_id=self.solution)
+        signal = random.choice(self.signals)
+        sound = self.target.apply_equalization(signal, level_only=False)
+        self.devices["RX8"].handle.write(tag=f"data0",
+                                         value=sound.data[:, 0].flatten(),
+                                         procs=f"{self.target.TDT_analog}{self.target.TDT_idx_analog}")
+        self.devices["RX8"].handle.write(tag=f"chan0",
+                                         value=self.target.channel_analog,
+                                         procs=f"{self.target.TDT_analog}{self.target.TDT_idx_analog}")
 
     def _start_trial(self):
         self.time_0 = time.time()  # starting time of the trial
         log.info(f'trial {self.setting.current_trial}/{self.setting.total_trial-1} start: {time.time() - self.time_0}')
-        self.devices["RX8"].start()
-        self.devices["RP2"].start()
-        self.devices["ArUcoCam"].start()
+        for device in self.devices.keys():
+            self.devices[device].start()
+        self.devices["RX8"].handle.write(tag='bitmask',
+                                         value=0,
+                                         procs="RX81")  # illuminate central speaker LED
         self.devices["RP2"].wait_for_button()
-        self.response = self.devices["RP2"].get_response()
         self.rt = int(round(time.time() - self.time_0, 3) * 1000)
-        self.is_correct = True if self.response == self.solution else False
+        self.devices["RX8"].handle.write(tag='bitmask',
+                                         value=1,
+                                         procs="RX81")  # illuminate central speaker LED
+        self.devices["ArUcoCam"].retrieve()
+        # reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
+        self.actual = np.ndarray.tolist(np.array([self.target.azimuth, self.target.elevation]))
+        self.perceived = np.ndarray.tolist(np.array(self.devices["ArUcoCam"].pose))
+        self.accuracy = np.ndarray.tolist(np.abs(np.subtract(self.actual, self.perceived)))
+        self.error.append(self.accuracy)
+        time.sleep(1)
+        self.devices["RP2"].wait_for_button()
+        log.info(f"Trial {self.setting.current_trial} error - azimuth: {self.accuracy[0]}, elevation: {self.accuracy[1]}")
+        # time.sleep(0.2)
 
     def _stop_trial(self):
+        self.devices["RX8"].handle.write(tag='bitmask',
+                                         value=0,
+                                         procs="RX81")  # illuminate central speaker LED
+        #accuracy = np.abs(np.subtract([self.target.azimuth, self.target.elevation], self.pose))
+        #log.warning(f"Accuracy azi: {accuracy[0]}, ele: {accuracy[1]}")
         log.info(f"trial {self.setting.current_trial}/{self.setting.total_trial-1} end: {time.time() - self.time_0}")
         for device in self.devices.keys():
             self.devices[device].pause()
-        #self.devices["RX8"].clear_buffers(n_buffers=self.sequence.this_trial,
-                                          #buffer_length=self.devices["RX8"].setting.sampling_freq, proc=["RX81", "RX82"])
         if self.setting.current_trial + 1 == self.setting.total_trial:
             self.devices["RX8"].handle.write(tag='bitmask',
                                              value=0,
                                              procs="RX81")  # turn off LED
-            # self.devices["RX8"].clear_channels(n_channels=5, proc=["RX81", "RX82"])
-            for idx in range(6):  # clear all speakers before loading warning tone
-                self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
+            self.devices["RX8"].clear_channels(n_channels=1, proc=["RX81", "RX82"])
             self.devices["RX8"].handle.write("data0", self.paradigm_end.data.flatten(), procs="RX81")
             self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
             self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
             self.devices["RX8"].wait_to_finish_playing()
-        self.results.write(self.response, "response")
-        self.results.write(self.solution, "solution")
+        self.results.write(self.actual, "actual")
+        self.results.write(self.perceived, "perceived")
+        self.results.write(self.accuracy, "accuracy")
         self.results.write(self.rt, "rt")
-        self.results.write(self.is_correct, "is_correct")
-        self.results.write(np.ndarray.tolist(np.array(self.devices["ArUcoCam"].pose)), "headpose")
-        self.results.write([x.id for x in self.speakers_sample], "speakers_sample")
-        self.results.write([x for x in self.signals_sample.keys()], "signals_sample")
+        self.results.write(self.target.id, "target_spk_id")
 
-    def load_signals(self, sound_type="tts-countries_n13_resamp_48828"):
-        sound_type = "tts-countries-reversed_n13_resamp_48828" if self.reversed_speech else sound_type
+    def load_babble(self, sound_type="babble-numbers-reversed-n13-shifted_resamp_48828"):
         sound_root = get_config(setting="SOUND_ROOT")
         sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
         sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
-        all_talkers = dict()
-        talker_id_range = range(225, 377)
-        for talker_id in talker_id_range:
-            talker_sorted = list()
-            for i, sound in enumerate(os.listdir(sound_fp)):
-                if str(talker_id) in sound:
-                    talker_sorted.append(sound_list[i])
-            if talker_sorted.__len__():
-                all_talkers[str(talker_id)] = talker_sorted
-        self.signals = all_talkers
+        self.signals = sound_list
+
+    def load_pinknoise(self):
+        noise = slab.Sound.pinknoise(duration=0.025, samplerate=self.devices["RX8"].setting.sampling_freq, level=65)
+        silence = slab.Sound.silence(duration=0.025, samplerate=self.devices["RX8"].setting.sampling_freq)
+        end_silence = slab.Sound.silence(duration=0.775, samplerate=self.devices["RX8"].setting.sampling_freq)
+        stim = slab.Sound.sequence(noise, silence, noise, silence, noise,
+                                   silence, noise, silence, noise, end_silence)
+        stim = stim.ramp(when='both', duration=0.01)
+        self.signals = [stim]
 
     def load_speakers(self, filename=f"{setting.setup}_speakers.txt", calibration=True):
         basedir = os.path.join(get_config(setting="BASE_DIRECTORY"), "speakers")
@@ -190,21 +201,10 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         else:
             log.info("Wrong plane, must be v or h. Unable to load speakers!")
             speakers = [None]
-        self.speakers = speakers
+        self.all_speakers = speakers
 
-    def pick_speakers_this_trial(self, n_speakers):
-        # speakers_no_rep = list(x for x in self.speakers if x not in self.speakers_sample)
-        self.speakers_sample = random.sample(self.speakers, n_speakers)
-
-    def pick_signals_this_trial(self, n_signals):
-        talkers = random.sample(list(self.signals.keys()), n_signals)
-        country_idxs = random.sample(range(13), n_signals)
-        sample = dict()
-        for idx, talker in enumerate(talkers):
-            country_id = country_idxs[idx]
-            sample[talker] = self.signals[talker][country_id]
-        self.results.write(country_idxs, "country_idxs")
-        self.signals_sample = sample
+    def pick_speaker_this_trial(self, speaker_id):
+        self.target = self.all_speakers[speaker_id]
 
     def calibrate_camera(self, report=True):
         """
@@ -239,11 +239,9 @@ class NumerosityJudgementExperiment(ExperimentLogic):
             self.devices["ArUcoCam"].retrieve()
             # self.devices["ArUcoCam"].pause()
             try:
-                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].pose) ** 2)) > 12.5:
+                if np.sqrt(np.mean(np.array(self.devices["ArUcoCam"].pose) ** 2)) > 15:
                     log.info("Subject is not looking straight ahead")
-                    # self.devices["RX8"].clear_channels(n_channels=5, proc=["RX81", "RX82"])
-                    for idx in range(6):  # clear all speakers before loading warning tone
-                        self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
+                    self.devices["RX8"].clear_channels(n_channels=1, proc=["RX81", "RX82"])
                     self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
                     self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
                     #self.devices["RX8"].start()
@@ -289,9 +287,9 @@ if __name__ == "__main__":
         subject.data_path = os.path.join(get_config("DATA_ROOT"), "Foo_test.h5")
     # subject.file_path
     experimenter = "Max"
-    nj = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
-    nj.results = slab.ResultsFile(subject=subject.name)
-    nj.devices["RP2"].experiment = nj
-    nj.calibrate_camera()
-    nj.start()
+    la = LocalizationAccuracyExperiment(subject=subject, experimenter=experimenter)
+    la.load_pinknoise()
+    la.calibrate_camera()
+    la.results = slab.ResultsFile(subject=subject.name)
+    la.start()
     # nj.configure_traits()

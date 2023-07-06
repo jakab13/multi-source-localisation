@@ -1,7 +1,7 @@
 from labplatform.config import get_config
 from labplatform.core.Setting import DeviceSetting
 from labplatform.core.Device import Device
-from traits.api import Instance, Float, Any, Str, List, Tuple, Bool
+from traits.api import Instance, Float, Any, Str, List, Tuple, Bool, CFloat
 from PIL import ImageEnhance, Image
 from labplatform.core import TDTblackbox as tdt
 import logging
@@ -12,14 +12,18 @@ except ModuleNotFoundError:
 import numpy as np
 from Speakers.speaker_config import SpeakerArray
 import os
-import PySpin
-from simple_pyspin import Camera
+try:
+    import EasyPySpin
+except ModuleNotFoundError:
+    PySpin = False
 import cv2
 import PIL
-from matplotlib import pyplot as plt
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 log = logging.getLogger(__name__)
+
+# TODO: FlirCam is deprecated
+
 
 class ArUcoCamSetting(DeviceSetting):
     """
@@ -32,9 +36,10 @@ class ArUcoCamSetting(DeviceSetting):
     root = Str(get_config(setting="BASE_DIRECTORY"), group="status", dsec="Labplatform root directory")
     setup = Str("dome", group="status", dsec="experiment setup")
     file = Str(f"{setup.default_value}_speakers.txt", group="status", dsec="Speaker file")
-    pose = List(group="primary", dsec="Headpose", reinit=False)
+    # pose = List(group="primary", dsec="Headpose", reinit=False)
     device_name = Str("FireFly", group="status", dsec="Name of the device")
     device_type = Str("Camera", group='status', dsec='Type of the device')
+    sampling_freq = CFloat(1.0, group='primary', dsec='Sampling frequency of the device (Hz)', reinit=False)
 
 
 class ArUcoCam(Device):
@@ -47,17 +52,18 @@ class ArUcoCam(Device):
     aruco_dicts = [cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_100),
                    cv2.aruco.Dictionary_get(cv2.aruco.DICT_5X5_100)]
     params = cv2.aruco.DetectorParameters_create()
-    cams = [Camera(index=0), Camera(index=1)]
-    # led = Any()
+    cams = List()
     offset = Any()
     calibrated = Bool()
+    _output_specs = {'type': setting.type, 'sampling_freq': setting.sampling_freq,
+                     'dtype': setting.dtype, "shape": setting.shape}
+    pose = Any()
 
     def _initialize(self, **kwargs):
         """
         Initializes the device and sets the state to "created". Necessary before running the device.
         """
-        for c in self.cams:  # initialize cameras
-            c.init()
+        self.cams = [EasyPySpin.VideoCapture(0), EasyPySpin.VideoCapture(1)]
 
     def _configure(self, **kwargs):
         """
@@ -70,33 +76,20 @@ class ArUcoCam(Device):
         Runs the device and sets the state to "running". Here lie all the important steps the camera has to do in each
         trial, such as acquiring and writing the head pose.
         """
-        for c in self.cams:
-            c.start()  # start recording images into the camera buffer
-        if self.calibrated:
-            pose = self.get_pose()  # Get image as numpy array
-            if self.offset:
-                self.setting.pose = [pose[0] - self.offset[0], pose[1] - self.offset[1]]  # subtract offset
-            else:
-                log.info("Camera not calibrated, head pose might be unreliable ...")
-                self.setting.pose = pose
-            log.info("Acquired pose!")
-        else:
-            log.info("WARNING: Camera is not calibrated, head pose might be unreliable.")
-            self.setting.pose = self.get_pose()
+        pass
 
     def _pause(self, **kwargs):
         """
         Pauses the camera and sets the state to "paused".
         """
-        for c in self.cams:
-            c.stop()
+        pass
 
     def _stop(self):
         """
         Closes the camera and cleans up and sets the state to "stopped".
         """
         for c in self.cams:
-            c.close()
+            c.release()
 
     def snapshot(self, cmap="gray"):
         """
@@ -104,30 +97,62 @@ class ArUcoCam(Device):
             cmap: matplotlib colormap
         """
         for c in self.cams:
-            image = c.get_array()  # get image as np array
-            plt.imshow(image, cmap=cmap)  # show image
+            ret, frame = c.read()
+            plt.imshow(frame, cmap=cmap)  # show image
             plt.show()
+
+    def show_video(self):
+        for c in self.cams:
+            while True:
+                ret, frame = c.read()
+                cv2.imshow("press q to quit", frame)
+                key = cv2.waitKey(30)
+                if key == ord("q"):
+                    break
+
+    def retrieve(self):
+        if self.calibrated:
+            pose = self.get_pose()  # Get image as numpy array
+            for i, coord in enumerate(pose):
+                if coord is None:
+                    log.warning("Could not acquire head pose")
+                    pose[i] = 99
+            if self.offset:
+                self.pose = [pose[0] - self.offset[0], pose[1] - self.offset[1]]  # subtract offset
+            else:
+                log.warning("Camera not calibrated, head pose might be unreliable ...")
+                self.pose = pose
+            log.info("Acquired pose!")
+        else:
+            self.pose = self.get_pose()
 
     def get_pose(self, plot=False, resolution=1.0):
         pose = [None, None]
         for i, c in enumerate(self.cams):
-            image = c.get_array()
-            if resolution < 1.0:
-                image = self.change_res(image, resolution)
-            _pose, info = self.pose_from_image(image=image, dictionary=self.aruco_dicts[i])
-            if plot:
-                if _pose is None:
-                    image = self.draw_markers(image, _pose, self.aruco_dicts[i], info)
-                cv2.imshow('camera %s' % c.DeviceID(), image)
-            if _pose:
-                _pose = np.asarray(_pose)[:, 2].astype('float16')
-                # remove outliers
-                d = np.abs(_pose - np.median(_pose))  # deviation from median
-                mdev = np.median(d)  # mean deviation
-                s = d / mdev if mdev else 0.  # factorized mean deviation of each element in pose
-                _pose = _pose[s < 2]  # remove outliers
-                _pose = np.mean(_pose)
-                pose[i] = _pose
+            while True:  # avoid breaking when image is NoneType
+                ret, image = c.read()
+                if image is not None:
+                    if image.ndim == 3:
+                        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                    if resolution < 1.0:
+                        image = self.change_res(image, resolution)
+                    _pose, info = self.pose_from_image(image=image, dictionary=self.aruco_dicts[i])
+                    if plot:
+                        if _pose is None:
+                            image = self.draw_markers(image, _pose, self.aruco_dicts[i], info)
+                        plt.imshow(image)
+                    if _pose:
+                        _pose = np.asarray(_pose)[:, 2].astype('float16')
+                        # remove outliers
+                        d = np.abs(_pose - np.median(_pose))  # deviation from median
+                        mdev = np.median(d)  # mean deviation
+                        s = d / mdev if mdev else 0.  # factorized mean deviation of each element in pose
+                        _pose = _pose[s < 2]  # remove outliers
+                        _pose = np.mean(_pose)
+                        pose[i] = _pose
+                    break
+                else:
+                    continue
         return pose
 
     def pose_from_image(self, image, dictionary):  # get pose
@@ -381,54 +406,21 @@ if __name__ == "__main__":
     # add ch to logger
     log.addHandler(ch)
 
-    cam = ArUcoCam()
-    cam.initialize()
+    import cv2
+    import EasyPySpin
+    from matplotlib import pyplot as plt
 
-    interval = 10
-    poses = list()
-    azimuth = list()
-    elevation = list()
+    cams = [EasyPySpin.VideoCapture(0), EasyPySpin.VideoCapture(1)]
 
-    for trial in range(interval):
-        cam.configure()
-        cam.start()
-        cam.snapshot()
-        cam.pause()
-        poses.append(cam.setting.pose)
+    for k, cam in cams:
+        ret, frame = cam.read()
+        plt.imshow(frame)
+        plt.show()
 
-    for azi, ele in poses:
-        azimuth.append(azi)
-        elevation.append(ele)
 
-    print(f"SD over {interval} trials: \
-          azimuth:{np.std(azimuth)}\
-          elevation: {np.std(elevation)}")
+    plt.show()
 
-    # Facial landmark detection logic test
-    # see if the logic works
-    """
-    cam = FlirCam()
-    cam.initialize()
-    cam.configure()
-    cam.start()
-    cam.snapshot()
-    cam.pause()
-    
-    # headpose estimation
-    import time
-    time.sleep(10)
-    est = PoseEstimator()
-    cam = Camera()
-    cam.init()
-    cam.start()
-    img = cam.get_array()
-    cam.stop()
-    img = Image.fromarray(img)
-    brightness = ImageEnhance.Brightness(img)
-    bright = brightness.enhance(6.0)
-    array = np.asarray(bright)
-    roll, pitch, yaw = est.pose_from_image(array)  # estimate the head pose
-    """
+
 
 
 

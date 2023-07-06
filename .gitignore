@@ -1,6 +1,6 @@
 /CRM/
 /samples/
-/Results/
+/tobedeleted/Results/
 # pycharm metadata
 /.idea/
 
@@ -8,8 +8,10 @@
 /__pycache__/
 
 # Results
-/Results
+/tobedeleted/Results
 
 # trash
 /tobedeleted
 /headpose_estimation/meta_motion/.metawear/
+/analysis/plots/
+/data/sounds/
