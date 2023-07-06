@@ -20,8 +20,8 @@ revspeech = dfv[np.where(filled==True, True, False)]  # True where reversed_spee
 clearspeech = dfv[np.where(filled==False, True, False)]  # True where reversed_speech is False
 
 # for each plane, plot revspeech and clearspeech results
-layout = [["A", "B"],
-          ["C", "C"]]
+layout = [["A", "C"],
+          ["B", "C"]]
 fig, ax = mosaic_plot(layout)
 
 # plot response vs solution lineplot
@@ -56,7 +56,7 @@ for val in ax.values():
 
 ax["A"].sharex(ax["B"])
 ax["A"].sharey(ax["B"])
-# plt.tight_layout()
 ax["A"].legend("")
 ax["B"].legend("")
+plt.tight_layout
 plt.show()
