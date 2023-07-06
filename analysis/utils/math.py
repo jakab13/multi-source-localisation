@@ -23,7 +23,7 @@ def spectemp_coverage(sound_composition, dyn_range):
       returns the spectrogram of the sound.
 
     """
-    assert not isinstance(sound_composition, list), ValueError("Input must be a list of sounds")
+    assert isinstance(sound_composition, list), ValueError("Input must be a list of sounds")
 
     # Combine the sounds in the composition
     sound = sum(sound_composition)
@@ -126,4 +126,4 @@ def variance(data):
 
 
 if __name__ == "__main__":
-    pass
+    spectemp_coverage(sound_composition=2, dyn_range=0)
