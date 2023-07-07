@@ -57,15 +57,13 @@ country_idxs_reversed_v = revspeech_v.country_idxs  # indices of the country nam
 coverage = pkl.load(open("Results/coverage_dataframe.pkl", "rb"))
 
 # plot results
-sns.lineplot(x=clearspeech_h.solution, y=coverage.loc["clearspeech_h"]["coverage"], errorbar="se", label="clear speech")
-sns.lineplot(x=revspeech_h.solution, y=coverage.loc["revspeech_h"]["coverage"], errorbar="se", label="reversed speech")
-plt.title("Spectral Density Horizontal")
+sns.lineplot(x=clearspeech_h.solution, y=coverage.loc["clearspeech_h"]["coverage"], errorbar="se", label="clear speech_h")
+sns.lineplot(x=revspeech_h.solution, y=coverage.loc["revspeech_h"]["coverage"], errorbar="se", label="reversed speech_h")
 plt.xlabel("Sound source perceptional discrepancy")
-plt.ylabel("coverage")
+plt.ylabel("Coverage")
 
 # vertical
-sns.lineplot(x=clearspeech_v.solution, y=coverage.loc["clearspeech_v"]["coverage"], errorbar="se", label="clear speech")
-sns.lineplot(x=revspeech_v.solution, y=coverage.loc["revspeech_v"]["coverage"], errorbar="se", label="reversed speech")
-plt.title("Spectral Density Vertical")
+sns.lineplot(x=clearspeech_v.solution, y=coverage.loc["clearspeech_v"]["coverage"], errorbar="se", label="clear speech_v")
+sns.lineplot(x=revspeech_v.solution, y=coverage.loc["revspeech_v"]["coverage"], errorbar="se", label="reversed speech_v")
 plt.xlabel("Solution")
-plt.ylabel("coverage")
+plt.ylabel("Coverage")
