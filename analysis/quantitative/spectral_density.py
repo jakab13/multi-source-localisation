@@ -35,7 +35,6 @@ talker_files_path = os.path.join(get_config("SOUND_ROOT"), "numjudge_talker_file
 with open(talker_files_path, "rb") as files:
     sounds_reversed = pkl.load(files)
 
-
 # get info from trials horizontal
 speakers_sample_clear_h = clearspeech_h.speakers_sample  # indices of speakers from speakertable
 signals_sample_clear_h = clearspeech_h.signals_sample  # talker IDs
@@ -70,4 +69,3 @@ sns.lineplot(x=revspeech_v.solution, y=coverage.loc["revspeech_v"]["coverage"], 
 plt.title("Spectral Density Vertical")
 plt.xlabel("Solution")
 plt.ylabel("coverage")
-
