@@ -3,13 +3,14 @@ import numpy as np
 _p_ref = 2e-5  # 20 μPa, the standard reference pressure for sound in air
 
 
-def spectemp_coverage(sound_composition, dyn_range):
+def spectemp_coverage(sound_composition, dyn_range, upper_freq):
     """
     Calculate the spectro-temporal coverage of a sound composition.
 
     Parameters:
     - sound_composition (list): A list of sounds in the composition.
     - dyn_range (float): The dynamic range in decibels (dB) to consider for coverage calculation.
+    - upper_freq (int): The upper frequency limit to consider for the analysis.
 
     Returns:
     - float: The ratio of the number of spectro-temporal points within the specified dynamic range
@@ -29,7 +30,9 @@ def spectemp_coverage(sound_composition, dyn_range):
     sound = sum(sound_composition)
 
     # Calculate the spectrogram and power
-    _, _, power = sound.spectrogram(show=False)
+    freqs, times, power = sound.spectrogram(show=False)
+    if upper_freq:
+        power = power[freqs < upper_freq, :]
 
     # Convert power to logarithmic scale for plotting
     power = 10 * np.log10(power / (_p_ref ** 2))
