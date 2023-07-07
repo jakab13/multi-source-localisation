@@ -59,7 +59,9 @@ country_idxs_clear_v = clearspeech_v.country_idxs  # indices of the country name
 signals_sample_reversed_v = revspeech_v.signals_sample  # talker IDs
 country_idxs_reversed_v = revspeech_v.country_idxs  # indices of the country names from a talker
 
-dyn_range = 109  # threshold dB yielding highest coverage variance
+dyn_range = 65  # threshold dB yielding highest coverage variance
+resize = 0.6  # resize duration
+upper_freq = 11000
 
 # extract horizontal data
 clearspeech_data_h = dict(sound=[], coverage=[])
@@ -67,8 +69,8 @@ for trial_n in range(clearspeech_h.__len__()):
     sound = slab.Sound(data=np.zeros(48828), samplerate=48828)
     signals = signals_sample_clear_h[trial_n]
     country_idx = country_idxs_clear_h[trial_n]
-    trial_composition = [sounds_clear[x][y].resize(1.0) for x, y in zip(signals, country_idx)]
-    percentage_filled = spectemp_coverage(trial_composition, dyn_range=dyn_range)
+    trial_composition = [sounds_clear[x][y].resize(resize) for x, y in zip(signals, country_idx)]
+    percentage_filled = spectemp_coverage(trial_composition, dyn_range=dyn_range, upper_freq=upper_freq)
     clearspeech_data_h["sound"].append(sum(trial_composition))
     clearspeech_data_h["coverage"].append(percentage_filled)
 
@@ -78,8 +80,8 @@ for trial_n in range(revspeech_h.__len__()):
     sound = slab.Sound(data=np.zeros(int(48828)), samplerate=48828)
     signals = signals_sample_reversed_h[trial_n]
     country_idx = country_idxs_reversed_h[trial_n]
-    trial_composition = [sounds_reversed[x][y].resize(1.0) for x, y in zip(signals, country_idx)]
-    percentage_filled = spectemp_coverage(trial_composition, dyn_range)
+    trial_composition = [sounds_reversed[x][y].resize(resize) for x, y in zip(signals, country_idx)]
+    percentage_filled = spectemp_coverage(trial_composition, dyn_range, upper_freq=upper_freq)
     revspeech_data_h["sound"].append(sum(trial_composition))
     revspeech_data_h["coverage"].append(percentage_filled)
 
@@ -88,8 +90,8 @@ for trial_n in range(clearspeech_v.__len__()):
     sound = slab.Sound(data=np.zeros(48828), samplerate=48828)
     signals = signals_sample_clear_v[trial_n]
     country_idx = country_idxs_clear_v[trial_n]
-    trial_composition = [sounds_clear[x][y].resize(1.0) for x, y in zip(signals, country_idx)]
-    percentage_filled = spectemp_coverage(trial_composition, dyn_range)
+    trial_composition = [sounds_clear[x][y].resize(resize) for x, y in zip(signals, country_idx)]
+    percentage_filled = spectemp_coverage(trial_composition, dyn_range, upper_freq=upper_freq)
     clearspeech_data_v["sound"].append(sum(trial_composition))
     clearspeech_data_v["coverage"].append(percentage_filled)
 
@@ -98,8 +100,8 @@ for trial_n in range(revspeech_v.__len__()):
     sound = slab.Sound(data=np.zeros(int(48828)), samplerate=48828)
     signals = signals_sample_reversed_v[trial_n]
     country_idx = country_idxs_reversed_v[trial_n]
-    trial_composition = [sounds_reversed[x][y].resize(1.0) for x, y in zip(signals, country_idx)]
-    percentage_filled = spectemp_coverage(trial_composition, dyn_range)
+    trial_composition = [sounds_reversed[x][y].resize(resize) for x, y in zip(signals, country_idx)]
+    percentage_filled = spectemp_coverage(trial_composition, dyn_range, upper_freq=upper_freq)
     revspeech_data_v["sound"].append(sum(trial_composition))
     revspeech_data_v["coverage"].append(percentage_filled)
 
