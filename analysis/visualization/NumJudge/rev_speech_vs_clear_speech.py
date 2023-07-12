@@ -36,13 +36,13 @@ ax["B"].set(title="clear speech vertical")
 sns.lineplot(x=revspeech.solution.reset_index(drop=True),
              y=revspeech.response.reset_index(drop=True),
              err_style="bars",
-             errorbar=("se", 1),
+             errorbar=("se", 2),
              label="reversed speech",
              ax=ax["C"])
 sns.lineplot(x=clearspeech.solution.reset_index(drop=True),
              y=clearspeech.response.reset_index(drop=True),
              err_style="bars",
-             errorbar=("se", 1),
+             errorbar=("se", 2),
              label="clear speech",
              ax=ax["C"])
 plt.xticks(range(2, 7))
