@@ -35,35 +35,17 @@ talker_files_path = os.path.join(get_config("SOUND_ROOT"), "numjudge_talker_file
 with open(talker_files_path, "rb") as files:
     sounds_reversed = pkl.load(files)
 
-# get info from trials horizontal
-speakers_sample_clear_h = clearspeech_h.speakers_sample  # indices of speakers from speakertable
-signals_sample_clear_h = clearspeech_h.signals_sample  # talker IDs
-country_idxs_clear_h = clearspeech_h.country_idxs  # indices of the country names from a talker
-
-speakers_sample_reversed_h = revspeech_h.speakers_sample  # indices of speakers from speakertable
-signals_sample_reversed_h = revspeech_h.signals_sample  # talker IDs
-country_idxs_reversed_h = revspeech_h.country_idxs  # indices of the country names from a talker
-
-# get info from trials vertical
-speakers_sample_clear_v = clearspeech_v.speakers_sample  # indices of speakers from speakertable
-signals_sample_clear_v = clearspeech_v.signals_sample  # talker IDs
-country_idxs_clear_v = clearspeech_v.country_idxs  # indices of the country names from a talker
-
-speakers_sample_reversed_v = revspeech_v.speakers_sample  # indices of speakers from speakertable
-signals_sample_reversed_v = revspeech_v.signals_sample  # talker IDs
-country_idxs_reversed_v = revspeech_v.country_idxs  # indices of the country names from a talker
-
 # load dataframe containing coverage
 coverage = pkl.load(open("Results/coverage_dataframe.pkl", "rb"))
 
 # plot results
-sns.lineplot(x=clearspeech_h.solution, y=coverage.loc["clearspeech_h"]["coverage"], errorbar="se", label="clear speech_h")
-sns.lineplot(x=revspeech_h.solution, y=coverage.loc["revspeech_h"]["coverage"], errorbar="se", label="reversed speech_h")
+sns.lineplot(x=clearspeech_h.solution, y=coverage.loc["clearspeech_h"]["coverage"], errorbar=("se", 2), label="clear speech_h")
+sns.lineplot(x=revspeech_h.solution, y=coverage.loc["revspeech_h"]["coverage"], errorbar=("se", 2), label="reversed speech_h")
 plt.xlabel("Sound source perceptional discrepancy")
 plt.ylabel("Coverage")
 
 # vertical
-sns.lineplot(x=clearspeech_v.solution, y=coverage.loc["clearspeech_v"]["coverage"], errorbar="se", label="clear speech_v")
-sns.lineplot(x=revspeech_v.solution, y=coverage.loc["revspeech_v"]["coverage"], errorbar="se", label="reversed speech_v")
+sns.lineplot(x=clearspeech_v.solution, y=coverage.loc["clearspeech_v"]["coverage"], errorbar=("se", 2), label="clear speech_v")
+sns.lineplot(x=revspeech_v.solution, y=coverage.loc["revspeech_v"]["coverage"], errorbar=("se", 2), label="reversed speech_v")
 plt.xlabel("Solution")
 plt.ylabel("Coverage")
