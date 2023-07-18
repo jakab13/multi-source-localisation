@@ -1,10 +1,8 @@
-from analysis.utils.plotting import *
 from analysis.utils.misc import *
 import os
 from labplatform.config import get_config
 import seaborn as sns
 import matplotlib.pyplot as plt
-from Speakers.speaker_config import SpeakerArray
 from sklearn.linear_model import LinearRegression
 sns.set_theme()
 
@@ -35,7 +33,7 @@ spatmask_h = load_dataframe(fp, exp_name="SpatMask", plane="h")
 
 sub_ids = extract_subject_ids_from_dataframe(locaaccu_v)  # subject IDs
 
-model = LinearRegression()  # linear regression model
+model = LinearRegression(fit_intercept=True)  # linear regression model
 
 babble_data_v = dict(gain=[], r2=[], mse=[])  # dict to store data
 babble_data_h = dict(gain=[], r2=[], mse=[])  # dict to store data
@@ -113,59 +111,51 @@ filled_h = numjudge_h.reversed_speech.ffill()
 clear_h = numjudge_h[np.where(filled_h==False, True, False)]  # True where reversed_speech is True
 reversed_h = numjudge_h[np.where(filled_h==True, True, False)]  # True where reversed_speech is False
 
-clear_data_v = dict(gain=[], r2=[], mse=[], correct=[])  # dict to store data
-clear_data_h = dict(gain=[], r2=[], mse=[], correct=[])  # dict to store data
-reversed_data_v = dict(gain=[], r2=[], mse=[], correct=[])  # dict to store data
-reversed_data_h = dict(gain=[], r2=[], mse=[], correct=[])  # dict to store data
+clear_data_v = dict(gain=[], correct=[])  # dict to store data
+clear_data_h = dict(gain=[], correct=[])  # dict to store data
+reversed_data_v = dict(gain=[], correct=[])  # dict to store data
+reversed_data_h = dict(gain=[], correct=[])  # dict to store data
 
 for sub in sub_ids:
     # horizontal
     # fit clear numjudge data to model
-    model.fit(np.reshape(clear_h.loc[sub].solution.values, (-1, 1)),
-              replace_in_array(clear_h.loc[sub].response.values))  #  fit data
-    clear_data_h["r2"].append(model.score(np.reshape(clear_h.loc[sub].solution.values, (-1, 1)),
-                replace_in_array(clear_h.loc[sub].response.values)))  # R²
-    clear_data_h["gain"].append(model.coef_)  # slope
+    x = list(clear_h.loc[sub].solution.values)
+    y = list(clear_h.loc[sub].response.fillna(0).values)
+    clear_data_h["gain"].append(np.polyfit(np.log(x), y, 1)[1])  # slope
     correct_responses = [x for x in clear_h.loc[sub].is_correct if x == True]
     clear_data_h["correct"].append(correct_responses.__len__() / clear_h.loc[sub].is_correct.__len__())
 
     # fit reversed numjudge data to model
-    model.fit(np.reshape(reversed_h.loc[sub].solution.values, (-1, 1)),
-              replace_in_array(reversed_h.loc[sub].response.values))  #  fit data
-    reversed_data_h["r2"].append(model.score(np.reshape(reversed_h.loc[sub].solution.values, (-1, 1)),
-                replace_in_array(reversed_h.loc[sub].response.values)))  # R²
-    reversed_data_h["gain"].append(model.coef_)  # slope
+    x = list(reversed_h.loc[sub].solution.values)
+    y = list(reversed_h.loc[sub].response.fillna(0).values)
+    reversed_data_h["gain"].append(np.polyfit(np.log(x), y, 1)[1])  # slope
     correct_responses = [x for x in reversed_h.loc[sub].is_correct if x == True]
     reversed_data_h["correct"].append(correct_responses.__len__() / reversed_h.loc[sub].is_correct.__len__())
 
     # vertical
     # fit clear numjudge data to model
-    model.fit(np.reshape(clear_v.loc[sub].solution.values, (-1, 1)),
-              replace_in_array(clear_v.loc[sub].response.values))  #  fit data
-    clear_data_v["r2"].append(model.score(np.reshape(clear_v.loc[sub].solution.values, (-1, 1)),
-                replace_in_array(clear_v.loc[sub].response.values)))  # R²
-    clear_data_v["gain"].append(model.coef_)  # slope
+    x = list(clear_v.loc[sub].solution.values)
+    y = list(clear_v.loc[sub].response.fillna(0).values)
+    clear_data_v["gain"].append(np.polyfit(np.log(x), y, 1)[1])  # slope
     correct_responses = [x for x in clear_v.loc[sub].is_correct if x == True]
     clear_data_v["correct"].append(correct_responses.__len__() / clear_v.loc[sub].is_correct.__len__())
 
     # fit reversed numjudge data to model
-    model.fit(np.reshape(reversed_v.loc[sub].solution.values, (-1, 1)),
-              replace_in_array(reversed_v.loc[sub].response.values))  #  fit data
-    reversed_data_v["r2"].append(model.score(np.reshape(reversed_v.loc[sub].solution.values, (-1, 1)),
-                replace_in_array(reversed_v.loc[sub].response.values)))  # R²
-    reversed_data_v["gain"].append(model.coef_)  # slope
+    x = list(reversed_v.loc[sub].solution.values)
+    y = list(reversed_v.loc[sub].response.fillna(0).values)
+    reversed_data_v["gain"].append(np.polyfit(np.log(x), y, 1)[1])  # slope
     correct_responses = [x for x in reversed_v.loc[sub].is_correct if x == True]
     reversed_data_v["correct"].append(correct_responses.__len__() / reversed_v.loc[sub].is_correct.__len__())
 
+# gain
 plt.scatter(clear_data_h["gain"], clear_data_v["gain"])
 plt.scatter(reversed_data_h["gain"], reversed_data_v["gain"])
 plt.title("Numerosity Judgement performance gain")
 plt.xlabel("Horizontal")
 plt.ylabel("Vertical")
-plt.xlim(0, 1)
-plt.ylim(0, 1)
 plt.legend(["Forward speech", "Reversed speech"])
 
+# percent correct
 plt.scatter(clear_data_h["correct"], clear_data_v["correct"])
 plt.scatter(reversed_data_h["correct"], reversed_data_v["correct"])
 plt.title("Numerosity Judgement percentage correct")
