@@ -121,14 +121,14 @@ for sub in sub_ids:
     # fit clear numjudge data to model
     x = list(clear_h.loc[sub].solution.values)
     y = list(clear_h.loc[sub].response.fillna(0).values)
-    clear_data_h["gain"].append(np.polyfit(np.log(x), y, 1)[1])  # slope
+    clear_data_h["gain"].append(np.polyfit(np.log(x), y, 1)[0])  # slope
     correct_responses = [x for x in clear_h.loc[sub].is_correct if x == True]
     clear_data_h["correct"].append(correct_responses.__len__() / clear_h.loc[sub].is_correct.__len__())
 
     # fit reversed numjudge data to model
     x = list(reversed_h.loc[sub].solution.values)
     y = list(reversed_h.loc[sub].response.fillna(0).values)
-    reversed_data_h["gain"].append(np.polyfit(np.log(x), y, 1)[1])  # slope
+    reversed_data_h["gain"].append(np.polyfit(np.log(x), y, 1)[0])  # slope
     correct_responses = [x for x in reversed_h.loc[sub].is_correct if x == True]
     reversed_data_h["correct"].append(correct_responses.__len__() / reversed_h.loc[sub].is_correct.__len__())
 
@@ -136,14 +136,14 @@ for sub in sub_ids:
     # fit clear numjudge data to model
     x = list(clear_v.loc[sub].solution.values)
     y = list(clear_v.loc[sub].response.fillna(0).values)
-    clear_data_v["gain"].append(np.polyfit(np.log(x), y, 1)[1])  # slope
+    clear_data_v["gain"].append(np.polyfit(np.log(x), y, 1)[0])  # slope
     correct_responses = [x for x in clear_v.loc[sub].is_correct if x == True]
     clear_data_v["correct"].append(correct_responses.__len__() / clear_v.loc[sub].is_correct.__len__())
 
     # fit reversed numjudge data to model
     x = list(reversed_v.loc[sub].solution.values)
     y = list(reversed_v.loc[sub].response.fillna(0).values)
-    reversed_data_v["gain"].append(np.polyfit(np.log(x), y, 1)[1])  # slope
+    reversed_data_v["gain"].append(np.polyfit(np.log(x), y, 1)[0])  # slope
     correct_responses = [x for x in reversed_v.loc[sub].is_correct if x == True]
     reversed_data_v["correct"].append(correct_responses.__len__() / reversed_v.loc[sub].is_correct.__len__())
 
