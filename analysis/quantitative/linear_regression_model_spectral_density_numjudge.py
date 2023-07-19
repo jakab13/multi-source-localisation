@@ -38,9 +38,10 @@ df = df.fillna(0)
 # model
 x = df.solution.values.reshape(-1, 1)
 y = df.coverage.values.reshape(-1, 1)
-model = LinearRegression(fit_intercept=True)
+model = LinearRegression(fit_intercept=False)
 model.fit(x, y)
 ypred = model.predict(x)
+model.score(x, y)
 
 plt.scatter(x, y)
 plt.plot(x, ypred)
