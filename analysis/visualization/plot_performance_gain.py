@@ -19,8 +19,6 @@ locaaccu_v = load_dataframe(fp, exp_name="LocaAccu", plane="v")
 filled_v = locaaccu_v["mode"].ffill()
 noise_v = locaaccu_v[np.where(filled_v=="noise", True, False)]  # True where reversed_speech is True
 babble_v = locaaccu_v[np.where(filled_v=="babble", True, False)]  # True where reversed_speech is False
-spatmask_v = load_dataframe(fp, exp_name="SpatMask", plane="v")
-
 
 # get data for all paradigms
 locaaccu_h = load_dataframe(fp, exp_name="LocaAccu", plane="h")
@@ -28,8 +26,6 @@ locaaccu_h = load_dataframe(fp, exp_name="LocaAccu", plane="h")
 filled_h = locaaccu_h["mode"].ffill()
 noise_h = locaaccu_h[np.where(filled_h=="noise", True, False)]  # True where reversed_speech is True
 babble_h = locaaccu_h[np.where(filled_h=="babble", True, False)]  # True where reversed_speech is False
-
-spatmask_h = load_dataframe(fp, exp_name="SpatMask", plane="h")
 
 sub_ids = extract_subject_ids_from_dataframe(locaaccu_v)  # subject IDs
 
@@ -53,7 +49,7 @@ for sub in sub_ids:  # iterate through all subjects
     # fit locaaccu data to model for first subject
     model.fit(np.reshape(actual_v, (-1, 1)), perceived_v)  # fit model
     babble_data_v["r2"].append(model.score(np.reshape(actual_v, (-1, 1)), perceived_v))  # R²
-    babble_data_v["gain"].append(model.coef_)  # slope
+    babble_data_v["gain"].append(model.coef_[0])  # slope
     babble_data_v["mse"].append(np.mean(np.abs(np.subtract(perceived_v, actual_v)) ** 2))  # mean squared error
 
     ### horizontal plane babble ###
@@ -63,7 +59,7 @@ for sub in sub_ids:  # iterate through all subjects
     perceived_h = replace_in_array(perceived_h)  # get right shape
     model.fit(np.reshape(actual_h, (-1, 1)), perceived_h)  # fit model
     babble_data_h["r2"].append(model.score(np.reshape(actual_h, (-1, 1)), perceived_h))  # R²
-    babble_data_h["gain"].append(model.coef_)  # slope
+    babble_data_h["gain"].append(model.coef_[0])  # slope
     babble_data_h["mse"].append(np.mean(np.abs(np.subtract(perceived_h, actual_h)) ** 2))  # mean squared error
 
     ### vertical plane noise ###
@@ -74,7 +70,7 @@ for sub in sub_ids:  # iterate through all subjects
     # fit locaaccu data to model for first subject
     model.fit(np.reshape(actual_v, (-1, 1)), perceived_v)  # fit model
     noise_data_v["r2"].append(model.score(np.reshape(actual_v, (-1, 1)), perceived_v))  # R²
-    noise_data_v["gain"].append(model.coef_)  # slope
+    noise_data_v["gain"].append(model.coef_[0])  # slope
     noise_data_v["mse"].append(np.mean(np.abs(np.subtract(perceived_v, actual_v)) ** 2))  # mean squared error
 
     ### horizontal plane noise ###
@@ -84,7 +80,7 @@ for sub in sub_ids:  # iterate through all subjects
     perceived_h = replace_in_array(perceived_h)  # get right shape
     model.fit(np.reshape(actual_h, (-1, 1)), perceived_h)  # fit model
     noise_data_h["r2"].append(model.score(np.reshape(actual_h, (-1, 1)), perceived_h))  # R²
-    noise_data_h["gain"].append(model.coef_)  # slope
+    noise_data_h["gain"].append(model.coef_[0])  # slope
     noise_data_h["mse"].append(np.mean(np.abs(np.subtract(perceived_h, actual_h)) ** 2))  # mean squared error
 
 plt.scatter(babble_data_h["gain"], babble_data_v["gain"])
