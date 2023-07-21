@@ -1,25 +1,31 @@
-import math
-import sklearn
-from sklearn.linear_model import LinearRegression
+from statsmodels.regression.linear_model import OLS
+import time
+import itertools
+import pandas as pd
 
 
-def gain(x, y):
-    return LinearRegression().fit(x, y)
+def process_subset(feature_set, X, y):
+    # Fit model on feature_set and calculate RSS
+    model = OLS(y, X[list(feature_set)])
+    regr = model.fit()
+    RSS = ((regr.predict(X[list(feature_set)]) - y) ** 2).sum()
+    return {"model": regr, "RSS": RSS}
 
 
-def possible_combinations(n, k):
-    return math.comb(n, k)
+def mallows_ck(k, X, y):
+    tic = time.time()
+    results = []
+    for combo in itertools.combinations(X.columns, k):
+        results.append(process_subset(combo, X, y))
+    # Wrap everything up in a nice dataframe
+    models = pd.DataFrame(results)
+    # Choose the model with the highest RSS
+    best_model = models.loc[models['RSS'].argmin()]
+    toc = time.time()
+    print("Processed", models.shape[0], "models on", k, "predictors in", (toc - tic), "seconds.")
+    # Return the best model, along with some other useful information about the model
+    return best_model
 
 
 if __name__ == "__main__":
-    from analysis.utils.misc import load_dataframe
-    from labplatform.config import get_config
-    import os
-    import pandas as pd
-    import seaborn as sn
-    dd = os.path.join(get_config("DATA_ROOT"), "MSL")
-    df = load_dataframe(data_dir=dd, exp_name="NumJudge", plane="h")
-    cm = pd.crosstab(df['response'], df['solution'], rownames=['response'], colnames=['solution'], margins=True,
-                     normalize=True)
-    cm = cm.drop(index=8)
-    sn.heatmap(cm, annot=True)
+    pass
