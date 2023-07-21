@@ -16,15 +16,16 @@ dfh = load_dataframe(fp, exp_name=exp_name, plane="h")
 
 filled_h = dfh.reversed_speech.ffill()
 revspeech_h = dfh[np.where(filled_h==True, True, False)]  # True where reversed_speech is True
+revspeech_h = revspeech_h.sort_index()
 clearspeech_h = dfh[np.where(filled_h==False, True, False)]  # True where reversed_speech is False
+clearspeech_h = clearspeech_h.sort_index()
 
 # vertical
 filled_v = dfv.reversed_speech.ffill()
 revspeech_v = dfv[np.where(filled_v==True, True, False)]  # True where reversed_speech is True
+revspeech_v = revspeech_v.sort_index()
 clearspeech_v = dfv[np.where(filled_v==False, True, False)]  # True where reversed_speech is False
-
-# get sub ids
-sub_ids = extract_subject_ids_from_dataframe(dfh)
+clearspeech_v = clearspeech_v.sort_index()
 
 # get talker files
 talker_files_path = os.path.join(get_config("SOUND_ROOT"), "numjudge_talker_files_clear.pkl")
