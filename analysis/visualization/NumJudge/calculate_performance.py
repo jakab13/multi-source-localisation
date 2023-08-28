@@ -28,10 +28,10 @@ clearspeech_v = dfv[np.where(filled_v==False, True, False)]  # True where revers
 clearspeech_v = clearspeech_v.sort_index()
 
 # calculate performance
-performance = clearspeech_h.solution - clearspeech_h.response
+performance = revspeech_h.solution - revspeech_h.response
 # some processing
 performance = performance.abs().fillna(0)  # fill NaN with 0 and make everything positive
 
-df = pd.DataFrame(performance, columns=["performance_clear_h"])
-tofp = "/home/max/labplatform/data/csv/numjudge_performance_clearspeech_h.csv"
+df = pd.DataFrame(performance, columns=["performance_reversed_h"])
+tofp = "/home/max/labplatform/data/csv/numjudge_performance_revspeech_h.csv"
 df.to_csv(tofp)

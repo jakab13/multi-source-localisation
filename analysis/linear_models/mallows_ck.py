@@ -13,7 +13,7 @@ models_best = pd.DataFrame(columns=["RSS", "model"])
 for k in range(1, (len(x.columns))):
     models_best.loc[k] = mallows_ck(k, x, y)
 print(models_best.loc[6, "model"].summary())
-print(mallows_ck(3, x, y)["model"].summary())
+print(mallows_ck(k=3, X=x, y=y)["model"].summary())
 
 # plotting
 plt.figure(figsize=(20, 10))
