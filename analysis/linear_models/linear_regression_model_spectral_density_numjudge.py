@@ -29,14 +29,13 @@ sub_ids = extract_subject_ids_from_dataframe(dfh)
 coverage = pkl.load(open("Results/coverage_dataframe.pkl", "rb"))
 
 # prepare dataframe for the model
-df = pd.DataFrame(columns=["solution", "response", "coverage"])
-df.solution = clearspeech_v.solution
-df.response = clearspeech_v.response
-df.coverage = coverage.loc["clearspeech_v"]["coverage"]
+df = pd.DataFrame(columns=["response", "coverage"])
+df.response = clearspeech_h.response
+df.coverage = coverage.loc["clearspeech_h"]["coverage"]
 df = df.fillna(0)
 
 # model
-x = df.solution.values.reshape(-1, 1)
+x = df.response.values.reshape(-1, 1)
 y = df.coverage.values.reshape(-1, 1)
 model = LinearRegression(fit_intercept=False)
 model.fit(x, y)
