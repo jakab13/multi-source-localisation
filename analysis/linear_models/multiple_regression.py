@@ -1,19 +1,18 @@
 from analysis.utils.plotting import *
 import seaborn as sns
-from statsmodels.regression.linear_model import OLS
+from statsmodels.regression.linear_model import GLS
 import statsmodels.api as sm
 sns.set_theme()
 
 
-fromfp = "/home/max/labplatform/data/csv/final_df_general.csv"
-df = pd.read_csv(fromfp, index_col=1)
-df.pop("Sub_ID")
+fromfp = "/home/max/labplatform/data/linear_model/final_df_revspeech_v.csv"
+df = pd.read_csv(fromfp, index_col=0)
 
 # multiple regression
-x = df.drop(["performance", "solution", "response", "percentage_correct"], axis=1)
-y = df.performance
+x = df.drop(["response"], axis=1)
+y = df.response
 x_added_constant = sm.add_constant(x)
-model = OLS(y, x_added_constant).fit()
+model = GLS(y, x_added_constant).fit()
 model.summary()
 
 # scatterplot matrix
