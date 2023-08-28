@@ -158,3 +158,16 @@ plt.title("Numerosity Judgement percentage correct")
 plt.xlabel("Horizontal")
 plt.ylabel("Vertical")
 plt.legend(["Forward speech", "Reversed speech"])
+
+# save gain data
+csvpath = "/home/max/labplatform/data/csv"
+df = pd.DataFrame(clear_data_h["gain"], columns=["clearspeech_h_gain"])
+df.to_csv(os.path.join(csvpath, "numjudge_clearspeech_h_gain.csv"))
+df = pd.DataFrame(clear_data_v["gain"], columns=["clearspeech_v_gain"])
+df.to_csv(os.path.join(csvpath, "numjudge_clearspeech_v_gain.csv"))
+
+df = pd.DataFrame(reversed_data_h["gain"], columns=["revspeech_h_gain"])
+df.to_csv(os.path.join(csvpath, "numjudge_revspeech_h_gain.csv"))
+df = pd.DataFrame(reversed_data_v["gain"], columns=["revspeech_v_gain"])
+df.to_csv(os.path.join(csvpath, "numjudge_revspeech_v_gain.csv"))
+
