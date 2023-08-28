@@ -6,6 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from Speakers.speaker_config import SpeakerArray
 sns.set_theme()
+import pickle as pkl
 
 
 # get dataframes
@@ -85,6 +86,10 @@ abs_distance_h[35.0] = pd.concat([threshs_all_subjects_h[-35.0],
                                   threshs_all_subjects_h[35.0]], ignore_index=True)
 abs_distance_h[52.5] = pd.concat([threshs_all_subjects_h[-52.5],
                                   threshs_all_subjects_h[52.5]], ignore_index=True)
+
+# save dataframes
+pkl.dump(abs_distance_h, open("/home/max/labplatform/data/DataFrames/spatmask_abs_distance_h.pkl", "wb"))
+pkl.dump(abs_distance_v, open("/home/max/labplatform/data/DataFrames/spatmask_abs_distance_v.pkl", "wb"))
 
 
 fig, ax = mosaic_plot(layout=[["A"], ["B"]])
