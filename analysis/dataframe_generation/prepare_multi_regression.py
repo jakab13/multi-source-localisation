@@ -2,82 +2,66 @@ import pickle as pkl
 from analysis.utils.plotting import *
 import os
 import seaborn as sns
-from labplatform.config import get_config
 sns.set_theme()
 
 
-# load data from all subjects
-fp = os.path.join(get_config("DATA_ROOT"), "MSL")
-exp_name = "NumJudge"
-dfv = load_dataframe(fp, exp_name=exp_name, plane="v")
-dfh = load_dataframe(fp, exp_name=exp_name, plane="h")
-
-filled_h = dfh.reversed_speech.ffill()
-revspeech_h = dfh[np.where(filled_h==True, True, False)]  # True where reversed_speech is True
-revspeech_h = revspeech_h.sort_index()
-clearspeech_h = dfh[np.where(filled_h==False, True, False)]  # True where reversed_speech is False
-clearspeech_h = clearspeech_h.sort_index()
-
-# vertical
-filled_v = dfv.reversed_speech.ffill()
-revspeech_v = dfv[np.where(filled_v==True, True, False)]  # True where reversed_speech is True
-revspeech_v = revspeech_v.sort_index()
-clearspeech_v = dfv[np.where(filled_v==False, True, False)]  # True where reversed_speech is False
-clearspeech_v = clearspeech_v.sort_index()
-
-# general performance
-# prepare horizontal clearspeech
-# filepaths
 root = "/home/max/labplatform/data/csv"  # root
 
 # data paths
-labfp = os.path.join(root, "locaaccu_babble_h_gain.csv")  # locaaccu babble
-lanfp = os.path.join(root, "locaaccu_noise_h_gain.csv")  # locaaccu noise
-sufp = os.path.join(root, "spatmask_threshold_h.csv")  # spatmask
-njpchfp = os.path.join(root, "numjudge_percentage_correct_clear_h.csv")  # percentage correct numjudge
-ccsfp = os.path.join(root, "coverage_clearspeech_h.csv")  # spectral coverage clearspeech
-njfp = os.path.join(root, "numjudge_performance_clearspeech_h.csv")  # numjudge clearspeech
+labfp = os.path.join(root, "mad_babble_v.csv")  # locaaccu babble
+lanfp = os.path.join(root, "mad_noise_v.csv")  # locaaccu noise
+sufp = os.path.join(root, "spatmask_v_linear_slopes.csv")  # spatmask
+njshfp = os.path.join(root, "numjudge_clearspeech_v_gain.csv")  # percentage correct numjudge
+njrfp = os.path.join(root, "numjudge_response_clearspeech_v.csv")  # numjudge clearspeech responses
+njpfp = os.path.join(root, "numjudge_performance_clearspeech_v.csv")  # numjudge solution - response
 
 coverage = pkl.load(open("Results/coverage_dataframe.pkl", "rb"))
-# some processing
-performance = pd.read_csv("/home/max/labplatform/data/csv/numjudge_performance_clearspeech_h.csv", index_col=1)
-performance.pop("Sub_ID")
-performance = [x[0] for x in performance.values.tolist()]
 
 # pandas dataframes for all paradigms
-labh = pd.read_csv(labfp, index_col=0)
-lanh = pd.read_csv(lanfp, index_col=0)
+labh = pd.read_csv(labfp)
+lanh = pd.read_csv(lanfp)
 suh = pd.read_csv(sufp, index_col=0)
-njpch = pd.read_csv(njpchfp, index_col=0)
+njsh = pd.read_csv(njshfp, index_col=0)
+njrh = pd.read_csv(njrfp, index_col=1)
+njph = pd.read_csv(njpfp, index_col=1)
+njrh.pop("Sub_ID")
+njph.pop("Sub_ID")
+sub_ids = np.array([range(1, 14)])
 
-# make above dataframes length 2100
-dflen = 2100
+# make above dataframes length
+dflen = njrh.__len__()
 replication_factor = dflen/len(labh)
 # Convert DataFrame to a numpy array and replicate each element
 labh_array = np.repeat(labh.values, replication_factor, axis=0)
 lanh_array = np.repeat(lanh.values, replication_factor, axis=0)
 suh_array = np.repeat(suh.values, replication_factor, axis=0)
-njpch_array = np.repeat(njpch.values, replication_factor, axis=0)
+njsh_array = np.repeat(njsh.values, replication_factor, axis=0)
+sub_ids = np.repeat(sub_ids, replication_factor, axis=1)
+sub_ids = sub_ids.reshape((1950, 1))
+
 
 # Create a new DataFrame with the replicated elements
 new_labh = pd.DataFrame(labh_array, columns=labh.columns)
 new_lanh = pd.DataFrame(lanh_array, columns=lanh.columns)
 new_suh = pd.DataFrame(suh_array, columns=suh.columns)
-new_njpch = pd.DataFrame(njpch_array, columns=njpch.columns)
+new_njsh = pd.DataFrame(njsh_array, columns=njsh.columns)
+new_subs = pd.DataFrame(sub_ids, columns=["subID"])
 
 
 # finalize dataframe
-finaldf = pd.DataFrame(columns=["response", "solution", "performance", "locaaccu_babble", "locaaccu_noise", "spatmask",
-                                "coverage", "percentage_correct"])
-finaldf.response = clearspeech_h.response
-finaldf.solution = clearspeech_h.solution
-finaldf.performance = performance
-finaldf.locaaccu_babble = [x[0] for x in new_labh.values.tolist()]
-finaldf.locaaccu_noise = [x[0] for x in new_lanh.values.tolist()]
-finaldf.percentage_correct = [x[0] for x in new_njpch.values.tolist()]
-finaldf.coverage = coverage.loc["clearspeech_h"]["coverage"]
+finaldf = pd.DataFrame(columns=["response", "lababble", "lanoise", "spatmask", "coverage", "numjudge",
+                                "performance", "subID"])
+finaldf.response = njrh
+finaldf.lababble = [x[0] for x in new_labh.values.tolist()]
+finaldf.lanoise = [x[0] for x in new_lanh.values.tolist()]
+finaldf.coverage = coverage.loc["clearspeech_v"]["coverage"]
 finaldf.spatmask = [x[0] for x in new_suh.values.tolist()]
+finaldf.numjudge = [x[0] for x in new_njsh.values.tolist()]
+finaldf.performance = njph
+finaldf = finaldf.reset_index()
+finaldf.subID = new_subs
+finaldf.pop("index")
 finaldf = finaldf.fillna(0)
 
-tofp = "/home/max/labplatform/data/csv/final_df_general.csv"
+tofp = "/home/max/labplatform/data/linear_model/final_df_clearspeech_v.csv"
 finaldf.to_csv(tofp)
