@@ -24,8 +24,7 @@ noise = dfv[np.where(filled=="noise", True, False)]  # True where reversed_speec
 babble = dfv[np.where(filled=="babble", True, False)]  # True where reversed_speech is False
 
 layout = [["A", "B"],
-          ["C", "D"],
-          ["E", "E"]]
+          ["C", "D"]]
 
 # set up mosaic plot
 fig, ax = mosaic_plot(layout=layout)
@@ -46,11 +45,6 @@ ax["C"].set_title("Regression fit noise")
 # plot regression line horizontal
 draw_linear_regression_actual_vs_perceived(data=babble, plane="vertical", ax=ax["D"])
 ax["D"].set_title("Regression fit babble")
-
-# plot regression line of all planes and subjects
-df = pd.concat([noise, babble])
-draw_linear_regression_actual_vs_perceived(data=df, plane="all", ax=ax["E"])
-ax["E"].set_title("Regression fit mean")
 
 # show
 ax["A"].legend("")
