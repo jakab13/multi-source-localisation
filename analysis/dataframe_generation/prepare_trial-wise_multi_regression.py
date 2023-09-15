@@ -1,19 +1,17 @@
 import pickle as pkl
 from analysis.utils.plotting import *
 import os
-import seaborn as sns
-sns.set_theme()
 
 
 root = "/home/max/labplatform/data/csv"  # root
 
 # data paths
-labfp = os.path.join(root, "mad_babble_v.csv")  # locaaccu babble
-lanfp = os.path.join(root, "mad_noise_v.csv")  # locaaccu noise
-sufp = os.path.join(root, "spatmask_v_linear_slopes.csv")  # spatmask
-njshfp = os.path.join(root, "numjudge_clearspeech_v_gain.csv")  # percentage correct numjudge
-njrfp = os.path.join(root, "numjudge_response_clearspeech_v.csv")  # numjudge clearspeech responses
-njpfp = os.path.join(root, "numjudge_performance_clearspeech_v.csv")  # numjudge solution - response
+labfp = os.path.join(root, "mad_babble_h.csv")  # locaaccu babble
+lanfp = os.path.join(root, "mad_noise_h.csv")  # locaaccu noise
+sufp = os.path.join(root, "spatmask_h_linear_slopes.csv")  # spatmask
+njshfp = os.path.join(root, "numjudge_clearspeech_h_gain.csv")  # percentage correct numjudge
+njrfp = os.path.join(root, "numjudge_response_clearspeech_h.csv")  # numjudge clearspeech responses
+njpfp = os.path.join(root, "numjudge_performance_clearspeech_h.csv")  # numjudge solution - response
 
 coverage = pkl.load(open("Results/coverage_dataframe.pkl", "rb"))
 
@@ -54,7 +52,7 @@ finaldf = pd.DataFrame(columns=["response", "lababble", "lanoise", "spatmask", "
 finaldf.response = njrh
 finaldf.lababble = [x[0] for x in new_labh.values.tolist()]
 finaldf.lanoise = [x[0] for x in new_lanh.values.tolist()]
-finaldf.coverage = coverage.loc["clearspeech_v"]["coverage"]
+finaldf.coverage = coverage.loc["clearspeech_h"]["coverage"]
 finaldf.spatmask = [x[0] for x in new_suh.values.tolist()]
 finaldf.numjudge = [x[0] for x in new_njsh.values.tolist()]
 finaldf.performance = njph
@@ -63,5 +61,5 @@ finaldf.subID = new_subs
 finaldf.pop("index")
 finaldf = finaldf.fillna(0)
 
-tofp = "/home/max/labplatform/data/linear_model/final_df_clearspeech_v.csv"
+tofp = "/home/max/labplatform/data/linear_model/final_df_clearspeech_h.csv"
 finaldf.to_csv(tofp)
