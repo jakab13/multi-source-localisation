@@ -27,26 +27,17 @@ revspeech_v = revspeech_v.sort_index()
 clearspeech_v = dfv[np.where(filled_v==False, True, False)]  # True where reversed_speech is False
 clearspeech_v = clearspeech_v.sort_index()
 
-# get talker files
-talker_files_path = os.path.join(get_config("SOUND_ROOT"), "numjudge_talker_files_clear.pkl")
-with open(talker_files_path, "rb") as files:
-    sounds_clear = pkl.load(files)
-
-talker_files_path = os.path.join(get_config("SOUND_ROOT"), "numjudge_talker_files_reversed.pkl")
-with open(talker_files_path, "rb") as files:
-    sounds_reversed = pkl.load(files)
-
 # load dataframe containing coverage
 coverage = pkl.load(open("Results/coverage_dataframe.pkl", "rb"))
 
 # plot results
-sns.lineplot(x=clearspeech_h.solution, y=coverage.loc["clearspeech_h"]["coverage"], errorbar=("se", 2), label="clear speech_h")
-sns.lineplot(x=revspeech_h.solution, y=coverage.loc["revspeech_h"]["coverage"], errorbar=("se", 2), label="reversed speech_h")
+sns.lineplot(x=clearspeech_h.solution, y=coverage.loc["clearspeech_h"]["coverage"], label="clear speech_h")
+sns.lineplot(x=revspeech_h.solution, y=coverage.loc["revspeech_h"]["coverage"], label="reversed speech_h")
 plt.xlabel("Sound source perceptional discrepancy")
 plt.ylabel("Coverage")
 
 # vertical
-sns.lineplot(x=clearspeech_v.solution, y=coverage.loc["clearspeech_v"]["coverage"], errorbar=("se", 2), label="clear speech_v")
-sns.lineplot(x=revspeech_v.solution, y=coverage.loc["revspeech_v"]["coverage"], errorbar=("se", 2), label="reversed speech_v")
+sns.lineplot(x=clearspeech_v.solution, y=coverage.loc["clearspeech_v"]["coverage"], label="clear speech_v")
+sns.lineplot(x=revspeech_v.solution, y=coverage.loc["revspeech_v"]["coverage"], label="reversed speech_v")
 plt.xlabel("Solution")
 plt.ylabel("Coverage")

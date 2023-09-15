@@ -7,14 +7,9 @@ import pandas as pd
 root = "/home/max/labplatform/data/DataFrames/"
 su_fph = os.path.join(root, "spatmask_abs_distance_h.pkl")
 su_fpv = os.path.join(root, "spatmask_abs_distance_v.pkl")
-la_fph = os.path.join(root, "locaaccu_dfh")
-la_fpv = os.path.join(root, "locaaccu_dfv")
 
 suh = pickle.load(open(su_fph, "rb"))
 suv = pickle.load(open(su_fpv, "rb"))
-
-lah = pickle.load(open(la_fph, "rb"))
-lav = pickle.load(open(la_fpv, "rb"))
 
 model = LinearRegression(fit_intercept=True)  # linear regression model
 
