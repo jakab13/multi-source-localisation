@@ -8,7 +8,7 @@ def mosaic_plot(layout, **kwargs):
     return fig, ax
 
 
-def draw_lineplot_actual_vs_perceived(data, sub_ids, plane, ax=None, errorbar=("sd", 1), **kwargs):
+def draw_lineplot_actual_vs_perceived(data, sub_ids, plane, ax=None, **kwargs):
     for sub_id in sub_ids:
         sub = data.loc[sub_id].reset_index()
         if plane == "horizontal":
@@ -23,7 +23,6 @@ def draw_lineplot_actual_vs_perceived(data, sub_ids, plane, ax=None, errorbar=("
             sns.lineplot(x=actual,
                          y=perceived,
                          err_style="bars",
-                         errorbar=errorbar,
                          label=sub_id,
                          ax=ax,
                          **kwargs)
@@ -31,19 +30,17 @@ def draw_lineplot_actual_vs_perceived(data, sub_ids, plane, ax=None, errorbar=("
             sns.lineplot(x=actual,
                          y=perceived,
                          err_style="bars",
-                         errorbar=errorbar,
                          label=sub_id,
                          **kwargs)
 
 
-def draw_lineplot_solution_vs_response(data, sub_ids, ax=None, errorbar=("sd", 1), **kwargs):
+def draw_lineplot_solution_vs_response(data, sub_ids, ax=None, **kwargs):
     for sub_id in sub_ids:
         sub = data.loc[sub_id].reset_index()
         if ax:
             sns.lineplot(x=sub.solution,
                          y=sub.response,
                          err_style="bars",
-                         errorbar=errorbar,
                          label=sub_id,
                          ax=ax,
                          **kwargs)
@@ -51,7 +48,6 @@ def draw_lineplot_solution_vs_response(data, sub_ids, ax=None, errorbar=("sd", 1
             sns.lineplot(x=sub.solution,
                          y=sub.response,
                          err_style="bars",
-                         errorbar=errorbar,
                          label=sub_id,
                          **kwargs)
 
