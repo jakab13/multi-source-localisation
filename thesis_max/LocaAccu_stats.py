@@ -2,6 +2,7 @@ import scipy.stats as stats
 from statsmodels.stats.multitest import multipletests
 from sklearn.linear_model import LinearRegression
 from analysis.utils.misc import *
+from labplatform.config import get_config
 
 # get dataframes
 fp = os.path.join(get_config("DATA_ROOT"), "MSL")
@@ -27,14 +28,19 @@ madnoiseh = np.mean(np.abs(replace_in_array(get_azimuth_from_df(noiseh.accuracy)
 madbabbleh = np.mean(np.abs(replace_in_array(get_azimuth_from_df(babbleh.accuracy))))
 madnoisev = np.mean(np.abs(replace_in_array(get_elevation_from_df(noisev.accuracy))))
 madbabblev = np.mean(np.abs(replace_in_array(get_elevation_from_df(babblev.accuracy))))
+madnoiseherr = stats.sem(np.abs(replace_in_array(get_azimuth_from_df(noiseh.accuracy))))
+madbabbleherr = stats.sem(np.abs(replace_in_array(get_azimuth_from_df(babbleh.accuracy))))
+madnoiseverr = stats.sem(np.abs(replace_in_array(get_elevation_from_df(noisev.accuracy))))
+madbabbleverr = stats.sem(np.abs(replace_in_array(get_elevation_from_df(babblev.accuracy))))
+
 
 print(f"AZIMUTH: \n"
-      f"MAD babble noise: {madbabbleh.round(2)} \n"
-      f"MAD rifle noise: {madnoiseh.round(2)} \n"
+      f"MAD babble noise: {madbabbleh.round(2)} ± {madbabbleherr}\n"
+      f"MAD rifle noise: {madnoiseh.round(2)} ± {madnoiseherr}\n"
       "### \n"
       f"ELEVATION: \n"
-      f"MAD babble noise: {madbabblev.round(2)} \n"
-      f"MAD rifle noise: {madnoisev.round(2)}")
+      f"MAD babble noise: {madbabblev.round(2)} ± {madbabbleverr}\n"
+      f"MAD rifle noise: {madnoisev.round(2)} ± {madnoiseverr}")
 
 # stats
 print(f"WILCOXON SIGNED RANK TEST MAD: \n"
@@ -80,14 +86,21 @@ rtnoiseh = np.mean(noiseh.rt)
 rtbabbleh = np.mean(babbleh.rt)
 rtnoisev = np.mean(noisev.rt)
 rtbabblev = np.mean(babblev.rt)
+rtnoiseherr = stats.sem(replace_in_array(noiseh.rt))
+rtbabbleherr = stats.sem(replace_in_array(babbleh.rt))
+rtnoiseverr = stats.sem(replace_in_array(noisev.rt))
+rtbabbleverr = stats.sem(replace_in_array(babblev.rt))
+
 
 print(f"MEAN REACTION TIMES \n"
       f"AZIMUTH: \n"
-      f"Babble noise: {rtbabbleh} ms\n"
-      f"Rifle noise: {rtnoiseh} ms\n"
+      f"Babble noise: {rtbabbleh} ± {rtbabbleherr}ms\n"
+      f"Rifle noise: {rtnoiseh}  ± {rtnoiseherr}ms\n"
       f"ELEVATION: \n"
-      f"Babble noise: {rtbabblev} ms\n"
-      f"Rifle noise: {rtnoisev} ms\n")
+      f"Babble noise: {rtbabblev} ± {rtbabbleverr}ms\n"
+      f"Rifle noise: {rtnoisev} ± {rtnoiseverr}ms\n"
+      f"MEAN AZI: {np.mean([rtbabbleh, rtnoiseh])} ± {np.mean([rtbabbleherr, rtnoiseherr])} \n"
+      f"MEAN ELE: {np.mean([rtbabblev, rtnoisev])} ± {np.mean([rtbabbleverr, rtnoiseverr])}")
 
 print(f"WILCOXON SIGNED RANK TEST REACTION TIMES ELEVATION VS. AZIMUTH\n"
       f"{stats.wilcoxon(replace_in_array(np.append(noiseh.rt, babbleh.rt)), replace_in_array(np.append(noisev.rt, babblev.rt)))}")
