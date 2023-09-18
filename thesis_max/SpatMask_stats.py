@@ -4,7 +4,6 @@ from labplatform.config import get_config
 from Speakers.speaker_config import SpeakerArray
 from scipy import stats
 from statsmodels.stats.multitest import multipletests
-from sklearn.linear_model import LinearRegression
 
 
 # get dataframes
@@ -97,3 +96,20 @@ method = "bonferroni"
 # wilcoxon, bonferroni corrected
 print(f"HORIZONTAL: {multipletests(pvalsh, method=method)} \n"
       f"VERTICAL: {multipletests(pvalsv, method=method)}")
+
+# means and standard errors
+print(f"### MEANS AND STD ERRORS ### \n"
+      f"AZIMUTH: \n"
+      f"17.5: {np.mean(abs_distance_h[17.5])} ± {stats.sem(abs_distance_h[17.5])} \n"
+      f"35.0: {np.mean(abs_distance_h[35.0])} ± {stats.sem(abs_distance_h[35.0])} \n"
+      f"52.5: {np.mean(abs_distance_h[52.5])} ± {stats.sem(abs_distance_h[52.5])} \n"
+      f"ELEVATION: \n"
+      f"12.5: {np.mean(abs_distance_v[12.5])} ± {stats.sem(abs_distance_v[12.5])} \n"
+      f"25.0: {np.mean(abs_distance_v[25.0])} ± {stats.sem(abs_distance_v[25.0])} \n"
+      f"37.5: {np.mean(abs_distance_v[37.5])} ± {stats.sem(abs_distance_v[37.5])} \n")
+
+# Page L test for monotony (better stats than wilcoxon)
+method = "exact"
+print(f"### PAGE TREND TEST ### \n"
+      f"AZIMUTH: {stats.page_trend_test(abs_distance_h.abs(), method=method)} \n"
+      f"ELEVATION: {stats.page_trend_test(abs_distance_v.abs(), method=method)}")
