@@ -37,31 +37,3 @@ labels = ["Statistic", "p-value"]
 norm_res = stats.shapiro(result.resid)
 for key, val in dict(zip(labels, norm_res)).items():
     print(key, val)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-"""
-oldenburg
-berlin stipendium
-imprss
-school of cognition
-aachen institute for hearing acoustics
-gesa hartwigsen
-stephan ebener
-"""

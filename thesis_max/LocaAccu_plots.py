@@ -3,9 +3,10 @@ import os
 from labplatform.config import get_config
 import seaborn as sns
 import matplotlib.pyplot as plt
-import scienceplots
 import ptitprince as pt
-plt.style.use(['science', 'nature'])
+sns.set_theme(style="white", palette="viridis")
+plt.rcParams['text.usetex'] = True  # TeX rendering
+
 
 raincloud_params = dict(bw=0.2,
                         width_viol=.6,
@@ -51,14 +52,41 @@ data["noisev"] = [replace_in_array(get_elevation_from_df(noisev.actual)), replac
 data["babblev"] = [replace_in_array(get_elevation_from_df(babblev.actual)), replace_in_array(get_elevation_from_df(babblev.perceived))]
 data["noiseh"] = [replace_in_array(get_azimuth_from_df(noiseh.actual)), replace_in_array(get_azimuth_from_df(noiseh.perceived))]
 data["babbleh"] = [replace_in_array(get_azimuth_from_df(babbleh.actual)), replace_in_array(get_azimuth_from_df(babbleh.perceived))]
+data["rth"] = babbleh.rt.append(noiseh.rt)
+data["rtv"] = babblev.rt.append(noisev.rt)
 
 
 layout = """
-AAC
-BBC
+AB
 """
-axes = plt.figure(layout="constrained").subplot_mosaic(layout, sharex=False, sharey=True)
-plt.ylim((-60, 60))
+axes = plt.figure().subplot_mosaic(layout, sharex=True, sharey=True)
+axes["A"].set_title("Elevation Performance")
+axes["B"].set_title("Azimuth Performance")
+axes["A"].set_xlabel("Actual Position (degrees)")
+axes["A"].set_ylabel("Judged Position (degrees)")
+axes["B"].set_xlabel("Actual Position (degrees)")
+
+
+sns.lineplot(data["noisev"][0], data["noisev"][1], ax=axes["A"], label="Noise")
+sns.lineplot(data["babblev"][0], data["babblev"][1], ax=axes["A"], label="Babble")
+
+
+sns.lineplot(data["noiseh"][0], data["noiseh"][1], ax=axes["B"], label="Noise")
+sns.lineplot(data["babbleh"][0], data["babbleh"][1], ax=axes["B"], label="Babble")
+
+axes["A"].plot(plt.xlim(), plt.ylim(), ls="--", c=".3")
+axes["B"].plot(plt.xlim(), plt.ylim(), ls="--", c=".3")
+plt.show()
+
+sns.distplot(data["rth"], label="Horizontal")
+sns.distplot(data["rtv"], label="Vertical")
+plt.xlim((0, 5000))
+plt.xlabel("Reaction Time [ms]")
+plt.legend()
+
+
+"""
 pt.RainCloud(data["noisev"][0], data["noisev"][1], ax=axes["A"], **raincloud_params)
 pt.RainCloud(data["noiseh"][0], data["noiseh"][1], ax=axes["B"], **raincloud_params)
 sns.scatterplot(x=labh.babbleh.abs(), y=labv.babblev.abs(), ax=axes["C"])
+"""
