@@ -4,7 +4,8 @@ import statsmodels.formula.api as smf
 import statsmodels.api as sm
 import researchpy as rp
 import scipy.stats as stats
-sns.set_theme()
+sns.set_theme(style="white")
+plt.rcParams['text.usetex'] = True  # TeX rendering
 
 
 fromfp = "/home/max/labplatform/data/linear_model/final_df_mean_clearspeech_v.csv"
@@ -30,7 +31,6 @@ ax.set_xlabel("Residuals")
 
 # Q-QPLot
 sm.qqplot(result.resid, dist=stats.norm, line='s')
-plt.set_title("Q-Q Plot")
 
 # shapiro wilk test
 labels = ["Statistic", "p-value"]
