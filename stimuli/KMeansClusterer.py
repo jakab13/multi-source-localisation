@@ -30,9 +30,10 @@ class KMeansClusterer:
 
 
 if __name__ == "__main__":
-    plt.rcParams['image.cmap'] = 'viridis'
-    plt.rcParams['text.usetex'] = True  # TeX rendering
+    import scienceplots
 
+    plt.style.use("science")
+    plt.ion()
     # kwargs important for kmeans clustering
     kmeans_kwargs = {"init": "k-means++",
                      "n_init": 10,
@@ -103,7 +104,6 @@ if __name__ == "__main__":
     plt.xticks(range(1, 11))
     plt.xlabel("Number of Clusters")
     plt.ylabel("SSE")
-    plt.show()
 
     kl = KneeLocator(range(1, 11), sse, curve="convex", direction="decreasing")
     nclust_opt = 8  # seems 3 clusters is optimal
@@ -126,11 +126,12 @@ if __name__ == "__main__":
             plt.annotate(txt, (data[i, 0], data[i, 1] + 0.02))
         else:
             continue
-    plt.legend()
+    # plt.legend()
     # plt.colorbar()
 
     plt.xlabel("Z-Score Spectral Feature (PC1)")
     plt.ylabel("Z-Score Spectral Feature (PC2)")
 
-    plt.show()
+    plt.savefig("/home/max/labplatform/plots/MA_thesis/materials_methods/kmeans_cluster.png",
+                dpi=800)
 

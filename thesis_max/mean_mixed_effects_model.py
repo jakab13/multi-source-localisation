@@ -19,7 +19,7 @@ rp.summary_cont(df)
 model = smf.mixedlm("response ~ coverage + numjudge + lababble + lanoise + spatmask", data=df,
                     groups=df["subID"])
 result = model.fit()
-table = result.summary()
+result.summary()
 
 # scatterplot matrix
 sns.pairplot(df)

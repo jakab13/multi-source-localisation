@@ -8,7 +8,7 @@ sns.set_theme(style="white")
 plt.rcParams['text.usetex'] = True  # TeX rendering
 
 
-fromfp = "/home/max/labplatform/data/linear_model/final_df_mean_clearspeech_h.csv"
+fromfp = "/home/max/labplatform/data/linear_model/final_df_revspeech_v.csv"
 df = pd.read_csv(fromfp, index_col=0)
 
 # look at the performance based on the other variables
@@ -16,10 +16,10 @@ rp.summary_cont(df)
 
 # multiple regression
 # random intercept and slope
-model = smf.mixedlm("response ~ coverage + numjudge + lababble + lanoise + spatmask", data=df,
+model = smf.mixedlm("response ~ coverage + numjudge + spatmask + lababble + lanoise", data=df,
                     groups=df["subID"])
 result = model.fit()
-table = result.summary()
+result.summary()
 
 # scatterplot matrix
 sns.pairplot(df)
@@ -31,6 +31,7 @@ ax.set_xlabel("Residuals")
 
 # Q-QPLot
 sm.qqplot(result.resid, dist=stats.norm, line='s')
+plt.set_title("Q-Q Plot")
 
 # shapiro wilk test
 labels = ["Statistic", "p-value"]

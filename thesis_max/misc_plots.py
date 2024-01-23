@@ -1,10 +1,12 @@
-import numpy as np
 import matplotlib.pyplot as plt
-import librosa
 import seaborn as sns
-sns.set_theme(style="white", palette="Set1")
-plt.rcParams['text.usetex'] = True  # TeX rendering
+import scienceplots
+plt.style.use("science")
+plt.set_cmap("Greys")
+plt.ion()
+
 import slab
+import pickle as pkl
 
 goal_sf = 48828
 belgium = slab.Sound.read("/home/max/labplatform/male_example_belgium.wav").resample(goal_sf)
@@ -17,6 +19,8 @@ CC
 DD
 """
 figs, axs = plt.subplot_mosaic(mosaic=layout)
+plt.subplots_adjust(wspace=0.25, hspace=0.2)
+
 cuba.waveform(axis=axs["A"])
 belgium.waveform(axis=axs["A"])
 cuba.spectrum(axis=axs["B"])
@@ -25,6 +29,27 @@ cuba.spectrogram(axis=axs["C"])
 belgium.spectrogram(axis=axs["D"])
 
 axs["C"].sharex(axs["D"])
-axs["C"].set_title("Female Cuba")
-axs["D"].set_title("Male Belgium")
+axs["C"].set_xlabel("")
+axs["B"].set_xlabel("Frequency [Hz]")
+for key, ax in axs.items():
+    axs[key].set_title("")
+
+plt.savefig("/home/max/labplatform/plots/MA_thesis/materials_methods/talker_description.png",
+            dpi=800)
+
+
+rifle = pkl.load(open("/home/max/labplatform/sound_files/locaaccu_machine_gun_noise.pkl", "rb"))[0]
+layout = """
+ab
+cc
+"""
+figs, axs = plt.subplot_mosaic(mosaic=layout)
+rifle.waveform(axis=axs["a"])
+rifle.spectrum(axis=axs["b"])
+rifle.spectrogram(axis=axs["c"])
+
+axs["a"].sharex(axs["b"])
+axs["b"].set_title("Female Cuba")
 plt.tight_layout()
+
+

@@ -3,9 +3,9 @@ import os
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pickle as pkl
-sns.set_theme(style="white", palette="inferno")
-plt.rcParams['text.usetex'] = True  # TeX rendering
-
+import scienceplots
+plt.style.use("science")
+plt.ion()
 
 boxplot_params = dict(saturation=0.75,
                       width=.8,
@@ -27,11 +27,15 @@ suv = pkl.load(open(su_fpv, "rb"))
 all = pd.concat([suh, suv], keys=["Azimuth", "Elevation"], axis=0)
 # suh["dimension"] = ["azimuth"] * len(suh.index)
 
-sns.boxplot(data=all.loc["Azimuth"], palette="twilight", **boxplot_params)
-sns.boxplot(data=all.loc["Elevation"], palette="twilight_shifted", **boxplot_params)
-sns.despine(offset=10, trim=True)
+bp1 = sns.boxplot(data=all.loc["Azimuth"], palette="twilight", **boxplot_params)
+bp2 = sns.boxplot(data=all.loc["Elevation"], palette="twilight_shifted", **boxplot_params)
+# sns.despine(offset=10, trim=True)
 
 plt.xlabel("Speaker-Target Difference [degrees]")
 plt.ylabel("50 Percent Hearing Threshold (TMR) [dB]")
-plt.legend(labels=["Azimuth", "Elevation"], loc="upper left")
-plt.show()
+legend1=plt.legend(["Azimuth"], loc="upper left")
+plt.legend(["Elevation"], loc="upper right")
+plt.gca().add_artist(legend1)
+
+plt.savefig("/home/max/labplatform/plots/MA_thesis/results/hearing_thresholds.png",
+            dpi=800)

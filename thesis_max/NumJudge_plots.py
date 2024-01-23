@@ -4,8 +4,10 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from labplatform.config import get_config
 import pickle as pkl
-sns.set_theme(style="white")
-plt.rcParams['text.usetex'] = True  # TeX rendering
+import string
+import scienceplots
+plt.style.use("science")
+plt.ion()
 
 
 # load data from all subjects
@@ -48,6 +50,10 @@ sns.lineplot(x=clearspeechv.solution.fillna(0), y=clearspeechv.response.fillna(0
 sns.lineplot(x=revspeechv.solution.fillna(0), y=revspeechv.response.fillna(0), ax=ax["b"],
              err_style="bars",  label="Reversed speech", palette="viridis")
 
+ax["a"].text(-0.1, 1.0, string.ascii_uppercase[0], transform=ax["a"].transAxes,
+               size=20, weight='bold')
+ax["b"].text(-0.1, 1.0, string.ascii_uppercase[1], transform=ax["b"].transAxes,
+               size=20, weight='bold')
 plt.xticks(range(2, 7))
 plt.yticks(range(2, 7))
 
@@ -57,12 +63,12 @@ for key in list(ax.keys()):
     y0, y1 = plt.ylim()
     lims = [1.9, 6.1]
     sns.lineplot(x=lims, y=lims, color='grey', linestyle="dashed", ax=ax[key])
-    ax[key].set_title("Azimuth") if key == "a" else ax[key].set_title("Elevation")
+    # ax[key].set_title("Azimuth") if key == "a" else ax[key].set_title("Elevation")
     ax[key].set_xlabel("Actual Number Of Sounds")
     ax[key].set_ylabel("Reported Number Of Sounds")
 
-plt.show()
-
+plt.savefig("/home/max/labplatform/plots/MA_thesis/results/numerosity_judgment_performance.png",
+            dpi=400, bbox_inches="tight")
 
 layout = """
 cd
@@ -88,10 +94,16 @@ sns.lineplot(x=revspeechv.solution, y=coverage.loc["revspeech_v"]["coverage"], l
 for key in list(ax.keys()):
     lims = [[1.9, 6.1], [0.5, 1.0]]
     sns.lineplot(x=lims[0], y=lims[1], color='grey', linestyle="dashed", ax=ax[key])
-    ax[key].set_title("Azimuth") if key == "c" else ax[key].set_title("Elevation")
+    # ax[key].set_title("Azimuth") if key == "c" else ax[key].set_title("Elevation")
     ax[key].set_xlabel("Actual Number Of Sounds")
     ax[key].set_ylabel("Spectro-Temporal Coverage")
+ax["c"].text(-0.1, 1.0, string.ascii_uppercase[0], transform=ax["c"].transAxes,
+               size=20, weight='bold')
+ax["d"].text(-0.1, 1.0, string.ascii_uppercase[1], transform=ax["d"].transAxes,
+               size=20, weight='bold')
 
+plt.savefig("/home/max/labplatform/plots/MA_thesis/results/spectro_temporal_coverage.png",
+            dpi=400, bbox_inches="tight")
 
 # Dynamic Range Distribution
 """
@@ -132,4 +144,7 @@ plt.axvline(x=65,
             linestyle="--",
             color="black")
 plt.xlabel("Dynamic Range Minimum Value [dB]")
-plt.ylabel("Spectro-temporal Coverage Variance [%]")
+plt.ylabel("Spectro-Temporal Coverage Variance")
+
+plt.savefig("/home/max/labplatform/plots/MA_thesis/results/variance_distribution_coverage.png",
+            dpi=400, bbox_inches="tight")

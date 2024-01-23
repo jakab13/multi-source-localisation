@@ -1,4 +1,9 @@
 from slab import Staircase
+import matplotlib.pyplot as plt
+import scienceplots
+plt.style.use("science")
+plt.ion()
+
 
 """
 Staircases are means which give rise to psychometric measures of the perceivable stimulus detection threshold. The slab 
@@ -31,9 +36,14 @@ simulated_hearing_threshold = start_val - 30
 for level in stairs:
     response = stairs.simulate_response(simulated_hearing_threshold)
     stairs.add_response(response)
-    stairs.plot()
+    stairs.plot(show=False)
 
+plt.title("")
+plt.ylabel("Target Sound Intensity [dB]")
+plt.show()
 print(f"mean detection threshold: {stairs.threshold()}")
 print(f"deviation from true threshold: {simulated_hearing_threshold-stairs.threshold()}")
 print(f"total trials: {stairs.this_trial_n}")
 
+plt.savefig("/home/max/labplatform/plots/MA_thesis/materials_methods/staircase_example.png",
+            dpi=800)

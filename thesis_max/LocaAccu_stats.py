@@ -64,20 +64,20 @@ fromfpv = "/home/max/labplatform/data/linear_model/final_df_revspeech_v.csv"
 dfv = pd.read_csv(fromfpv, index_col=0)
 
 x1 = np.unique(dfh.lababble).reshape((-1, 1))
-y1 = np.unique(dfv.lababble)
+y1 = np.unique(dfh.lanoise)
 
-x2 = np.unique(dfh.lanoise).reshape((-1, 1))
+x2 = np.unique(dfv.lababble).reshape((-1, 1))
 y2 = np.unique(dfv.lanoise)
 
 # fit model
 model1 = LinearRegression().fit(x1, y1)
-model2 = LinearRegression().fit(x1, y2)
+model2 = LinearRegression().fit(x2, y2)
 
 print(f"LINEAR REGRESSION \n"
-      f"AZIMUTH VS ELEVATION BABBLE NOISE MAD: \n"
+      f"AZIMUTH BABBLE VS PINK NOISE: \n"
       f"Line slope: {model1.coef_} \n"
       f"Correlation: {model1.score(x1, y1)} \n"
-      f"AZIMUTH VS ELEVATION RIFLE NOISE MAD \n"
+      f"ELEVATION BABBLE VS PINK NOISE: \n"
       f"Line slope: {model2.coef_} \n"
       f"Correlation: {model2.score(x2, y2)}")
 
