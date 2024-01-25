@@ -9,14 +9,13 @@ import slab
 import pickle as pkl
 
 goal_sf = 48828
-belgium = slab.Sound.read("/home/max/labplatform/male_example_belgium.wav").resample(goal_sf)
-cuba = slab.sound.Sound.read("/home/max/labplatform/female_example_cuba.wav").resample(goal_sf)
-combined = cuba.resize(1.0)+belgium.resize(1.0)
+belgium = slab.Sound.read("/home/max/labplatform/male_example_belgium.wav").resample(goal_sf).resize(1.0)
+cuba = slab.sound.Sound.read("/home/max/labplatform/female_example_cuba.wav").resample(goal_sf).resize(1.0)
+combined = cuba+belgium
+diff = cuba - belgium
 
 layout = """
 AB
-CC
-DD
 """
 figs, axs = plt.subplot_mosaic(mosaic=layout)
 plt.subplots_adjust(wspace=0.25, hspace=0.2)
@@ -25,11 +24,7 @@ cuba.waveform(axis=axs["A"])
 belgium.waveform(axis=axs["A"])
 cuba.spectrum(axis=axs["B"])
 belgium.spectrum(axis=axs["B"])
-cuba.spectrogram(axis=axs["C"])
-belgium.spectrogram(axis=axs["D"])
 
-axs["C"].sharex(axs["D"])
-axs["C"].set_xlabel("")
 axs["B"].set_xlabel("Frequency [Hz]")
 for key, ax in axs.items():
     axs[key].set_title("")
