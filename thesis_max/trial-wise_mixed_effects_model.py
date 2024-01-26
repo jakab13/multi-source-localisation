@@ -8,7 +8,7 @@ sns.set_theme(style="white")
 plt.rcParams['text.usetex'] = True  # TeX rendering
 
 
-fromfp = "/home/max/labplatform/data/linear_model/final_df_revspeech_v.csv"
+fromfp = "/home/max/labplatform/data/linear_model/final_df_revspeech_h.csv"
 df = pd.read_csv(fromfp, index_col=0)
 
 # look at the performance based on the other variables
@@ -19,7 +19,7 @@ rp.summary_cont(df)
 model = smf.mixedlm("response ~ coverage + numjudge + spatmask + lababble + lanoise", data=df,
                     groups=df["subID"])
 result = model.fit()
-result.summary()
+print(result.summary().as_latex())
 
 # scatterplot matrix
 sns.pairplot(df)
