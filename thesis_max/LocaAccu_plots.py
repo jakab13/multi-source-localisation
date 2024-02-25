@@ -60,7 +60,7 @@ data["rtv"] = babblev.rt.append(noisev.rt)
 layout = """
 AB
 """
-axes = plt.figure().subplot_mosaic(layout, sharex=True, sharey=True)
+_, axes = plt.subplot_mosaic(layout, sharex=True, sharey=True, figsize=(6, 3))
 axes["A"].set_xlabel("Actual Position (degrees)")
 axes["A"].set_ylabel("Judged Position (degrees)")
 axes["B"].set_xlabel("Actual Position (degrees)")
@@ -90,7 +90,9 @@ sns.regplot(labv, lanv, label="Elevation")
 plt.legend()
 plt.xlabel("Babble Noise Mean Absolute Error (degrees)")
 plt.ylabel("Pink Noise Mean Absolute Error (degrees)")
-plt.savefig("/home/max/labplatform/plots/MA_thesis/results/mad_plane_comparison.png",
+plt.gca().figure.set_figheight(4)
+plt.gca().figure.set_figwidth(5)
+plt.savefig("/home/max/labplatform/plots/MA_thesis/results/mae_plane_comparison.png",
             dpi=800)
 
 
@@ -100,6 +102,8 @@ sns.distplot(data["rtv"], label="Elevation")
 plt.xlim((0, 5000))
 plt.xlabel("Reaction Time [ms]")
 plt.legend()
+plt.gca().figure.set_figheight(4)
+plt.gca().figure.set_figwidth(5)
 plt.savefig("/home/max/labplatform/plots/MA_thesis/results/reaction_times.png",
             dpi=800)
 

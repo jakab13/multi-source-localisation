@@ -131,6 +131,8 @@ if __name__ == "__main__":
 
     plt.xlabel("Z-Score Spectral Feature (PC1)")
     plt.ylabel("Z-Score Spectral Feature (PC2)")
+    plt.gca().figure.set_figheight(5)
+    plt.gca().figure.set_figwidth(5)
 
     plt.savefig("/home/max/labplatform/plots/MA_thesis/materials_methods/kmeans_cluster.png",
                 dpi=800)

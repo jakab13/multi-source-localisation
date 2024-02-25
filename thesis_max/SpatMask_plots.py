@@ -33,9 +33,11 @@ bp2 = sns.boxplot(data=all.loc["Elevation"], palette="twilight_shifted", **boxpl
 
 plt.xlabel("Speaker-Target Difference [degrees]")
 plt.ylabel("50 Percent Hearing Threshold (TMR) [dB]")
-legend1=plt.legend(["Azimuth"], loc="upper left")
-plt.legend(["Elevation"], loc="upper right")
+legend1=plt.legend(["Azimuth"], loc="upper left", handlelength=0, handletextpad=0, fancybox=False)
+plt.legend(["Elevation"], loc="upper right", handlelength=0, handletextpad=0, fancybox=False)
 plt.gca().add_artist(legend1)
+plt.gca().figure.set_figheight(4)
+plt.gca().figure.set_figwidth(5)
 
 plt.savefig("/home/max/labplatform/plots/MA_thesis/results/hearing_thresholds.png",
             dpi=800)

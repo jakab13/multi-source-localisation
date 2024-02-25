@@ -39,7 +39,7 @@ coverage = pkl.load(open("Results/coverage_dataframe.pkl", "rb"))
 layout = """
 ab
 """
-ax = plt.figure().subplot_mosaic(layout, sharex=True, sharey=True)
+_, ax = plt.subplot_mosaic(layout, sharex=True, sharey=True, figsize=(6, 3))
 sns.lineplot(x=clearspeechh.solution.fillna(0), y=clearspeechh.response.fillna(0), ax=ax["a"],
              err_style="bars", label="Forward speech", palette="magma")
 sns.lineplot(x=revspeechh.solution.fillna(0), y=revspeechh.response.fillna(0), ax=ax["a"],
@@ -73,7 +73,7 @@ plt.savefig("/home/max/labplatform/plots/MA_thesis/results/numerosity_judgment_p
 layout = """
 cd
 """
-ax = plt.figure().subplot_mosaic(layout, sharex=True, sharey=True)
+_, ax = plt.subplot_mosaic(layout, sharex=True, sharey=True, figsize=(6, 3))
 
 # plot results
 sns.lineplot(x=clearspeechh.solution, y=coverage.loc["clearspeech_h"]["coverage"], label="Forward speech",
