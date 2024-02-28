@@ -1,4 +1,9 @@
 from slab import Staircase
+import matplotlib.pyplot as plt
+import scienceplots
+plt.style.use("science")
+plt.ion()
+
 
 """
 Staircases are means which give rise to psychometric measures of the perceivable stimulus detection threshold. The slab 
@@ -17,23 +22,28 @@ which in theory will yield a more efficient staircase with less error and trials
 simulated responses.
 """
 
-stairs = Staircase(start_val=50,  # starting dB value
-                   n_reversals=8,  # number of reversals
-                   step_sizes=[3, 1],  # step sizes (in this case, go 4 dB until first reversal point, then do 1 steps)
+start_val = 75
+stairs = Staircase(start_val=start_val,  # starting dB value
+                   n_reversals=16,  # number of reversals
+                   step_sizes=[4, 2, 1],  # step sizes (in this case, go 4 dB until first reversal point, then do 1 steps)
                    step_up_factor=1,  # Sdown * (1-Xthresh)
                    n_pretrials=0,  # number of pretrials before the staircase begins
                    n_up=1,  # amount of correct responses before stimulus is lowered in dB
                    n_down=1,  # amount of correct responses before stimulus is lowered in dB
                    step_type="db")
 
-simulated_hearing_threshold = 10
+simulated_hearing_threshold = start_val - 30
 for level in stairs:
     response = stairs.simulate_response(simulated_hearing_threshold)
     stairs.add_response(response)
-    # stairs.plot()
+    stairs.plot(show=False)
 
-stairs.close_plot()
+plt.title("")
+plt.ylabel("Target Sound Intensity [dB]")
+plt.show()
 print(f"mean detection threshold: {stairs.threshold()}")
 print(f"deviation from true threshold: {simulated_hearing_threshold-stairs.threshold()}")
 print(f"total trials: {stairs.this_trial_n}")
 
+plt.savefig("/home/max/labplatform/plots/MA_thesis/materials_methods/staircase_example.png",
+            dpi=800)

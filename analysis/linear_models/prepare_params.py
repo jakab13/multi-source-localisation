@@ -18,8 +18,8 @@ filled_v = dfv["mode"].ffill()
 
 noise_h = dfh[np.where(filled_h=="noise", True, False)]  # True where reversed_speech is True
 babble_h = dfh[np.where(filled_h=="babble", True, False)]  # True where reversed_speech is False
-noise_v = dfv[np.where(filled_h=="noise", True, False)]  # True where reversed_speech is True
-babble_v = dfv[np.where(filled_h=="babble", True, False)]  # True where reversed_speech is False
+noise_v = dfv[np.where(filled_v=="noise", True, False)]  # True where reversed_speech is True
+babble_v = dfv[np.where(filled_v=="babble", True, False)]  # True where reversed_speech is False
 
 sub_ids = extract_subject_ids_from_dataframe(dfh)  # subject IDs
 

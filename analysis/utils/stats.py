@@ -48,7 +48,7 @@ def mallows_ck(k, X, y):
     return best_model
 
 
-def permutation_test(group1, group2, n_permutations=10000, plot=True):
+def permutation_test(group1, group2, n_permutations=10000, plot=True, **kwargs):
     """
     Perform a permutation test to compare two groups.
 
@@ -102,11 +102,10 @@ def permutation_test(group1, group2, n_permutations=10000, plot=True):
 
     if plot:
         # Plot the permutation distribution and observed difference
-        density_plot = sns.kdeplot(results, fill=True)
+        density_plot = sns.kdeplot(results, fill=True, **kwargs)
         density_plot.set(
             xlabel='Absolute Mean Difference Between Groups',
-            ylabel='Proportion of Permutations',
-            title='P-Value Estimate'
+            ylabel='Proportion of Permutations'
         )
 
         # Add a line to show the actual difference observed in the data
@@ -118,7 +117,7 @@ def permutation_test(group1, group2, n_permutations=10000, plot=True):
 
         # Add a legend to the plot
         plt.legend(
-            labels=['Permutation Distribution', f'Observed Difference: {observed_diff}'],
+            labels=['Permutation Distribution', f'Observed Difference: {round(observed_diff, 2)}'],
             loc='upper right'
         )
 

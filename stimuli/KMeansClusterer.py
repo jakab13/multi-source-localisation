@@ -1,17 +1,17 @@
-from labplatform.config import get_config
+import matplotlib
+matplotlib.use("TkAgg")
+from matplotlib import pyplot as plt
+
 import os
 import slab
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
-from matplotlib import pyplot as plt
 from kneed import KneeLocator
 import pathlib
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 from stimuli.features import zcr
-import seaborn as sns
-plt.rcParams['image.cmap'] = 'viridis'
 
 
 class KMeansClusterer:
@@ -30,15 +30,16 @@ class KMeansClusterer:
 
 
 if __name__ == "__main__":
+    import scienceplots
+
+    plt.style.use("science")
+    plt.ion()
     # kwargs important for kmeans clustering
-    kmeans_kwargs = {"init": "kmeans++",
+    kmeans_kwargs = {"init": "k-means++",
                      "n_init": 10,
                      "random_state": 42}
 
-    # load and sort sound files by talker
-    sound_type = "tts-countries_resamp_24414"
-    sound_root = pathlib.Path("C:\labplatform\sound_files")
-    sound_fp = pathlib.Path(os.path.join(sound_root, sound_type))
+    sound_fp = pathlib.Path("/home/max/labplatform/sound_files/tts-countries")
     sound_list = slab.Precomputed(slab.Sound.read(pathlib.Path(sound_fp / file)) for file in os.listdir(sound_fp))
     all_talkers = dict()
     talker_id_range = range(225, 377)
@@ -53,7 +54,6 @@ if __name__ == "__main__":
 
     centroids = list()
     rolloffs = list()
-    f0s = list()
     zcrs = list()
 
     for k, v in all_talkers.items():
@@ -104,7 +104,6 @@ if __name__ == "__main__":
     plt.xticks(range(1, 11))
     plt.xlabel("Number of Clusters")
     plt.ylabel("SSE")
-    plt.show()
 
     kl = KneeLocator(range(1, 11), sse, curve="convex", direction="decreasing")
     nclust_opt = 8  # seems 3 clusters is optimal
@@ -120,7 +119,21 @@ if __name__ == "__main__":
     for i in u_labels:
         plt.scatter(data[label == i, 0], data[label == i, 1], label=i)
     plt.scatter(centroids[:, 0], centroids[:, 1], s=80, marker="x", c="black")
-    plt.legend()
-    plt.colorbar()
-    plt.show()
+    n = list(netto_talkers.keys())
+    final_talkers = ["229", "318", "256", "307", "248", "245", "284", "268"]
+    for i, txt in enumerate(n):
+        if txt in final_talkers:
+            plt.annotate(txt, (data[i, 0], data[i, 1] + 0.02))
+        else:
+            continue
+    # plt.legend()
+    # plt.colorbar()
+
+    plt.xlabel("Z-Score Spectral Feature (PC1)")
+    plt.ylabel("Z-Score Spectral Feature (PC2)")
+    plt.gca().figure.set_figheight(5)
+    plt.gca().figure.set_figwidth(5)
+
+    plt.savefig("/home/max/labplatform/plots/MA_thesis/materials_methods/kmeans_cluster.png",
+                dpi=800)
 
