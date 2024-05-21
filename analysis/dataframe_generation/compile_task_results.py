@@ -55,6 +55,8 @@ for subject_id, results_file_list in results_files.items():
             df_curr["resp_azi"] = resp_azi.astype(float)
             df_curr["resp_ele"] = resp_ele.astype(float)
             df_la = pd.concat([df_la, df_curr], ignore_index=True)
+        elif "SpatMaske" in results_file_name:
+            plane = slab.ResultsFile.read_file(path, tag="plane")
         elif "NumJudge" in results_file_name:
             plane = slab.ResultsFile.read_file(path, tag="plane")
             stim_number = slab.ResultsFile.read_file(path, tag="solution")
@@ -82,15 +84,15 @@ columns_performance = ["subject_id", "plane", "stim_type", "slope", "intercept",
 df_performance_nj = pd.DataFrame(columns=columns_performance)
 
 for subject_id in df_nj.subject_id.unique():
-    if subject_id != "sub_01" and subject_id != "sub_02" and subject_id != "sub_09":
-        for plane in df_nj.plane.unique():
-            for stim_type in df_nj.stim_type.unique():
-                df_curr = df_nj[(df_nj.subject_id == subject_id) & (df_nj.plane == plane) & (df_nj.stim_type == stim_type)]
-                if len(df_curr) > 0:
-                    x = df_curr.stim_number.values.astype(float)
-                    y = df_curr.resp_number.values.astype(float)
-                    reg = scipy.stats.linregress(x, y)
-                    df_performance_nj.loc[len(df_performance_nj)] = [subject_id, plane, stim_type, reg.slope, reg.intercept, reg.rvalue, reg.pvalue, reg.stderr, reg.intercept_stderr]
+    for plane in df_nj.plane.unique():
+        for stim_type in df_nj.stim_type.unique():
+            df_curr = df_nj[(df_nj.subject_id == subject_id) & (df_nj.plane == plane) & (df_nj.stim_type == stim_type)]
+            df_curr = df_curr.dropna(subset=["stim_number", "resp_number"])
+            if len(df_curr) > 0:
+                x = df_curr.stim_number.values.astype(float)
+                y = df_curr.resp_number.values.astype(float)
+                reg = scipy.stats.linregress(x, y)
+                df_performance_nj.loc[len(df_performance_nj)] = [subject_id, plane, stim_type, reg.slope, reg.intercept, reg.rvalue, reg.pvalue, reg.stderr, reg.intercept_stderr]
 
 columns_performance = ["subject_id", "plane", "stim_type", "slope", "intercept", "rvalue", "pvalue", "stderr", "intercept_stderr"]
 df_performance_la = pd.DataFrame(columns=columns_performance)
@@ -109,7 +111,8 @@ for subject_id in df_la.subject_id.unique():
                 if reg.slope < 0 or reg.pvalue > 0.05:
                     continue
                 else:
-                    df_performance_la.loc[len(df_performance_la)] = [subject_id, plane, stim_type, reg.slope, reg.intercept, reg.rvalue, reg.pvalue, reg.stderr, reg.intercept_stderr]
+                    slope = 1 - np.abs(1 - reg.slope)
+                    df_performance_la.loc[len(df_performance_la)] = [subject_id, plane, stim_type, slope, reg.intercept, reg.rvalue, reg.pvalue, reg.stderr, reg.intercept_stderr]
 
 columns_slopes = ["subject_id", "plane", "stim_type_la", "stim_type_nj", "la_slope", "nj_slope"]
 df_slopes = pd.DataFrame(columns=columns_slopes)

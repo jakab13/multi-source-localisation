@@ -5,7 +5,7 @@ import scipy
 import numpy as np
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
-from analysis.dataframe_generation.post_processing import df_nj
+from analysis.dataframe_generation.post_processing import df_nj, df_la
 
 sns.pointplot(df_nj, x="stim_number", y="resp_number", hue="subject_id")
 
@@ -14,9 +14,8 @@ print("MSE=%.3f" % lm_glob.mse_resid)
 print(lm_glob.t_test('stim_number'))
 sns.lmplot(x="stim_number", y="resp_number", data=df_nj)
 
-lmm = smf.mixedlm("resp_number ~ stim_number + la_slope",
+lmm = smf.mixedlm("resp_number ~ stim_number",
                   data=df_nj,
-                  re_formula="~ 1 + la_slope",
                   groups="subject_id").fit()
 print(lmm.summary())
 
