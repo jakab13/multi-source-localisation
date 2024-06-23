@@ -85,7 +85,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         self.results.write(self.sequence, "sequence")
         self.results.write(np.ndarray.tolist(np.array(self.devices["ArUcoCam"].pose)), "offset")
         self.devices["RX8"].handle.write(tag='bitmask',
-                                         value=1,
+                                         value=8,
                                          procs="RX81")  # illuminate central speaker LED
         self.load_speakers()
         if self.mode == "babble":
@@ -135,7 +135,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         self.devices["RP2"].wait_for_button()
         self.rt = int(round(time.time() - self.time_0, 3) * 1000)
         self.devices["RX8"].handle.write(tag='bitmask',
-                                         value=1,
+                                         value=8,
                                          procs="RX81")  # illuminate central speaker LED
         self.devices["ArUcoCam"].retrieve()
         # reaction_time = int(round(time.time() - self.time_0, 3) * 1000)
@@ -213,7 +213,7 @@ class LocalizationAccuracyExperiment(ExperimentLogic):
         """
         log.info("Calibrating camera")
         self.devices["RX8"].handle.write(tag='bitmask',
-                                         value=1,
+                                         value=8,
                                          procs="RX81")  # illuminate central speaker LED
         log.info('Point towards led and press button to start calibration')
         self.devices["RP2"].wait_for_button()  # start calibration after button press

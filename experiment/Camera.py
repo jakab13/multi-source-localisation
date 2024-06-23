@@ -50,7 +50,7 @@ class ArUcoCam(Device):
     """
     setting = ArUcoCamSetting()
     aruco_dicts = [cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_100),
-                   cv2.aruco.Dictionary_get(cv2.aruco.DICT_5X5_100)]
+                   cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_100)]
     params = cv2.aruco.DetectorParameters_create()
     cams = List()
     offset = Any()
@@ -63,7 +63,7 @@ class ArUcoCam(Device):
         """
         Initializes the device and sets the state to "created". Necessary before running the device.
         """
-        self.cams = [EasyPySpin.VideoCapture(0), EasyPySpin.VideoCapture(1)]
+        self.cams = [EasyPySpin.VideoCapture(1), EasyPySpin.VideoCapture(0)]
 
     def _configure(self, **kwargs):
         """
@@ -410,9 +410,9 @@ if __name__ == "__main__":
     import EasyPySpin
     from matplotlib import pyplot as plt
 
-    cams = [EasyPySpin.VideoCapture(0), EasyPySpin.VideoCapture(1)]
+    cams = [EasyPySpin.VideoCapture(1), EasyPySpin.VideoCapture(0)]
 
-    for k, cam in cams:
+    for cam in cams:
         ret, frame = cam.read()
         plt.imshow(frame)
         plt.show()

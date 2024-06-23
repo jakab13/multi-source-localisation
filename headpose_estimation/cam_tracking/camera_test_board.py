@@ -40,9 +40,9 @@ def aruco_test():
 
 def get_image(cam):
     image_result = cam.GetNextImage()
-    image = image_result.Convert(PySpin.PixelFormat_Mono8, PySpin.HQ_LINEAR)
+    # image = image_result.Convert(PySpin.PixelFormat_Mono8, PySpin.HQ_LINEAR)
     #image = image_result.Convert(PySpin.PixelFormat_RGB8, PySpin.HQ_LINEAR)
-    image = image.GetNDArray()
+    image = image_result.GetNDArray()
     image.setflags(write=1)
     image_result.Release()
     return image

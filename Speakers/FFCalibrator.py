@@ -39,7 +39,7 @@ class FFCalibrator:
         self.calib_param = {"ref_spk_id": 23,
                             "samplerate": 48828,
                             "n_repeats": 20,
-                            "calib_db": 75,
+                            "calib_db": 70,
                             'filter_bank': {'length': 1000,
                                             'bandwidth': 0.02,
                                             'low_cutoff': 20,
@@ -90,7 +90,7 @@ class FFCalibrator:
         self.device.RX8.trigger("zBusA", proc=self.device.RX8)
         self.device.wait_to_finish_playing()
         intensity = float(input("Enter measured sound intensity: "))
-        self.results["SPL_const"] = intensity - stimlevel
+        self.results["SPL_const"] = stimlevel - intensity
         slab.set_calibration_intensity(self.results["SPL_const"])
         sound = self.stimulus
         if speakers == "all":  # use the whole speaker table
@@ -318,7 +318,7 @@ class FFCalibrator:
             rec_full.append(self.play_and_record(speaker, full_equalized, equalize=False))
         return slab.Sound(rec_raw), slab.Sound(rec_level), slab.Sound(rec_full)
 
-    def spectral_range(self, signal, thresh=3, plot=True, log=False, bandwidth=1/5, ):
+    def spectral_range(self, signal, thresh=3, plot=True, log=False, bandwidth=1/5):
         """
         Compute the range of differences in power spectrum for all channels in
         the signal. The signal is devided into bands of equivalent rectangular

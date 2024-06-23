@@ -1,20 +1,21 @@
-import pickle
-import pathlib
+from Speakers import FFCalibrator
 import slab
-import freefield
-import time
 
-DIR = pathlib.Path("C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\Anaconda3_64\\envs\\freefield\\Lib\\site-packages\\freefield")
-with open(DIR / 'data' / 'calibration_dome.pkl', "rb") as f:
-    cal = pickle.load(f)
+cal = FFCalibrator.FFCalibrator("FREEFIELD")
 
-freefield.initialize("dome", default="play_rec")
+sound = slab.Sound.chirp(duration=0.1, kind="linear", level=85, from_frequency=0,
+                         to_frequency=20000, samplerate=cal.device.RP2.GetSFreq())
+sound = sound.ramp(duration=sound.duration/50)
 
-noise = slab.Sound.pinknoise(duration=1.0)
+speaker = cal.speakerArray.pick_speakers(23)
 
-for i in range(47):
-    freefield.set_signal_and_speaker(noise, i)
-    freefield.play()
-    freefield.wait_to_finish_playing()
-    time.sleep(0.5)
+cal.play_and_record(speaker=speaker, sound=sound, equalize=False)
 
+
+# test calibration
+censpeaks = cal.speakerArray.pick_speakers(picks=[20, 21, 22, 23, 24, 25, 26])
+cal.calibrate(speakers=censpeaks)
+
+raw, level, full = cal.test_equalization(speakers=censpeaks)
+
+cal.spectral_range(signal=full)

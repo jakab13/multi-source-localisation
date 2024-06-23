@@ -16,6 +16,8 @@ import time
 import numpy as np
 import logging
 import datetime
+import pandas as pd
+import ast
 
 log = logging.getLogger(__name__)
 config = slab.load_config(os.path.join(get_config("BASE_DIRECTORY"), "config", "numjudge_config.txt"))
@@ -40,6 +42,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     setting = NumerosityJudgementSetting()
     data = ExperimentData()
     sequence = slab.Trialsequence(conditions=list(setting.conditions), n_reps=setting.trial_number)
+    bin_sequence = slab.Trialsequence(conditions=list(range(setting.trial_number)), n_reps=len(setting.conditions))
     results = Any()
     devices = Dict()
     speakers_sample = List()
@@ -55,7 +58,24 @@ class NumerosityJudgementExperiment(ExperimentLogic):
     solution = Any()
     rt = Any()
     is_correct = Bool()
+    mode = Str()
     reversed_speech = Bool(False)
+    df = pd.read_csv(os.path.join(get_config("BASE_DIRECTORY"), "config", "tts_spectral_coverage_2024-06-20-10-33-03.csv"))
+    country_dict = {
+        "Belgium": 0,
+        "Britain": 1,
+        "Congo": 2,
+        "Cuba": 3,
+        "Japan": 4,
+        "Mali": 5,
+        "Oman": 6,
+        "Peru": 7,
+        "Sudan": 8,
+        "Syria": 9,
+        "Togo": 10,
+        "Tonga": 11,
+        "Yemen": 12
+    }
 
     def _devices_default(self):
         rp2 = RP2Device()
@@ -81,16 +101,17 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         pass
 
     def setup_experiment(self, info=None):
+        self.reversed_speech = True if self.mode == "reversed" else False
         self.results.write(self.reversed_speech, "reversed_speech")
         self.results.write(self.plane, "plane")
         self.results.write(self.sequence, "sequence")
         self.results.write(np.ndarray.tolist(np.array(self.devices["ArUcoCam"].offset)), "offset")
         self.devices["RX8"].handle.write(tag='bitmask',
-                                         value=1,
+                                         value=8,
                                          procs="RX81")  # illuminate central speaker LED
         self.load_speakers()
         self.load_signals()
-        self.devices["RX8"].handle.write("data0", self.paradigm_start.data.flatten(), procs="RX81")
+        self.devices["RX8"].handle.write("data0", self.paradigm_start.data.mean(axis=1), procs="RX81")
         self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
         self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
         self.devices["RX8"].wait_to_finish_playing()
@@ -100,29 +121,31 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         time.sleep(1)
 
     def _prepare_trial(self):
-        self.check_headpose()
+        # self.check_headpose()
         # self.devices["RX8"].clear_buffers(n_buffers=1, proc="RX81")
         # self.devices["RX8"].clear_channels(n_channels=5, proc=["RX81", "RX82"])
         for idx in range(6):  # clear all speakers before loading warning tone
             self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
         self.sequence.__next__()
+        self.bin_sequence.__next__()
         self.sequence.print_trial_info()
         self.solution = self.sequence.this_trial
         self.pick_speakers_this_trial(n_speakers=self.sequence.this_trial)
-        self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
+        # self.pick_signals_this_trial(n_signals=self.sequence.this_trial)
+        self.pick_signals_from_df_this_trial(n_signals=self.sequence.this_trial)
         for idx, spk in enumerate(self.speakers_sample):
             sound = spk.apply_equalization(list(self.signals_sample.values())[idx], level_only=False)
             self.devices["RX8"].handle.write(tag=f"data{idx}",
-                                             value=sound.data.flatten(),
+                                             value=sound.data.mean(axis=1),
                                              procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
             self.devices["RX8"].handle.write(tag=f"chan{idx}",
                                              value=spk.channel_analog,
                                              procs=f"{spk.TDT_analog}{spk.TDT_idx_analog}")
-            print(self.devices["RX8"].handle.read(tag=f"chan{idx}",
-                                                  proc=f"{spk.TDT_analog}{spk.TDT_idx_analog}"))
-            print(self.devices["RX8"].handle.read(tag=f"data{idx}",
-                                                  proc=f"{spk.TDT_analog}{spk.TDT_idx_analog}",
-                                                  n_samples=sound.n_samples))
+            # print(self.devices["RX8"].handle.read(tag=f"chan{idx}",
+            #                                       proc=f"{spk.TDT_analog}{spk.TDT_idx_analog}"))
+            # print(self.devices["RX8"].handle.read(tag=f"data{idx}",
+            #                                       proc=f"{spk.TDT_analog}{spk.TDT_idx_analog}",
+            #                                       n_samples=sound.n_samples))
 
     def _start_trial(self):
         self.time_0 = time.time()  # starting time of the trial
@@ -148,7 +171,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
             # self.devices["RX8"].clear_channels(n_channels=5, proc=["RX81", "RX82"])
             for idx in range(6):  # clear all speakers before loading warning tone
                 self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
-            self.devices["RX8"].handle.write("data0", self.paradigm_end.data.flatten(), procs="RX81")
+            self.devices["RX8"].handle.write("data0", self.paradigm_end.data.mean(axis=1), procs="RX81")
             self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
             self.devices["RX8"].handle.trigger("zBusA", proc=self.devices["RX8"].handle)
             self.devices["RX8"].wait_to_finish_playing()
@@ -206,6 +229,29 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         self.results.write(country_idxs, "country_idxs")
         self.signals_sample = sample
 
+    def pick_signals_from_df_this_trial(self, n_signals):
+        df_cond = self.df[self.df.setup == "freefield"]
+        stim_type = "countries_reversed" if self.mode == "reversed" else "countries_forward"
+        df_cond = df_cond[df_cond.stim_type == stim_type]
+        df_cond = df_cond[df_cond.n_presented == n_signals]
+        df_cond = df_cond.sort_values("spectral_coverage", ascending=False)
+        max_sc = df_cond.iloc[0]["spectral_coverage"]
+        min_sc = df_cond.iloc[-1]["spectral_coverage"]
+        bin_sc = (max_sc - min_sc) / self.setting.trial_number
+        bin_idx = self.bin_sequence.this_trial - 1
+        df_bin = df_cond[(df_cond.spectral_coverage >= min_sc + (bin_sc * bin_idx)) &
+                         (df_cond.spectral_coverage <= min_sc + (bin_sc * (bin_idx + 1)))]
+        row = df_bin.sample() if len(df_bin) > 0 else self.df.sample()
+        talkers = [t[1:] for t in ast.literal_eval(row.talker_ids.values[0])]
+        country_names = [c for c in ast.literal_eval(row.country_ids.values[0])]
+        country_idxs = [self.country_dict[name] for name in country_names]
+        sample = dict()
+        for idx, talker in enumerate(talkers):
+            country_id = country_idxs[idx]
+            sample[talker] = self.signals[talker][country_id]
+        self.results.write(country_idxs, "country_idxs")
+        self.signals_sample = sample
+
     def calibrate_camera(self, report=True):
         """
         Calibrates the cameras. Initializes the RX81 to access the central loudspeaker. Illuminates the led on ele,
@@ -213,7 +259,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
         """
         log.info("Calibrating camera")
         self.devices["RX8"].handle.write(tag='bitmask',
-                                         value=1,
+                                         value=8,
                                          procs="RX81")  # illuminate central speaker LED
         log.info('Point towards led and press button to start calibration')
         self.devices["RP2"].wait_for_button()  # start calibration after button press
@@ -244,7 +290,7 @@ class NumerosityJudgementExperiment(ExperimentLogic):
                     # self.devices["RX8"].clear_channels(n_channels=5, proc=["RX81", "RX82"])
                     for idx in range(6):  # clear all speakers before loading warning tone
                         self.devices["RX8"].handle.write(f"chan{idx}", 99, procs=["RX81", "RX82"])
-                    self.devices["RX8"].handle.write("data0", self.off_center.data.flatten(), procs="RX81")
+                    self.devices["RX8"].handle.write("data0", self.off_center.data.mean(axis=1), procs="RX81")
                     self.devices["RX8"].handle.write("chan0", 1, procs="RX81")
                     #self.devices["RX8"].start()
                     #self.devices["RX8"].pause()
@@ -291,7 +337,7 @@ if __name__ == "__main__":
     experimenter = "Max"
     nj = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
     nj.results = slab.ResultsFile(subject=subject.name)
-    nj.devices["RP2"].experiment = nj
+    # nj.devices["RP2"].experiment = nj
     nj.calibrate_camera()
     nj.start()
     # nj.configure_traits()

@@ -13,16 +13,18 @@ from experiment.exp_examples import LocalizationAccuracyExperiment_exmp, Spatial
 log = logging.getLogger(__name__)
 
 
-def setup_experiment():
-    exp_type = input("What is the paradigm? Enter LocaAccu (LocaAccu), su (SpatMask) or nm (NumJudge): ").lower()
+def setup_experiment(subject_id, plane, task, mode="sn"):
+    exp_type = task or input("What is the paradigm? Enter LocaAccu (LocaAccu), su (SpatMask) or nm (NumJudge): ")
     if exp_type == "LocaAccu":
-        la_mode = input("LocaAccu selected: use babble or noise? Enter b or sn")
-    name = input("Enter subject id: ").lower()
-    group = input("Vertical or horizontal? Insert v or h").lower()
-    sex = input("m or f? ").upper()
-    cohort = input("Pilot or Test cohort? Insert p or t").lower()
-    experimenter = input("Enter your name: ").lower()
-    is_example = input("Example? y or n").lower()
+        la_mode = mode or input("LocaAccu selected: use babble or noise? Enter b or sn")
+    if exp_type == "nm":
+        nm_mode = mode or input("Numjudge selected: use forward or reversed speech? Enter b or sn")
+    name = subject_id or input("Enter subject id: ").lower()
+    group = plane or input("Vertical or horizontal? Insert v or h").lower()
+    sex = "F" or input("m or f? ").upper()
+    cohort = "t" or input("Pilot or Test cohort? Insert p or t").lower()
+    experimenter = "jakab" or input("Enter your name: ").lower()
+    is_example = "n" or input("Example? y or n").lower()
 
     # _get_data_path() method call possible if instance calls itself
     #TODO
@@ -58,6 +60,7 @@ def setup_experiment():
         elif exp_type == "nm":
             exp = NumerosityJudgementExperiment(subject=subject, experimenter=experimenter)
             exp.plane = group
+            exp.mode = mode
         elif exp_type == "LocaAccu":
             if la_mode == "b":
                 exp = LocalizationAccuracyExperiment(subject=subject, experimenter=experimenter)

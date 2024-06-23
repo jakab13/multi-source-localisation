@@ -100,7 +100,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.results.write(self.talker, "talker")
         self.results.write(np.ndarray.tolist(np.array(self.devices["ArUcoCam"].pose)), "offset")
         self.devices["RX8"].handle.write(tag='bitmask',
-                                         value=1,
+                                         value=8,
                                          procs="RX81")  # illuminate central speaker LED
         # self.results.write(self.stairs, "stairs")
         # self._tosave_para["reaction_time"] = Any
@@ -153,20 +153,37 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         self.results.write(target_sound.level, "target_sound_level")
         self.masker_sound = self.masker_speaker.apply_equalization(self.masker_sound, level_only=False)
         self.results.write(self.masker_sound.level.mean(), "masker_sound_level")
-        print('masker level', self.masker_sound.level)
+        print('masker level', self.masker_sound.level.mean())
         print('target level', target_sound.level)
-        self.devices["RX8"].handle.write("chan0",
-                                         self.target_speaker.channel_analog,
-                                         f"{self.target_speaker.TDT_analog}{self.target_speaker.TDT_idx_analog}")
-        self.devices["RX8"].handle.write("data0",
-                                         target_sound.data.flatten(),
-                                         f"{self.target_speaker.TDT_analog}{self.target_speaker.TDT_idx_analog}")
-        self.devices["RX8"].handle.write("chan1",
-                                         self.masker_speaker.channel_analog,
-                                         f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
-        self.devices["RX8"].handle.write("data1",
-                                         self.masker_sound.data[:, 0].flatten(),
-                                         f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
+
+        if self.masker_speaker.id != self.target_speaker.id:
+            self.devices["RX8"].handle.write("chan0",
+                                             self.target_speaker.channel_analog,
+                                             f"{self.target_speaker.TDT_analog}{self.target_speaker.TDT_idx_analog}")
+            self.devices["RX8"].handle.write("data0",
+                                             target_sound.data.flatten(),
+                                             f"{self.target_speaker.TDT_analog}{self.target_speaker.TDT_idx_analog}")
+            self.devices["RX8"].handle.write("chan1",
+                                             self.masker_speaker.channel_analog,
+                                             f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
+            self.devices["RX8"].handle.write("data1",
+                                             self.masker_sound.data[:, 0].flatten(),
+                                             f"{self.masker_speaker.TDT_analog}{self.masker_speaker.TDT_idx_analog}")
+        elif self.masker_speaker.id == self.target_speaker.id:
+            max_samples = max(target_sound.n_samples, self.masker_sound.n_samples)
+
+            target_sound = slab.Sound.sequence(target_sound,
+                                                    slab.Sound.silence(max_samples - len(target_sound)))
+            self.masker_sound = slab.Sound.sequence(self.masker_sound,
+                                                    slab.Sound.silence(max_samples - len(self.masker_sound)))
+            combined_sound = target_sound + self.masker_sound
+            combined_sound.level -= 3
+            self.devices["RX8"].handle.write("chan0",
+                                             self.target_speaker.channel_analog,
+                                             f"{self.target_speaker.TDT_analog}{self.target_speaker.TDT_idx_analog}")
+            self.devices["RX8"].handle.write("data0",
+                                             combined_sound.data.flatten(),
+                                             f"{self.target_speaker.TDT_analog}{self.target_speaker.TDT_idx_analog}")
         log.info(f'trial {self.stairs.this_trial_n} start: {time.time() - self.time_0}')
         # simulate response
         # response = self.stairs.simulate_response(threshold=60)
@@ -261,9 +278,13 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         if calibration:
             spk_array.load_calibration(file=os.path.join(get_config("CAL_ROOT"), f"{self.setting.setup}_calibration.pkl"))
         if self.plane == "v":
-            speakers = spk_array.pick_speakers([x for x in range(20, 27) if x != 23])
+            # speakers = spk_array.pick_speakers([x for x in range(20, 27) if x != 23])
+            # Include collocated
+            speakers = spk_array.pick_speakers([x for x in range(20, 27)])
         elif self.plane == "h":
-            speakers = spk_array.pick_speakers([2, 8, 15, 31, 38, 44])
+            # speakers = spk_array.pick_speakers([2, 8, 15, 31, 38, 44])
+            # Include collocated
+            speakers = spk_array.pick_speakers([2, 8, 15, 31, 38, 44, 23])
         else:
             log.info("Wrong plane, must be v or h. Unable to load speakers!")
             speakers = [None]
@@ -284,7 +305,7 @@ class SpatialUnmaskingExperiment(ExperimentLogic):
         """
         log.info("Calibrating camera")
         self.devices["RX8"].handle.write(tag='bitmask',
-                                         value=1,
+                                         value=8,
                                          procs="RX81")  # illuminate central speaker LED
         log.info('Point towards led and press button to start calibration')
         self.devices["RP2"].wait_for_button()  # start calibration after button press
