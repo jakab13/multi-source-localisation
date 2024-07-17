@@ -9,6 +9,13 @@ from analysis.dataframe_generation.post_processing import df_nj, df_la, df_su
 
 col_order = ["horizontal", "vertical", "distance"]
 
+hue_order_nj = df_nj[
+    (df_nj["round"] == 2) &
+    (df_nj.plane == "horizontal") &
+    (df_nj["stim_type"] == "forward")].groupby(
+    ["subject_id", "nj_slope"],
+    as_index=False)["nj_slope"].mean().sort_values(by="nj_slope")["subject_id"].values
+
 # LOCALISATION ACCURACY =============
 df_curr = df_la[df_la["round"] == 2]
 # df_curr = df_la
@@ -23,12 +30,24 @@ g = sns.FacetGrid(
     # row="stim_type",
     row_order=["babble", "noise"],
     hue="subject_id",
-    # palette="copper",
+    # hue_order=hue_order_nj,
+    palette="copper",
     sharex=False,
     sharey=False,
     col_order=col_order
 )
 g.map(sns.lineplot, "stim_loc", "resp_loc")
+g.add_legend()
+
+df_curr = df_la[df_la["round"] == 2]
+g = sns.FacetGrid(
+    df_curr,
+    col="plane",
+    sharex=False,
+    sharey=False,
+    col_order=col_order
+)
+g.map(sns.regplot, "nj_slope", "rmse")
 g.add_legend()
 
 # SPATIAL UNMASKING =============
@@ -108,23 +127,15 @@ g = sns.FacetGrid(
 g.map(sns.lineplot, "stim_number", "resp_number")
 g.add_legend()
 
-hue_order = df_nj[
-    (df_nj["round"] == 2) &
-    (df_nj.plane == "horizontal") &
-    (df_nj["stim_type"] == "forward")].groupby(
-    ["subject_id", "nj_slope"],
-    as_index=False)["nj_slope"].mean().sort_values(by="nj_slope")["subject_id"].values
-
 df_curr = df_nj[df_nj["round"] == 2]
 df_curr = df_curr[df_curr["stim_type"] == "forward"]
-df_curr = df_curr[df_curr["subject_id"] == "sub_106"]
 g = sns.FacetGrid(
     df_curr.sort_values(by="nj_slope"),
     col="plane",
     # row="stim_type",
     hue="subject_id",
-    # hue_order=hue_order,
-    palette="copper",
+    # hue_order=hue_order_nj,
+    # palette="copper",
     col_order=col_order,
     row_order=["forward", "reversed"]
 )
@@ -138,6 +149,25 @@ plt.xlim(1.8, 6.2)
 g.fig.subplots_adjust(top=0.85)
 g.fig.suptitle("Auditory Numerosity Judgement in 3D")
 g.fig.supxlabel("n presented", fontsize=13)
+
+df_curr = df_nj[df_nj["round"] == 2]
+# df_curr = df_curr[df_curr["stim_number"] == 5]
+df_curr = df_curr[df_curr["subject_id"] == "sub_110"]
+g = sns.FacetGrid(
+    df_curr,
+    hue="stim_number",
+    # hue_order=hue_order_nj,
+    # palette="copper",
+    col="plane",
+    # row="stim_number",
+    col_order=col_order,
+    # sharex=False,
+    # sharey=False
+)
+g.map(sns.regplot, "spectral_coverage", "abs_error", scatter=False)
+g.add_legend()
+
+
 
 df_curr_group = df_curr.groupby(["subject_id", "plane"], as_index=False)["nj_slope"].mean()
 

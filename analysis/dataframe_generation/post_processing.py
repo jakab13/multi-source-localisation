@@ -3,7 +3,30 @@ import datetime
 import pandas as pd
 import scipy
 import numpy as np
+import slab
 from analysis.dataframe_generation.utils import pick_speakers
+from stimuli.tts_models import models
+import pathlib
+import os
+import ast
+
+tts_model = models["tts_models"][16]
+DIR = pathlib.Path(os.getcwd())
+country_converter = {
+    0: "Belgium",
+    1: "Britain",
+    2: "Congo",
+    3: "Cuba",
+    4: "Japan",
+    5: "Mali",
+    6: "Oman",
+    7: "Peru",
+    8: "Sudan",
+    9: "Syria",
+    10: "Togo",
+    11: "Tonga",
+    12: "Yemen",
+}
 
 speaker_rewiring_datetime = pd.to_datetime(datetime.datetime(2024, 7, 9, 12, 10, 6, 570176))
 
@@ -74,6 +97,8 @@ for subject_id in df_nj.subject_id.unique():
 
 for subject_id in df_la.subject_id.unique():
     for plane in df_la.plane.unique():
+        nj_slope = df_performance_nj[(df_performance_nj.subject_id == subject_id) &
+                                     (df_performance_nj.plane == plane)]["slope"].mean()
         for stim_type_la in df_la.stim_type.unique():
             la_slope = df_performance_la[(df_performance_la.subject_id == subject_id) &
                                          (df_performance_la.plane == plane) &
@@ -82,8 +107,12 @@ for subject_id in df_la.subject_id.unique():
                                          (df_performance_la.plane == plane) &
                                          (df_performance_la.stim_type == stim_type_la)]["intercept"].mean()
             q_curr_la = (df_la.subject_id == subject_id) & (df_la.plane == plane) & (df_la.stim_type == stim_type_la)
+            rmse = ((df_la[q_curr_la]["stim_loc"] - df_la[q_curr_la]["resp_loc"]) ** 2).mean() ** .5
+            df_la.loc[q_curr_la, "rmse"] = rmse
             df_la.loc[q_curr_la, "la_slope"] = la_slope
             df_la.loc[q_curr_la, "la_intercept"] = la_intercept
+            df_la.loc[q_curr_la, "nj_slope"] = nj_slope
+
 
 
 df_la = df_la[~((df_la.plane == "vertical") & (df_la.stim_loc > 50))]
@@ -158,6 +187,10 @@ def get_su_norm_to_max_threshold(row):
 df_su["normed_threshold"] = df_su.apply(lambda x: get_su_norm_to_max_threshold(x), axis=1)
 
 df_la["error_loc"] = df_la["stim_loc"] - df_la["resp_loc"]
+df_la["abs_error_loc"] = df_la["error_loc"].abs()
+
+df_nj["error"] = df_nj["stim_number"] - df_nj["resp_number"]
+df_nj["abs_error"] = df_nj["error"].abs()
 
 # sub_106 (Jacqueline): horizontal speaker 15 didn’t work
 q = (df_la.subject_id == "sub_106") & (df_la.plane == "horizontal") & (df_la.stim_loc == -17.5)
@@ -166,5 +199,58 @@ df_la = df_la[~q]
 q = (df_su.subject_id == "sub_106") & (df_su.plane == "horizontal") & (df_su.masker_speaker_loc == -17.5)
 df_su = df_su[~q]
 
-# TODO: finish this for numerosity judgement
-# q = (df_nj.subject_id == "sub_106") & (df_su.plane == "horizontal") & (df_su.masker_speaker_loc == -17.5)
+# q = (df_nj.subject_id == "sub_106") & (df_nj.plane == "horizontal")
+# df_nj = df_nj[~q]
+
+def get_spectral_coverage(row):
+    trial_dur = 0.6
+    p_ref = 2e-5  # 20 μPa, the standard reference pressure for sound in air
+    upper_freq = 11000  # upper frequency limit that carries information for speech
+    dyn_range = 65
+    talker_ids = row["stim_talker_ids"]
+    speaker_ids = row["speaker_ids"]
+    country_ids = row["stim_country_ids"]
+    country_ids = ast.literal_eval(country_ids) if type(country_ids) == str else country_ids
+    talker_ids = ast.literal_eval(talker_ids) if type(talker_ids) == str else talker_ids
+    setup = "cathedral" if row["plane"] == "distance" else "freefield"
+    stim_type = "countries_forward" if row["stim_type"] == "forward" else "countries_reversed"
+    trial_composition = list()
+    if setup == "cathedral":
+        sub_DIR = DIR / "samples" / "TTS" / f"tts-{stim_type}_cathedral_n13_resamp_24414"
+    else:
+        if stim_type == "countries_forward":
+            sub_DIR = DIR / "samples" / "TTS" / f"tts-countries_n13_resamp_24414"
+        else:
+            sub_DIR = DIR / "samples" / "TTS" / f"tts-countries-reversed_n13_resamp_24414"
+    for n in range(len(talker_ids)):
+        talker_id = talker_ids[n]
+        talker_id = "p" + talker_id if setup != "cathedral" else talker_id
+        sex = tts_model["speaker_genders"][talker_id]
+        country_id = country_ids[n]
+        if setup == "cathedral":
+            speaker_ids = ast.literal_eval(speaker_ids)
+            distances = [float(s + 2) for s in speaker_ids]
+            distance = distances[n]
+            # country_id = country_id + "_reversed" if "reversed" in stim_type else country_id + "_"
+            file_name = f"sound-talker-{talker_id}_sex-{sex}_text-{country_id}_mgb-level-27.5_distance-{distance}.wav"
+        else:
+            country_name = country_converter[country_id]
+            if stim_type == "countries_forward":
+                file_name = f"talker-{talker_id}_sex-{sex}_text-_{country_name}_.wav"
+            else:
+                file_name = f"talker-{talker_id}_sex-{sex}_text-_{country_name}_reversed.wav"
+        signal = slab.Sound(sub_DIR / file_name)
+        trial_composition.append(signal.resize(trial_dur))
+        sound = sum(trial_composition)
+        sound = slab.Sound(sound.data.mean(axis=1), samplerate=sound.samplerate)
+        sound = sound.resample(24414)
+        freqs, times, power = sound.spectrogram(show=False)
+        power = 10 * np.log10(power / (p_ref ** 2))  # logarithmic power for plotting
+        power = power[freqs < upper_freq, :]
+        dB_max = power.max()
+        dB_min = dB_max - dyn_range
+        interval = power[np.where((power > dB_min) & (power < dB_max))]
+        percentage_filled = interval.shape[0] / power.flatten().shape[0]
+        return percentage_filled
+
+df_nj["spectral_coverage"] = df_nj.apply(lambda row: get_spectral_coverage(row), axis=1)

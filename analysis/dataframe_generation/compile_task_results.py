@@ -31,6 +31,22 @@ df_la = pd.DataFrame(columns=columns_la)
 df_su = pd.DataFrame(columns=columns_su)
 df_nj = pd.DataFrame(columns=columns_nj)
 
+country_converter = {
+    0: "Belgium",
+    1: "Britain",
+    2: "Congo",
+    3: "Cuba",
+    4: "Japan",
+    5: "Mali",
+    6: "Oman",
+    7: "Peru",
+    8: "Sudan",
+    9: "Syria",
+    10: "Togo",
+    11: "Tonga",
+    12: "Yemen",
+}
+
 for subject_id, results_file_list in results_files.items():
     subject_idx = int(subject_id[4:])
     round = 1 if subject_idx < 100 else 2
@@ -167,3 +183,4 @@ for df in dfs:
     df.loc[(df.plane == "h"), "plane"] = "horizontal"
     df.loc[(df.plane == "v"), "plane"] = "vertical"
     df.loc[(df.plane == "d"), "plane"] = "distance"
+
