@@ -212,7 +212,7 @@ dyn_range = 65
 now = datetime.datetime.now().strftime("_%Y-%m-%d-%H-%M-%S")
 
 # setup = "cathedral"
-for setup in ["freefield", "cathedral"]:
+for setup in ["cathedral"]:
     for stim_type in ["countries_forward", "countries_reversed"]:
         if setup == "cathedral":
             sub_DIR = DIR / "samples" / "TTS" / f"tts-{stim_type}_cathedral_n13_resamp_24414"
@@ -226,7 +226,8 @@ for setup in ["freefield", "cathedral"]:
             num_pres = random.choice([2, 3, 4, 5, 6])
             selected_talker_ids = random.sample(talker_ids, num_pres)
             selected_country_ids = random.sample(countries, num_pres)
-            selected_distances = random.sample(distances, num_pres)
+            # selected_distances = random.sample(distances, num_pres)
+            selected_distances = [7.0] * num_pres
             trial_composition = list()
             file_names = list()
             for n in range(num_pres):

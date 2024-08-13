@@ -5,6 +5,22 @@ import numpy as np
 import slab
 from dataclasses import dataclass
 
+country_converter = {
+    0: "Belgium",
+    1: "Britain",
+    2: "Congo",
+    3: "Cuba",
+    4: "Japan",
+    5: "Mali",
+    6: "Oman",
+    7: "Peru",
+    8: "Sudan",
+    9: "Syria",
+    10: "Togo",
+    11: "Tonga",
+    12: "Yemen",
+}
+
 
 def creation_date(path_to_file):
     """
@@ -22,6 +38,35 @@ def creation_date(path_to_file):
             # We're probably on Linux. No easy way to get creation dates here,
             # so we'll settle for when its content was last modified.
             return stat.st_mtime
+
+def add_line_of_equality(axes, *line_args, **line_kwargs):
+    identity, = axes.plot([], [], *line_args, **line_kwargs)
+    def callback(axes):
+        low_x, high_x = axes.get_xlim()
+        low_y, high_y = axes.get_ylim()
+        low = max(low_x, low_y)
+        high = min(high_x, high_y)
+        identity.set_data([low, high], [low, high])
+    callback(axes)
+    axes.callbacks.connect('xlim_changed', callback)
+    axes.callbacks.connect('ylim_changed', callback)
+    return axes
+
+
+def add_grid_line_of_equality(g, task_name=None):
+    task_name = task_name or g.data["task_name"].values[0]
+    for ax in g.axes.flatten():
+        ax_min = ay_min = 1.5 if "distance" in ax.get_title() else -55
+        ax_max = ay_max = 12.5 if "distance" in ax.get_title() else 55
+        if task_name == "nj":
+            ax_min = ay_min = 1.5
+            ax_max = ay_max = 6.5
+        elif task_name == "su":
+            ay_min = -15
+            ay_max = 1
+        ax.set_xlim(ax_min, ax_max)
+        ax.set_ylim(ay_min, ay_max)
+        add_line_of_equality(ax, color="grey", ls="--", alpha=.3)
 
 @dataclass
 class Speaker:

@@ -5,18 +5,14 @@ import os
 import seaborn as sns
 import datetime as dt
 import numpy as np
+import ast
 from analysis.dataframe_generation.utils import creation_date
 
 pd.options.mode.chained_assignment = None
 sns.set_theme()
 results_folder = pathlib.Path(os.getcwd()) / "Results"
 
-subjects_excl = [
-    # "sub_101",
-]
-
 subjects = [s for s in os.listdir(results_folder) if not s.startswith('.')]
-subjects = sorted([s for s in subjects if not any(s in excl for excl in subjects_excl)])
 
 results_files = {s: [f for f in sorted(os.listdir(results_folder / s)) if not f.startswith('.')] for s in subjects}
 
@@ -48,7 +44,7 @@ country_converter = {
 }
 
 for subject_id, results_file_list in results_files.items():
-    subject_idx = int(subject_id[4:])
+    subject_idx = int(subject_id[4:]) if "collocated" not in subject_id else int(subject_id[4:7])
     round = 1 if subject_idx < 100 else 2
     for results_file_name in results_file_list:
         path = results_folder / subject_id / results_file_name
@@ -172,7 +168,7 @@ for subject_id, results_file_list in results_files.items():
                 df_curr["stim_talker_ids"] = df["stim_talker_ids"]
                 df_curr["speaker_ids"] = df["speaker_ids"]
                 df_curr["resp_number"] = df["resp_number"]
-                df_curr["reaction_time"] = df["reaction_time"]
+                df_curr["reaction_time"] = df["reaction_time"] * 1000
                 df_curr["stim_type"].replace("countries_forward", "forward", inplace=True)
                 df_curr["stim_type"].replace("countries_reversed", "reversed", inplace=True)
                 df_nj = pd.concat([df_nj, df_curr], ignore_index=True)
@@ -184,3 +180,37 @@ for df in dfs:
     df.loc[(df.plane == "v"), "plane"] = "vertical"
     df.loc[(df.plane == "d"), "plane"] = "distance"
 
+df_la["task_name"] = "la"
+df_su["task_name"] = "su"
+df_nj["task_name"] = "nj"
+
+
+def convert_cell_to_list(row, column_name):
+    output = row[column_name]
+    if type(row[column_name]) == str:
+        output = ast.literal_eval(row[column_name])
+    return output
+
+
+for column_name in ["stim_talker_ids", "speaker_ids", "stim_country_ids"]:
+    df_nj[column_name] = df_nj.apply(lambda row: convert_cell_to_list(row, column_name), axis=1)
+
+
+def check_talker_id_naming(row):
+    talker_ids = row["stim_talker_ids"]
+    if row["plane"] != "distance":
+        talker_ids = ["p" + talker_id for talker_id in talker_ids if talker_id[0] != "p"]
+    return talker_ids
+
+
+df_nj["stim_talker_ids"] = df_nj.apply(lambda row: check_talker_id_naming(row), axis=1)
+
+
+def format_country_ids(row):
+    country_ids = row["stim_country_ids"]
+    if row["plane"] != "distance":
+        country_ids = [country_converter[country_id] for country_id in country_ids]
+    return country_ids
+
+
+df_nj["stim_country_ids"] = df_nj.apply(lambda row: format_country_ids(row), axis=1)
