@@ -18,14 +18,21 @@ hue_order_nj = df_nj[
     ["subject_id", "nj_slope"],
     as_index=False)["nj_slope"].mean().sort_values(by="nj_slope")["subject_id"].values
 
+hue_order_su = df_nj[
+    (df_nj["round"] == 2) &
+    (df_nj.plane == "horizontal") &
+    (df_nj["stim_type"] == "forward")].groupby(
+    ["subject_id", "su_slope"],
+    as_index=False)["su_slope"].mean().sort_values(by="su_slope")["subject_id"].values
+
 # LOCALISATION ACCURACY =============
 df_curr = df_la[df_la["round"] == 2]
 # df_curr = df_la
 g = sns.FacetGrid(
     df_curr,
     col="plane",
-    row="stim_type",
-    row_order=["babble", "noise"],
+    # row="stim_type",
+    # row_order=["babble", "noise"],
     hue="subject_id",
     sharex=False,
     sharey=False,
@@ -82,12 +89,16 @@ g = sns.FacetGrid(
     df_curr,
     col="plane",
     col_order=col_order,
-    # hue="subject_id",
-    sharex=False
+    hue="subject_id",
+    hue_order=hue_order_su,
+    palette="copper",
+    sharex=False,
+    height=6,
+    aspect=.8
 )
 g.map(plt.axhline, y=0, ls='--', c='red', alpha=.2)
-g.map(sns.lineplot, "masker_speaker_loc", "normed_threshold", errorbar=("ci", 95), color="black")
-# g.map(sns.lineplot, "masker_speaker_loc", "threshold", errorbar=("ci", 95))
+# g.map(sns.lineplot, "masker_speaker_loc", "normed_threshold", errorbar=("ci", 95), color="black")
+g.map(sns.lineplot, "masker_speaker_loc_abs", "threshold", errorbar=None)
 # for ax in g.axes.flatten():
 #     ax_min = 1.5 if "distance" in ax.get_title() else -55
 #     ax_max = 12.5 if "distance" in ax.get_title() else 55
@@ -95,6 +106,10 @@ g.map(sns.lineplot, "masker_speaker_loc", "normed_threshold", errorbar=("ci", 95
 #     ax.set_ylim(-15, 3)
 g.add_legend()
 g.set_titles(template="{col_name}")
+title = f"Spatial unmasking thresholds in 3D"
+g.fig.subplots_adjust(top=0.85)
+g.fig.suptitle(title)
+# plt.savefig(title + ".svg", format="svg")
 cursor(hover=True)
 
 # NUMEROSITY JUDGEMENT ===============================================================================
@@ -109,7 +124,7 @@ def get_stim_type_diff(row):
 df_curr = df_nj[df_nj["round"] == 2]
 # df_curr = df_nj
 df_curr = df_curr.groupby(["subject_id", "plane", "stim_type", "stim_number"], as_index=False)["resp_number"].mean()
-df_curr["resp_diff"] = df_curr.apply(lambda row: get_stim_type_diff(row), axis=1)
+# df_curr["resp_diff"] = df_curr.apply(lambda row: get_stim_type_diff(row), axis=1)
 df_curr = df_curr[df_curr["stim_type"] == "forward"]
 g = sns.FacetGrid(
     df_curr,
@@ -119,7 +134,7 @@ g = sns.FacetGrid(
     # hue_order=hue_order_nj,
     # palette="copper"
 )
-g.map(sns.lineplot, "stim_number", "resp_diff")
+g.map(sns.lineplot, "stim_number", "resp_number")
 g.add_legend()
 # plt.ylim(1.8, 6.2)
 # plt.xlim(1.8, 6.2)
@@ -131,12 +146,19 @@ g = sns.FacetGrid(
     df_curr.groupby(["subject_id", "plane", "stim_type", "stim_number"], as_index=False)["resp_number"].mean(),
     col="plane",
     col_order=col_order,
-    # hue="stim_type"
+    # hue="stim_type",
+    height=6,
+    aspect=.8
 )
 g.map(sns.lineplot, "stim_number", "resp_number", errorbar="sd", color="black")
 add_grid_line_of_equality(g, task_name="nj")
 g.set_titles(template="{col_name}")
 g.add_legend()
+title = f"Numerosity judgement in 3D"
+g.fig.subplots_adjust(top=0.85)
+g.fig.suptitle(title)
+# plt.savefig(title + ".svg", format="svg")
+
 
 
 df_curr = df_nj[df_nj["round"] == 2]
@@ -227,14 +249,14 @@ for subject_id in df_curr.subject_id.unique():
 
 df_curr = df_nj[df_nj["round"] == 2]
 df_curr = df_curr[df_curr["stim_type"] == "forward"]
-df_curr = df_curr.groupby(["subject_id", "plane"], as_index=False)["nj_slope"].mean().sort_values(by="nj_slope")
+df_curr = df_curr.groupby(["subject_id", "plane"], as_index=False)["su_slope"].mean().sort_values(by="su_slope")
 g = sns.catplot(
     df_curr,
-    y="nj_slope",
+    y="su_slope",
     col="plane",
     col_order=col_order,
     hue="subject_id",
-    hue_order=hue_order_nj,
+    hue_order=hue_order_su,
     palette="copper",
     aspect=0.5,
     size=10
@@ -250,17 +272,18 @@ for subject_id in df_curr.subject_id.unique():
         # df_curr[df_curr.subject_id == subject_id],
         df_curr,
         col="plane",
-        row="stim_type",
+        # row="stim_type",
         hue="stim_number",
         palette="winter",
         col_order=col_order,
-        height=6,
+        height=4,
         aspect=0.8
     )
-    g.map(sns.regplot, "spectral_coverage", "error", scatter=False)
+    g.map(sns.regplot, "spectral_coverage_normed", "error", scatter=False)
     g.add_legend()
     g.set_titles(template="{col_name}")
-    title = f"Error vs spectral_coverage ({subject_id})"
+    # title = f"Error vs spectral_coverage ({subject_id})"
+    title = "Error vs spectral_coverage"
     g.fig.suptitle(title)
     # plt.savefig("figures/" + title + ".png")
     # plt.close()
@@ -272,14 +295,14 @@ df_curr = df_nj[df_nj["round"] == 2]
 # df_curr = df_curr[df_curr["stim_type"] == "forward"]
 df_curr = df_curr.groupby(["subject_id", "plane", "stim_type", "stim_number"], as_index=False)["spectral_coverage_slope"].mean()
 g = sns.FacetGrid(
-    df_curr,
+    df_curr[df_curr["stim_type"] == "forward"],
     palette="copper",
-    # hue="subject_id",
-    # hue_order=hue_order_nj,
+    hue="subject_id",
+    hue_order=hue_order_nj,
     col="plane",
     col_order=col_order
 )
-g.map(sns.pointplot, "stim_number", "spectral_coverage_slope", errorbar="sd")
+g.map(sns.stripplot, "stim_number", "spectral_coverage_slope")
 g.add_legend()
 cursor(hover=True)
 
