@@ -15,8 +15,8 @@ hue_order_nj = df_nj[
     (df_nj["round"] == 2) &
     (df_nj.plane == "horizontal") &
     (df_nj["stim_type"] == "forward")].groupby(
-    ["subject_id", "nj_slope"],
-    as_index=False)["nj_slope"].mean().sort_values(by="nj_slope")["subject_id"].values
+    ["subject_id", "nj_rmse"],
+    as_index=False)["nj_rmse"].mean().sort_values(by="nj_rmse", ascending=False)["subject_id"].values
 
 hue_order_su = df_nj[
     (df_nj["round"] == 2) &
@@ -266,43 +266,45 @@ cursor(hover=True)
 
 
 df_curr = df_nj[df_nj["round"] == 2]
-df_curr = df_curr[df_curr["stim_type"] == "forward"]
+# df_curr = df_curr[df_curr["stim_type"] == "forward"]
 for subject_id in df_curr.subject_id.unique():
     g = sns.FacetGrid(
-        # df_curr[df_curr.subject_id == subject_id],
-        df_curr,
+        df_curr[df_curr.subject_id == subject_id],
+        # df_curr,
         col="plane",
-        # row="stim_type",
+        row="stim_type",
         hue="stim_number",
         palette="winter",
         col_order=col_order,
+        # row_order=col_order,
         height=4,
         aspect=0.8
     )
-    g.map(sns.regplot, "spectral_coverage_normed", "error", scatter=False)
+    g.map(sns.regplot, "spectral_coverage_neg40", "resp_number", scatter=False)
     g.add_legend()
     g.set_titles(template="{col_name}")
-    # title = f"Error vs spectral_coverage ({subject_id})"
-    title = "Error vs spectral_coverage"
+    title = f"Dependence on spectral_coverage ({subject_id})"
+    # title = "Error vs spectral_coverage"
+    # title = "Dependence on spectral_coverage"
     g.fig.suptitle(title)
-    # plt.savefig("figures/" + title + ".png")
-    # plt.close()
-    plt.show()
+    plt.savefig("figures/" + title + ".png")
+    plt.close()
+    # plt.show()
 
 
 
 df_curr = df_nj[df_nj["round"] == 2]
-# df_curr = df_curr[df_curr["stim_type"] == "forward"]
+df_curr = df_curr[df_curr["stim_type"] == "forward"]
 df_curr = df_curr.groupby(["subject_id", "plane", "stim_type", "stim_number"], as_index=False)["spectral_coverage_slope"].mean()
 g = sns.FacetGrid(
     df_curr[df_curr["stim_type"] == "forward"],
     palette="copper",
-    hue="subject_id",
-    hue_order=hue_order_nj,
+    # hue="subject_id",
+    # hue_order=hue_order_nj,
     col="plane",
     col_order=col_order
 )
-g.map(sns.stripplot, "stim_number", "spectral_coverage_slope")
+g.map(sns.pointplot, "stim_number", "spectral_coverage_slope")
 g.add_legend()
 cursor(hover=True)
 

@@ -1,4 +1,3 @@
-import pandas as pd
 import scipy
 import numpy as np
 from sklearn.metrics import mean_squared_error
@@ -40,6 +39,10 @@ df_nj = df_nj[df_nj["round"] == 2]
 df_nj_group = df_nj.groupby(["subject_id", "plane"])
 df_performance["nj_slope"] = df_nj_group.apply(
     lambda row: get_slope(row.stim_number, row.resp_number)).reset_index(name='nj_slope')["nj_slope"]
+df_performance = df_nj_group.apply(
+    lambda row: get_rmse(row.stim_number, row.resp_number)).reset_index(name='nj_rmse')
+
 
 df_nj = df_nj.merge(df_performance[["subject_id", "plane", "la_power_exponent"]], on=["subject_id", "plane"])
+
 

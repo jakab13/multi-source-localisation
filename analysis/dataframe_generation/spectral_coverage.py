@@ -14,7 +14,7 @@ from analysis.dataframe_generation.post_processing import df_nj
 DIR = pathlib.Path(os.getcwd())
 tts_model = models["tts_models"][16]
 
-trial_dur = 0.6
+trial_dur = 1.2
 p_ref = 2e-5  # 20 μPa, the standard reference pressure for sound in air
 upper_freq = 11000  # upper frequency limit that carries information for speech
 col_order = ["horizontal", "vertical", "distance"]
@@ -87,7 +87,7 @@ def get_cochleagram(row):
 def get_spectral_coverage(row, dB_min):
     envs = get_cochleagram(row)
     coverage = np.where(envs < dB_min, 0, 1).sum() / envs.size
-    print(row.name, coverage)
+    print(dB_min, row.name, coverage)
     return coverage
 
 
@@ -125,13 +125,18 @@ df_nj["cochleagram"] = df_nj.apply(lambda row: get_cochleagram(row), axis=1)
 # df_nj["spectral_coverage_relative"] = df_nj.apply(lambda row: get_relative_spectral_coverage(row), axis=1)
 
 # df_nj["spectral_data"] = df_nj.apply(lambda row: get_spectral_data(row), axis=1)
-df_nj["spectral_coverage_-40"] = df_nj.apply(lambda row: get_spectral_coverage(row, -40), axis=1)
+for threshold in [20, 23, 24, 25, 30, 35, 40, 45, 46, 47,  50, 55]:
+    key = f"spectral_coverage_neg{threshold}"
+    df_nj.loc[df_nj.plane == "distance", key] = df_nj[df_nj.plane == "distance"].apply(
+        lambda row: get_spectral_coverage(row, -threshold), axis=1)
+
+# df_nj["spectral_coverage_-40"] = df_nj.apply(lambda row: get_spectral_coverage(row, -40), axis=1)
 
 for plane in df_nj.plane.unique():
     for stim_number in df_nj.stim_number.unique():
         for stim_type in df_nj.stim_type.unique():
             q = (df_nj.plane == plane) & (df_nj.stim_number == stim_number) & (df_nj.stim_type == stim_type)
-            df_nj.loc[q, "spectral_coverage_binned"] = pd.cut(df_nj.loc[q, "spectral_coverage"], 5,
+            df_nj.loc[q, "spectral_coverage_binned"] = pd.cut(df_nj.loc[q, "spectral_coverage_neg40"], 5,
                                                               labels=["lowest", "low", "mid", "high", "highest"])
 
 
@@ -160,26 +165,11 @@ def calculate_spectral_coverage_threshold():
     return df_spectral
 
 
-spectral_columns = [column for column in df_nj.columns if "spectral_coverage" in column]
+spectral_columns = [column for column in df_nj.columns if "spectral_coverage_neg" in column]
 df_spectral = df_nj.groupby(["plane", "stim_type", "stim_number"], as_index=False)[spectral_columns].std()
 df_thresholds = df_spectral.melt(id_vars=["plane", "stim_type", "stim_number"], value_vars=spectral_columns, var_name="threshold", value_name="std")
-df_thresholds["threshold"] = df_thresholds["threshold"].transform(lambda x: int(x[-3:]))
+df_thresholds["threshold"] = df_thresholds["threshold"].transform(lambda x: -int(x[-2:]))
 sns.lineplot(df_thresholds[df_thresholds.stim_type == "forward"], x="threshold", y="std", hue="plane")
-
-g = sns.FacetGrid(
-    df_thresholds,
-    col="plane",
-    row="stim_type",
-    hue="stim_number",
-    palette="winter",
-    col_order=col_order,
-    height=4,
-    aspect=0.8
-)
-g.map(sns.lineplot, "threshold", "std")
-g.add_legend()
-g.set_titles(template="{col_name}")
-plt.show()
 
 
 df_thresholds_max = df_thresholds.groupby(["plane", "stim_number", "stim_type"], as_index=False)["std"].max()
@@ -223,7 +213,7 @@ for stim_number in df_curr.stim_number.unique():
     # plt.close()
 
 
-fbank = slab.Filter.cos_filterbank(bandwidth=0.2, low_cutoff=20, samplerate=24414)
+fbank = slab.Filter.cos_filterbank(bandwidth=0.1, low_cutoff=20, high_cutoff=11000, samplerate=24414)
 freqs = fbank.filter_bank_center_freqs()
 cmap = matplotlib.cm.get_cmap('inferno')
 _, axis = plt.subplots()
@@ -234,3 +224,47 @@ axis.imshow(mesh, origin='lower', aspect='auto', cmap=cmap, interpolation='none'
 # cg.set_clim(vmin=75, vmax=90)
 axis.set(title='Cochleagram', xlabel='Time [sec]', ylabel='Frequency [Hz]')
 
+# PLOTTING
+
+
+def get_median_idx(rows):
+    median = rows.quantile(0.5, 'lower')
+    idx = rows.loc[rows == median].index[0]
+    return idx
+
+
+df_spectral_coverage_ids = df_nj[df_nj.stim_type == "forward"].groupby(["plane", "stim_number"], as_index=False)["spectral_coverage_neg30"].agg({
+    "idxmin": "idxmin",
+    "idxmax": "idxmax",
+    "idxmedian": lambda rows: get_median_idx(rows)
+}).melt(id_vars=["plane", "stim_number"],
+        value_vars=["idxmin", "idxmax", "idxmedian"],
+        var_name="idx_type",
+        value_name="idx"
+        )
+
+df_spectral_coverage_ids["idx_type"] = df_spectral_coverage_ids["idx_type"].apply(lambda x: x[3:])
+
+
+def plot_cochleagram(row, save=False, threshold=False):
+    cg = get_cochleagram(row)
+    _, axis = plt.subplots()
+    if threshold:
+        cg = np.where(cg < row["threshold"], 0, 1)
+        cmap = matplotlib.cm.get_cmap('Greys')
+        title = f"Cochleagram after threshold \n(n_stim={row.stim_number}, spec_cov={row.spectral_coverage:.2f})"
+    else:
+        cmap = matplotlib.cm.get_cmap('inferno')
+        title = f"Cochleagram \n(n_stim={row.stim_number}, spec_cov={row.spectral_coverage:.2f})"
+    axis.imshow(cg, origin='lower', aspect='auto', cmap=cmap, interpolation='none')
+    axis.set(title=title, xlabel='Time [sec]', ylabel='Frequency [Hz]')
+    if save:
+        title = title.rstrip()
+        print(title)
+        plt.savefig(f"figures/cochleagrams/{title}.png", dpi=400)
+        plt.close()
+    else:
+        plt.show()
+
+
+df_spectral_coverage_ids[df_spectral_coverage_ids.plane == "distance"]["idx"].apply(lambda idx: plot_cochleagram(df_nj.iloc[idx], save=True, threshold=True))
