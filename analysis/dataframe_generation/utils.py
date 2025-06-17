@@ -56,14 +56,21 @@ def add_line_of_equality(axes, *line_args, **line_kwargs):
 def add_grid_line_of_equality(g, task_name=None):
     task_name = task_name or g.data["task_name"].values[0]
     for ax in g.axes.flatten():
-        ax_min = ay_min = 1.5 if "distance" in ax.get_title() else -55
-        ax_max = ay_max = 12.5 if "distance" in ax.get_title() else 55
+        if "distance" in ax.get_title():
+            ax_min = ay_min = 1.5
+            ax_max = ay_max = 12.5
+        if "horizontal" in ax.get_title():
+            ax_min = ay_min = -55
+            ax_max = ay_max = 55
+        if "vertical" in ax.get_title():
+            ax_min = ay_min = -40
+            ax_max = ay_max = 40
         if task_name == "nj":
             ax_min = ay_min = 1.5
             ax_max = ay_max = 6.5
-        elif task_name == "su":
-            ay_min = -15
-            ay_max = 1
+        # elif task_name == "su":
+        #     ay_min = -15
+        #     ay_max = 1
         ax.set_xlim(ax_min, ax_max)
         ax.set_ylim(ay_min, ay_max)
         add_line_of_equality(ax, color="grey", ls="--", alpha=.3)

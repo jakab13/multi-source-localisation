@@ -7,7 +7,11 @@ import numpy as np
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from analysis.dataframe_generation.utils import add_grid_line_of_equality
-from analysis.dataframe_generation.post_processing import df_nj, df_la, df_su
+# from analysis.dataframe_generation.post_processing import df_nj, df_la, df_su
+
+df_la = pd.read_csv("DataFrames/localisation_accuracy.csv")
+df_su = pd.read_csv("DataFrames/spatial_unmasking.csv")
+df_nj = pd.read_csv("DataFrames/numerosity_judgement.csv")
 
 col_order = ["horizontal", "vertical", "distance"]
 
@@ -24,6 +28,10 @@ hue_order_su = df_nj[
     (df_nj["stim_type"] == "forward")].groupby(
     ["subject_id", "su_slope"],
     as_index=False)["su_slope"].mean().sort_values(by="su_slope")["subject_id"].values
+
+# sns.set_context("paper")
+# sns.set_style("whitegrid")
+sns.set_theme(context="paper", style="white", font_scale=1.2)
 
 # LOCALISATION ACCURACY =============
 df_curr = df_la[df_la["round"] == 2]
@@ -45,7 +53,9 @@ cursor(hover=True)
 
 
 df_curr = df_la[df_la["round"] == 2]
-df_curr = df_curr.groupby(["subject_id", "plane", "stim_loc"], as_index=False)["resp_loc"].mean()
+df_curr = df_curr.groupby(["subject_id", "plane", "stim_loc", "stim_type"], as_index=False)["resp_loc"].mean()
+# g = sns.FacetGrid(df_curr, col="plane", hue="stim_type", sharex=False, sharey=False, col_order=col_order)
+# g.map(sns.lineplot, "stim_loc", "resp_loc", errorbar="sd")
 g = sns.FacetGrid(df_curr, col="plane", sharex=False, sharey=False, col_order=col_order)
 g.map(sns.lineplot, "stim_loc", "resp_loc", errorbar="sd", color="black")
 add_grid_line_of_equality(g, task_name="la")
@@ -53,7 +63,42 @@ g.set_titles(template="{col_name}")
 g.set_xlabels(label="Presented location")
 g.set_ylabels(label='Perceived location')
 g.add_legend()
+title = f"Localisation accuracy in 3D (per stimulus type)"
+g.fig.subplots_adjust(top=0.85)
+g.fig.suptitle(title)
+# plt.savefig(f"figures/{title}.png", format="png", dpi=200)
 
+
+# ======== Subjects and average
+
+def plot_subjects_and_average(data, **kwargs):
+    ax = plt.gca()
+    # Individual subject lines
+    sns.lineplot(data=data, x="stim_loc", y="resp_loc", hue="subject_id", alpha=0.2, linewidth=0.7, legend=False, ax=ax,
+                 color="gray", errorbar=None, palette=gray_palette)
+    # Grand average
+    sns.lineplot( data=data, x="stim_loc", y="resp_loc", estimator="mean", errorbar=None, color="black", linewidth=3, ax=ax)
+
+
+df_curr = df_la[df_la["round"] == 2]
+unique_subjects = df_curr["subject_id"].unique()
+gray_palette = dict.fromkeys(unique_subjects, "gray")
+g = sns.FacetGrid(df_curr, col="plane", sharex=False, sharey=False, col_order=col_order)
+g.map_dataframe(plot_subjects_and_average)
+add_grid_line_of_equality(g)
+
+# Format plot
+g.set_titles(template="{col_name}")
+g.set_xlabels(label="Presented location")
+g.set_ylabels(label='Perceived location')
+g.add_legend()
+title = f"Localisation accuracy in 3D (subjects and average)"
+# g.fig.subplots_adjust(top=0.85)
+# g.fig.suptitle(title)
+plt.savefig(f"figures/{title}" + ".svg", format="svg", dpi=300)
+
+
+# ==========================================================
 
 df_curr = df_la[df_la["round"] == 2]
 g = sns.FacetGrid(
@@ -66,7 +111,10 @@ g = sns.FacetGrid(
 g.map(sns.regplot, "nj_slope", "rmse")
 g.add_legend()
 
+# =================================================================================================
 # SPATIAL UNMASKING ===============================================================================
+# =================================================================================================
+
 df_curr = df_su[df_su["round"] == 2]
 # df_curr = df_curr[df_curr["subject_id"] == "sub_109"]
 # df_curr = df_su
@@ -91,14 +139,14 @@ g = sns.FacetGrid(
     col_order=col_order,
     hue="subject_id",
     hue_order=hue_order_su,
-    palette="copper",
+    # palette="copper",
     sharex=False,
-    height=6,
-    aspect=.8
+    # height=6,
+    # aspect=.8
 )
-g.map(plt.axhline, y=0, ls='--', c='red', alpha=.2)
-# g.map(sns.lineplot, "masker_speaker_loc", "normed_threshold", errorbar=("ci", 95), color="black")
-g.map(sns.lineplot, "masker_speaker_loc_abs", "threshold", errorbar=None)
+# g.map(plt.axhline, y=0, ls='--', c='red', alpha=.2)
+g.map(sns.lineplot, "masker_speaker_loc", "normed_threshold", errorbar=("ci", 95))
+# g.map(sns.lineplot, "masker_speaker_loc_abs", "threshold", errorbar=None)
 # for ax in g.axes.flatten():
 #     ax_min = 1.5 if "distance" in ax.get_title() else -55
 #     ax_max = 12.5 if "distance" in ax.get_title() else 55
@@ -106,11 +154,35 @@ g.map(sns.lineplot, "masker_speaker_loc_abs", "threshold", errorbar=None)
 #     ax.set_ylim(-15, 3)
 g.add_legend()
 g.set_titles(template="{col_name}")
-title = f"Spatial unmasking thresholds in 3D"
+g.set_xlabels(label="Presented location [°]")
+g.set_ylabels(label='Target/Masker ratio [dB]')
+title = f"Spatial unmasking in 3D"
 g.fig.subplots_adjust(top=0.85)
 g.fig.suptitle(title)
-# plt.savefig(title + ".svg", format="svg")
+# plt.savefig(f"figures/{title}" + ".png", format="png", dpi=200)
 cursor(hover=True)
+
+
+def plot_subjects_and_average(data, **kwargs):
+    ax = plt.gca()
+    # Individual subject lines
+    sns.lineplot(data=data, x="masker_speaker_loc", y="normed_threshold", hue="subject_id", alpha=0.2, linewidth=0.7, legend=False, ax=ax,
+                 color="gray", errorbar=None, palette=gray_palette)
+    # Grand average
+    sns.lineplot(data=data, x="masker_speaker_loc", y="normed_threshold", estimator="mean", errorbar=None, color="black", linewidth=3, ax=ax)
+
+
+df_curr = df_su[df_su["round"] == 2]
+g = sns.FacetGrid( df_curr, col="plane", col_order=col_order, sharex=False)
+g.map_dataframe(plot_subjects_and_average)
+g.add_legend()
+g.set_titles(template="{col_name}")
+g.set_xlabels(label="Masker location [°]")
+g.set_ylabels(label='Target/Masker ratio [dB]')
+title = f"Spatial unmasking in 3D (subjects and average)"
+# g.fig.subplots_adjust(top=0.85)
+# g.fig.suptitle(title)
+# plt.savefig(f"figures/{title}" + ".svg", format="svg", dpi=300)
 
 # NUMEROSITY JUDGEMENT ===============================================================================
 def get_stim_type_diff(row):
@@ -146,18 +218,22 @@ g = sns.FacetGrid(
     df_curr.groupby(["subject_id", "plane", "stim_type", "stim_number"], as_index=False)["resp_number"].mean(),
     col="plane",
     col_order=col_order,
-    # hue="stim_type",
-    height=6,
-    aspect=.8
+    hue="stim_type",
+    # height=6,
+    # aspect=.8
 )
-g.map(sns.lineplot, "stim_number", "resp_number", errorbar="sd", color="black")
+g.map(sns.lineplot, "stim_number", "resp_number", errorbar="sd",
+      # color="black"
+      )
 add_grid_line_of_equality(g, task_name="nj")
 g.set_titles(template="{col_name}")
+g.set_xlabels(label="n presented")
+g.set_ylabels(label='n perceived')
 g.add_legend()
-title = f"Numerosity judgement in 3D"
-g.fig.subplots_adjust(top=0.85)
+title = f"Numerosity judgement in 3D (forward & reversed)"
+g.fig.subplots_adjust(top=0.8)
 g.fig.suptitle(title)
-# plt.savefig(title + ".svg", format="svg")
+plt.savefig(f"figures/{title}" + ".png", format="png", dpi=200)
 
 
 
@@ -188,6 +264,7 @@ g.map(sns.lineplot, "stim_number", "resp_number")
 g.add_legend()
 
 
+
 df_curr = df_nj[df_nj["round"] == 2]
 df_curr = df_curr[df_curr["stim_type"] == "forward"]
 df_curr = df_curr.sort_values(by="nj_slope")
@@ -201,19 +278,52 @@ g = sns.FacetGrid(
     palette="copper",
     col_order=col_order
 )
-g.map(sns.lineplot, "stim_number", "resp_number", errorbar=None, linewidth=2)
+g.map(sns.lineplot, "stim_number", "resp_number", errorbar=None, linewidth=2.)
 g.set(xticks=[2, 3, 4, 5, 6])
 g.set(yticks=[2, 3, 4, 5, 6])
 add_grid_line_of_equality(g)
-g.add_legend()
+# g.add_legend()
 g.set_titles(template="{col_name}")
 g.set_xlabels(label="n presented")
 g.set_ylabels(label='n perceived')
 plt.ylim(1.8, 6.2)
 plt.xlim(1.8, 6.2)
+title = "Numerosity Judgement in 3D (per subject)"
 g.fig.subplots_adjust(top=0.85)
-g.fig.suptitle("Auditory Numerosity Judgement in 3D")
+g.fig.suptitle(title)
+# plt.savefig(f"figures/{title}" + ".png", format="png", dpi=200)
 cursor(hover=True)
+
+
+def plot_subjects_and_average(data, **kwargs):
+    ax = plt.gca()
+    # Individual subject lines
+    sns.lineplot(data=data, x="stim_number", y="resp_number", hue="subject_id", alpha=0.2, linewidth=0.7, legend=False, ax=ax,
+                 color="gray", errorbar=None, palette=gray_palette)
+    # Grand average
+    sns.lineplot(data=data, x="stim_number", y="resp_number", estimator="mean", errorbar=None, color="black", linewidth=3, ax=ax)
+
+
+df_curr = df_nj[df_nj["round"] == 2]
+df_curr = df_curr[df_curr["stim_type"] == "forward"]
+df_curr = df_curr.sort_values(by="nj_slope")
+g = sns.FacetGrid( df_curr, col="plane", col_order=col_order)
+g.map_dataframe(plot_subjects_and_average)
+g.set(xticks=[2, 3, 4, 5, 6])
+g.set(yticks=[2, 3, 4, 5, 6])
+add_grid_line_of_equality(g)
+# g.add_legend()
+g.set_titles(template="{col_name}")
+g.set_xlabels(label="n presented")
+g.set_ylabels(label='n perceived')
+plt.ylim(1.8, 6.2)
+plt.xlim(1.8, 6.2)
+title = "Numerosity Judgement in 3D (subjects and average)"
+# g.fig.subplots_adjust(top=0.85)
+# g.fig.suptitle(title)
+plt.savefig(f"figures/{title}" + ".svg", format="svg", dpi=300)
+
+
 
 
 df_curr = df_nj[df_nj["round"] == 2]
@@ -287,7 +397,7 @@ for subject_id in df_curr.subject_id.unique():
     # title = "Error vs spectral_coverage"
     # title = "Dependence on spectral_coverage"
     g.fig.suptitle(title)
-    plt.savefig("figures/" + title + ".png")
+    # plt.savefig("figures/" + title + ".png")
     plt.close()
     # plt.show()
 

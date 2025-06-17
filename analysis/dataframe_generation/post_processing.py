@@ -96,13 +96,18 @@ def get_su_norm_to_max_threshold(row):
     collocated_threshold = None
     if row.plane == "horizontal" or row.plane == "vertical":
         collocated_threshold = df_su[
-            (df_su.plane == row.plane) & (df_su.masker_speaker_loc == 0.0)]["threshold"]
+            (df_su.subject_id == row.subject_id) &
+            (df_su.plane == row.plane) &
+            (df_su.masker_speaker_loc == 0.0)]["threshold"]
     elif row.plane == "distance":
         collocated_threshold = df_su[
-            (df_su.plane == row.plane) & (df_su.masker_speaker_loc == 7.0)]["threshold"]
+            (df_su.subject_id == row.subject_id) &
+            (df_su.plane == row.plane) &
+            (df_su.masker_speaker_loc == 7.0)]["threshold"]
     # max_threshold = df_su.loc[max_threshold_idx]["threshold"]
     # normed_threshold = row["threshold"] - max_threshold
     collocated_threshold = collocated_threshold.values.mean()
+    # print(collocated_threshold)
     normed_threshold = row["threshold"] - collocated_threshold
     return normed_threshold
 

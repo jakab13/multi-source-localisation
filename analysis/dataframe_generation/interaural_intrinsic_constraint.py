@@ -15,7 +15,7 @@ import psignifit as ps
 
 # ==============================================================
 
-output_path = "interaural_intrinsic_constraint_20.csv"
+output_path = "interaural_intrinsic_constraint_23.csv"
 subject_id = "jakab"
 standard_cue = "ild"  # itd or ild or both
 comparison_cue = "ild"  # itd or ild or both
@@ -75,7 +75,7 @@ def azimuth_to_ild(azimuth, frequency=2000, ils=None):
 
 
 ils = pickle.load(open('ils_jakab.pickle', 'rb'))
-isi = 0.2
+isi = 2
 stim_name = stim_type + "_" + str(centre_frequency)
 
 df = pd.DataFrame(columns=[
@@ -607,3 +607,5 @@ print(df_count_check[df_count_check["Unnamed: 0"] < 300]["Unnamed: 0"].to_string
 #     stairs.add_response(int(not response))  # initiates calculation of next stimulus value
 #     stairs.plot()
 # print(stairs.threshold())
+
+
