@@ -6,7 +6,7 @@ import seaborn as sns
 import datetime as dt
 import numpy as np
 import ast
-from analysis.dataframe_generation.utils import creation_date
+from analysis.dataframe_generation.utils import creation_date, country_converter
 
 pd.options.mode.chained_assignment = None
 sns.set_theme()
@@ -26,22 +26,6 @@ columns_nj = ["subject_id", "round", "datetime_c", "plane", "stim_type", "stim_n
 df_la = pd.DataFrame(columns=columns_la)
 df_su = pd.DataFrame(columns=columns_su)
 df_nj = pd.DataFrame(columns=columns_nj)
-
-country_converter = {
-    0: "Belgium",
-    1: "Britain",
-    2: "Congo",
-    3: "Cuba",
-    4: "Japan",
-    5: "Mali",
-    6: "Oman",
-    7: "Peru",
-    8: "Sudan",
-    9: "Syria",
-    10: "Togo",
-    11: "Tonga",
-    12: "Yemen",
-}
 
 for subject_id, results_file_list in results_files.items():
     subject_idx = int(subject_id[4:]) if "collocated" not in subject_id else int(subject_id[4:7])

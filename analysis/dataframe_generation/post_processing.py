@@ -72,7 +72,7 @@ df_su["masker_speaker_loc"] = df_su.apply(lambda x: get_speaker_loc(x), axis=1)
 
 
 df_la.loc[(df_la.plane == "horizontal") & (df_la.stim_loc == 17.5) & (df_la.ff_wiring == "modified"), "threshold"] = None
-df_su.loc[(df_su.plane == "vertical") & (df_su.masker_speaker_loc == 0.0) & (df_su.ff_wiring == "modified"), "threshold"] += 3
+# df_su.loc[(df_su.plane == "vertical") & (df_su.masker_speaker_loc == 0.0) & (df_su.ff_wiring == "modified"), "threshold"] += 3
 # df_su.loc[(df_su.plane == "horizontal") & (df_su.masker_speaker_loc == 17.5) & (df_su.ff_wiring == "modified"), "masker_speaker_loc"] = 8.75
 df_su.loc[(df_su.plane == "horizontal") & (df_su.masker_speaker_loc == 17.5) & (df_su.ff_wiring == "modified"), "masker_speaker_loc"] = None
 
@@ -96,12 +96,12 @@ def get_su_norm_to_max_threshold(row):
     collocated_threshold = None
     if row.plane == "horizontal" or row.plane == "vertical":
         collocated_threshold = df_su[
-            (df_su.subject_id == row.subject_id) &
+            # (df_su.subject_id == row.subject_id) &
             (df_su.plane == row.plane) &
             (df_su.masker_speaker_loc == 0.0)]["threshold"]
     elif row.plane == "distance":
         collocated_threshold = df_su[
-            (df_su.subject_id == row.subject_id) &
+            # (df_su.subject_id == row.subject_id) &
             (df_su.plane == row.plane) &
             (df_su.masker_speaker_loc == 7.0)]["threshold"]
     # max_threshold = df_su.loc[max_threshold_idx]["threshold"]
@@ -132,7 +132,7 @@ df_nj["error"] = df_nj["resp_number"] - df_nj["stim_number"]
 df_nj["abs_error"] = df_nj["error"].abs()
 
 df_la["stim_loc_abs"] = df_la["stim_loc"].abs()
-df_la[df_la.plane == "distance"]["stim_loc_abs"] = (df_la[df_la.plane == "distance"]["stim_loc"] - 7).abs()
+df_la.loc[df_la.plane == "distance", "stim_loc_abs"] = (df_la[df_la.plane == "distance"]["stim_loc"] - 7).abs()
 df_su["masker_speaker_loc_abs"] = df_su["masker_speaker_loc"].abs()
 df_su.loc[df_su.plane == "distance", "masker_speaker_loc_abs"] = (df_su[df_su.plane == "distance"]["masker_speaker_loc_abs"] - 7).abs()
 

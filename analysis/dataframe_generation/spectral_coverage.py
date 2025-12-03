@@ -9,7 +9,22 @@ import matplotlib
 import seaborn as sns
 import pycochleagram.cochleagram as cgram
 from stimuli.tts_models import models
-from analysis.dataframe_generation.post_processing import df_nj
+import ast
+# from analysis.dataframe_generation.post_processing import df_nj
+
+# df_nj = pd.read_csv("DataFrames/numjudge_post_processed_performance.csv")
+
+df_nj = pd.read_csv("DataFrames/numerosity_judgement_spectral_coverage_otsu.csv")
+
+def convert_cell_to_list(row, column_name):
+    output = row[column_name]
+    if type(row[column_name]) == str:
+        output = ast.literal_eval(row[column_name])
+    return output
+
+
+for column_name in ["stim_talker_ids", "speaker_ids", "stim_country_ids"]:
+    df_nj[column_name] = df_nj.apply(lambda row: convert_cell_to_list(row, column_name), axis=1)
 
 DIR = pathlib.Path(os.getcwd())
 tts_model = models["tts_models"][16]
@@ -18,6 +33,26 @@ trial_dur = 1.2
 p_ref = 2e-5  # 20 μPa, the standard reference pressure for sound in air
 upper_freq = 11000  # upper frequency limit that carries information for speech
 col_order = ["horizontal", "vertical", "distance"]
+
+hrtf = slab.HRTF.kemar()
+
+
+def spectral_coverage(sound, threshold=-50, low_cutoff=20, high_cutoff=None):
+    def otsu_var(data, th):  # helper function to compute Otsu interclass variance
+        return np.nansum(
+            [np.mean(cls) * np.var(data, where=cls) for cls in [data >= th, data < th]])
+
+    fbank = slab.Filter.cos_filterbank(low_cutoff=low_cutoff, high_cutoff=high_cutoff,
+                                  filter_width_factor=0.75,
+                                  pass_bands=True, samplerate=sound.samplerate)
+    subbands = fbank.apply(sound.channel(0))
+    envs = subbands.envelope(kind='dB').data
+    if threshold == 'otsu':
+        threshold = min(
+            range(int(np.min(envs)) + 1, int(np.max(envs))),
+            key=lambda th: otsu_var(envs, th))
+    coverage = np.where(envs > threshold, 1, 0).sum() / envs.size
+    return coverage, threshold
 
 
 def get_filename(stim_type, talker_id, country_id, distance=None):
@@ -43,21 +78,37 @@ def get_sub_DIR(plane, stim_type):
     return sub_DIR
 
 
-def compose_trial(sub_DIR, talker_ids, country_ids, distances, stim_type):
+def filter_cathedral_noise(sound):
+    sound = sound.filter(200, kind="hp")
+    sound = sound.filter((266, 344), kind="bs")
+    sound = sound.filter(4000, kind="lp")
+    return sound
+
+
+def compose_trial(sub_DIR, talker_ids, country_ids, speaker_ids, stim_type):
     trial_composition = list()
+    distances = [float(s + 2) for s in speaker_ids] if row["plane"] == "distance" else None
     for n in range(len(talker_ids)):
         talker_id = talker_ids[n]
         country_id = country_ids[n]
+        speaker_id = speaker_ids[n]
         distance = distances[n] if distances is not None else None
         filename = get_filename(stim_type, talker_id, country_id, distance)
         signal = slab.Sound(sub_DIR / filename)
         if distances is None:
             signal.level -= 10
-        trial_composition.append(signal.resize(trial_dur))
+        else:
+            signal = filter_cathedral_noise(signal)
+
+        # TODO filter HRTF based on location
+
+        filt = hrtf.interpolate(azimuth, elevation)
+        signal_hrtf = filt.apply(signal)
+        trial_composition.append(signal_hrtf.resize(trial_dur))
     sound = sum(trial_composition)
     sound = slab.Sound(sound.data.mean(axis=1), samplerate=sound.samplerate)
     sound = sound.resample(24414)
-    sound = sound.aweight()
+    sound = sound.aweight() if distances is None else sound
     return sound
 
 
@@ -65,17 +116,16 @@ def get_sound(row):
     talker_ids = row["stim_talker_ids"]
     speaker_ids = row["speaker_ids"]
     country_ids = row["stim_country_ids"]
-    distances = [float(s + 2) for s in speaker_ids] if row["plane"] == "distance" else None
     stim_type = "countries_forward" if row["stim_type"] == "forward" else "countries_reversed"
     sub_DIR = get_sub_DIR(row["plane"], stim_type)
-    sound = compose_trial(sub_DIR, talker_ids, country_ids, distances, stim_type)
+    sound = compose_trial(sub_DIR, talker_ids, country_ids, speaker_ids, stim_type)
     return sound
 
 
-def get_spectral_data(row):
-    sound = slab.Sound(row["sound_data"], samplerate=24414)
-    freqs, times, power = sound.spectrogram(show=False)
-    return [freqs, times, power]
+# def get_spectral_data(row):
+#     sound = slab.Sound(row["sound_data"], samplerate=24414)
+#     freqs, times, power = sound.spectrogram(show=False)
+#     return [freqs, times, power]
 
 
 def get_cochleagram(row):
@@ -84,11 +134,26 @@ def get_cochleagram(row):
     return cg
 
 
-def get_spectral_coverage(row, dB_min):
+def get_spectral_coverage_cgram(row, dB_min):
     envs = get_cochleagram(row)
     coverage = np.where(envs < dB_min, 0, 1).sum() / envs.size
     print(dB_min, row.name, coverage)
     return coverage
+
+
+def get_spectral_coverage_slab(row):
+    sound = get_sound(row)
+    threshold = -55 if row["plane"] == "distance" else -58
+    coverage = sound.spectral_coverage(threshold=threshold, high_cutoff=11000)
+    print(row.name)
+    return coverage
+
+
+def get_spectral_coverage_local(row, threshold):
+    sound = get_sound(row)
+    _coverage, _threshold = spectral_coverage(sound, threshold=threshold, high_cutoff=11000)
+    print(row.name, _threshold, _coverage)
+    return _coverage, _threshold
 
 
 # def get_spectral_coverage(row):
@@ -117,9 +182,9 @@ def get_relative_spectral_coverage(row):
     return relative_spectral_coverage
 
 
-df_nj = df_nj[df_nj["round"] == 2]
-df_nj["sound_data"] = df_nj.apply(lambda row: get_sound(row), axis=1)
-df_nj["cochleagram"] = df_nj.apply(lambda row: get_cochleagram(row), axis=1)
+# df_nj = df_nj[df_nj["round"] == 2]
+# df_nj["sound_data"] = df_nj.apply(lambda row: get_sound(row), axis=1)
+# df_nj["cochleagram"] = df_nj.apply(lambda row: get_cochleagram(row), axis=1)
 
 # df_nj["sound_data"] = df_nj.apply(lambda row: get_sound(row), axis=1)
 # df_nj["spectral_coverage_relative"] = df_nj.apply(lambda row: get_relative_spectral_coverage(row), axis=1)
@@ -128,16 +193,23 @@ df_nj["cochleagram"] = df_nj.apply(lambda row: get_cochleagram(row), axis=1)
 for threshold in [20, 23, 24, 25, 30, 35, 40, 45, 46, 47,  50, 55]:
     key = f"spectral_coverage_neg{threshold}"
     df_nj.loc[df_nj.plane == "distance", key] = df_nj[df_nj.plane == "distance"].apply(
-        lambda row: get_spectral_coverage(row, -threshold), axis=1)
+        lambda row: get_spectral_coverage_cgram(row, -threshold), axis=1)
 
 # df_nj["spectral_coverage_-40"] = df_nj.apply(lambda row: get_spectral_coverage(row, -40), axis=1)
+df_nj["spectral_coverage"] = df_nj.apply(lambda row: get_spectral_coverage_slab(row), axis='columns')
+# df_nj[["spectral_coverage_otsu", "threshold_otsu"]] = df_nj.apply(lambda row: get_spectral_coverage_local(row, "otsu"),
+#                                                                   axis='columns', result_type='expand')
+
+df_nj.loc[df_nj.plane == "distance", ["spectral_coverage_otsu", "threshold_otsu"]] = \
+    df_nj[df_nj.plane == "distance"].apply(lambda row: get_spectral_coverage_local(row, "otsu"), axis='columns')
+
 
 for plane in df_nj.plane.unique():
     for stim_number in df_nj.stim_number.unique():
         for stim_type in df_nj.stim_type.unique():
             q = (df_nj.plane == plane) & (df_nj.stim_number == stim_number) & (df_nj.stim_type == stim_type)
-            df_nj.loc[q, "spectral_coverage_binned"] = pd.cut(df_nj.loc[q, "spectral_coverage_neg40"], 5,
-                                                              labels=["lowest", "low", "mid", "high", "highest"])
+            df_nj.loc[q, "spectral_coverage_binned"] = pd.cut(df_nj.loc[q, "spectral_coverage_neg40"], 3,
+                                                              labels=["low", "mid", "high"])
 
 
 for subject_id in df_nj.subject_id.unique():
@@ -147,8 +219,9 @@ for subject_id in df_nj.subject_id.unique():
                 q = (df_nj.subject_id == subject_id) & (df_nj.plane == plane) & (df_nj.stim_number == stim_number) & (df_nj.stim_type == stim_type)
                 df_curr = df_nj[q]
                 if len(df_curr) > 0:
-                    x = df_curr.spectral_coverage_normed.values.astype(float)
-                    y = df_curr.error.values.astype(float)
+                    # x = df_curr.spectral_coverage_normed.values.astype(float)
+                    x = df_curr.spectral_coverage_neg40.values.astype(float)
+                    y = df_curr.resp_number.values.astype(float)
                     reg = scipy.stats.linregress(x, y)
                     df_nj.loc[q, "spectral_coverage_slope"] = reg.slope
 
@@ -156,7 +229,7 @@ for subject_id in df_nj.subject_id.unique():
 def calculate_spectral_coverage_threshold():
     df_spectral = pd.DataFrame(columns=["dB_min", "plane", "std"])
     for dB_min in [85, 86, 87, 88, 89, 90]:
-        df_nj["spectral_coverage"] = df_nj.apply(lambda row: get_spectral_coverage(row, dB_min), axis=1)
+        df_nj["spectral_coverage"] = df_nj.apply(lambda row: get_spectral_coverage_cgram(row, dB_min), axis=1)
         df_curr = df_nj.groupby(["plane"], as_index=False)["spectral_coverage"].std()
         df_curr = df_curr.rename(columns={"spectral_coverage": "std"})
         df_curr["dB_min"] = dB_min

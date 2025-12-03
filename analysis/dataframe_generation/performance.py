@@ -1,10 +1,15 @@
 import scipy
 import numpy as np
 from sklearn.metrics import mean_squared_error
-from analysis.dataframe_generation.post_processing import df_nj, df_la, df_su
+import pandas as pd
+# from analysis.dataframe_generation.post_processing import df_nj, df_la, df_su
 
+df_la = pd.read_csv("DataFrames/locaaccu_post_processed.csv")
+df_su = pd.read_csv("DataFrames/spatmask_post_processed.csv")
+df_nj = pd.read_csv("DataFrames/numjudge_post_processed.csv")
 
 def get_slope(presented, perceived):
+    # print(presented, perceived)
     linreg = scipy.stats.linregress(presented, perceived)
     slope = linreg.slope
     return slope
@@ -33,16 +38,19 @@ df_su = df_su[df_su["round"] == 2]
 df_su = df_su.dropna(subset=["masker_speaker_loc"])
 df_su_group = df_su.groupby(["subject_id", "plane"])
 df_performance["su_slope"] = df_su_group.apply(
-    lambda row: get_slope(row.masker_speaker_loc_abs, row.threshold)).reset_index(name='su_slope')["su_slope"]
+    lambda row: get_slope(row.masker_speaker_loc_abs, row.normed_threshold)).reset_index(name='su_slope')["su_slope"]
 
 df_nj = df_nj[df_nj["round"] == 2]
 df_nj_group = df_nj.groupby(["subject_id", "plane"])
 df_performance["nj_slope"] = df_nj_group.apply(
     lambda row: get_slope(row.stim_number, row.resp_number)).reset_index(name='nj_slope')["nj_slope"]
-df_performance = df_nj_group.apply(
-    lambda row: get_rmse(row.stim_number, row.resp_number)).reset_index(name='nj_rmse')
+df_performance["nj_rmse"] = df_nj_group.apply(
+    lambda row: get_rmse(row.stim_number, row.resp_number)).reset_index(name='nj_rmse')["nj_rmse"]
 
+df_performance = df_performance.merge(df_su_group["normed_threshold"].mean().reset_index(name="su_mean_threshold"), on=["subject_id", "plane"])
 
-df_nj = df_nj.merge(df_performance[["subject_id", "plane", "la_power_exponent"]], on=["subject_id", "plane"])
+df_nj = df_nj.merge(df_performance, on=["subject_id", "plane"])
 
-
+df_la.to_csv("DataFrames/locaaccu_post_processed_performance.csv")
+df_su.to_csv("DataFrames/spatmask_post_processed_performance.csv")
+df_nj.to_csv("DataFrames/numjudge_post_processed_performance.csv")

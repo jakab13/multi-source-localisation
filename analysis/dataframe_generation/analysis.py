@@ -125,7 +125,7 @@ for subject_id in df_curr.subject_id.unique():
         col_order=col_order,
         sharex=False
     )
-    g.map(sns.lineplot, "masker_speaker_loc", "normed_threshold")
+    g.map(sns.lineplot, "masker_speaker_loc", "threshold")
     g.add_legend()
     plt.title(subject_id)
     plt.show()
@@ -138,14 +138,14 @@ g = sns.FacetGrid(
     col="plane",
     col_order=col_order,
     hue="subject_id",
-    hue_order=hue_order_su,
+    # hue_order=hue_order_su,
     # palette="copper",
     sharex=False,
     # height=6,
     # aspect=.8
 )
 # g.map(plt.axhline, y=0, ls='--', c='red', alpha=.2)
-g.map(sns.lineplot, "masker_speaker_loc", "normed_threshold", errorbar=("ci", 95))
+g.map(sns.lineplot, "masker_speaker_loc", "threshold", errorbar=("ci", 95))
 # g.map(sns.lineplot, "masker_speaker_loc_abs", "threshold", errorbar=None)
 # for ax in g.axes.flatten():
 #     ax_min = 1.5 if "distance" in ax.get_title() else -55
@@ -211,29 +211,39 @@ g.add_legend()
 # plt.ylim(1.8, 6.2)
 # plt.xlim(1.8, 6.2)
 
+def plot_subjects_and_average(data, **kwargs):
+    ax = plt.gca()
+    c = kwargs["color"]
+    unique_subjects = data["subject_id"].unique()
+    palette = dict.fromkeys(unique_subjects, c)
+    # Individual subject lines
+    sns.lineplot(data=data, x="stim_number", y="resp_number", hue="subject_id", alpha=0.2, linewidth=0.7, legend=False, ax=ax,
+                 color=c, palette=palette, errorbar=None)
+    # Grand average
+    sns.lineplot(data=data, x="stim_number", y="resp_number", estimator="mean", errorbar=None, linewidth=3, ax=ax, color=kwargs["color"], label=data.stim_type.unique()[0])
+
 
 df_curr = df_nj[df_nj["round"] == 2]
 # df_curr = df_curr[df_curr["stim_type"] == "forward"]
 g = sns.FacetGrid(
-    df_curr.groupby(["subject_id", "plane", "stim_type", "stim_number"], as_index=False)["resp_number"].mean(),
+    # df_curr.groupby(["subject_id", "plane", "stim_type", "stim_number"], as_index=False)["resp_number"].mean(),
+    df_curr,
     col="plane",
     col_order=col_order,
     hue="stim_type",
     # height=6,
     # aspect=.8
 )
-g.map(sns.lineplot, "stim_number", "resp_number", errorbar="sd",
-      # color="black"
-      )
+g.map_dataframe(plot_subjects_and_average)
 add_grid_line_of_equality(g, task_name="nj")
 g.set_titles(template="{col_name}")
 g.set_xlabels(label="n presented")
 g.set_ylabels(label='n perceived')
 g.add_legend()
 title = f"Numerosity judgement in 3D (forward & reversed)"
-g.fig.subplots_adjust(top=0.8)
-g.fig.suptitle(title)
-plt.savefig(f"figures/{title}" + ".png", format="png", dpi=200)
+# g.fig.subplots_adjust(top=0.8)
+# g.fig.suptitle(title)
+plt.savefig(f"figures/{title}" + ".svg", format="svg", dpi=300)
 
 
 
@@ -298,8 +308,9 @@ cursor(hover=True)
 def plot_subjects_and_average(data, **kwargs):
     ax = plt.gca()
     # Individual subject lines
+    palette = dict.fromkeys(unique_subjects, )
     sns.lineplot(data=data, x="stim_number", y="resp_number", hue="subject_id", alpha=0.2, linewidth=0.7, legend=False, ax=ax,
-                 color="gray", errorbar=None, palette=gray_palette)
+                 color="gray", errorbar=None, palette=palette)
     # Grand average
     sns.lineplot(data=data, x="stim_number", y="resp_number", estimator="mean", errorbar=None, color="black", linewidth=3, ax=ax)
 
@@ -321,7 +332,7 @@ plt.xlim(1.8, 6.2)
 title = "Numerosity Judgement in 3D (subjects and average)"
 # g.fig.subplots_adjust(top=0.85)
 # g.fig.suptitle(title)
-plt.savefig(f"figures/{title}" + ".svg", format="svg", dpi=300)
+# plt.savefig(f"figures/{title}" + ".svg", format="svg", dpi=300)
 
 
 
@@ -379,8 +390,8 @@ df_curr = df_nj[df_nj["round"] == 2]
 # df_curr = df_curr[df_curr["stim_type"] == "forward"]
 for subject_id in df_curr.subject_id.unique():
     g = sns.FacetGrid(
-        df_curr[df_curr.subject_id == subject_id],
-        # df_curr,
+        # df_curr[df_curr.subject_id == subject_id],
+        df_curr,
         col="plane",
         row="stim_type",
         hue="stim_number",
@@ -398,30 +409,56 @@ for subject_id in df_curr.subject_id.unique():
     # title = "Dependence on spectral_coverage"
     g.fig.suptitle(title)
     # plt.savefig("figures/" + title + ".png")
-    plt.close()
+    # plt.close()
     # plt.show()
 
 
 
 df_curr = df_nj[df_nj["round"] == 2]
-df_curr = df_curr[df_curr["stim_type"] == "forward"]
+# df_curr = df_curr[df_curr["stim_type"] == "forward"]
 df_curr = df_curr.groupby(["subject_id", "plane", "stim_type", "stim_number"], as_index=False)["spectral_coverage_slope"].mean()
 g = sns.FacetGrid(
-    df_curr[df_curr["stim_type"] == "forward"],
-    palette="copper",
+    # df_curr[df_curr["stim_type"] == "forward"],
+    df_curr,
+    # palette="copper",
     # hue="subject_id",
     # hue_order=hue_order_nj,
     col="plane",
+    hue="stim_type",
     col_order=col_order
 )
-g.map(sns.pointplot, "stim_number", "spectral_coverage_slope")
+g.map(sns.barplot, "stim_number", "spectral_coverage_slope", errorbar=("ci", 95))
 g.add_legend()
 cursor(hover=True)
 
 
+
+df_curr = df_nj[df_nj["round"] == 2]
+# df_curr = df_curr[df_curr["stim_type"] == "forward"]
+df_curr = df_curr.groupby(["subject_id", "plane", "stim_type", "stim_number"], as_index=False)["spectral_coverage_slope"].mean()
+g = sns.catplot(
+    df_curr,
+    x="stim_number",
+    y="spectral_coverage_slope",
+    errorbar=("ci", 95),
+    col="plane",
+    col_order=col_order,
+    kind="bar",
+    color="lightgray",
+    # hue="stim_type"
+)
+g.set_xticklabels([2, 3, 4, 5, 6])
+g.set_titles(template="{col_name}")
+g.set_xlabels(label="n presented")
+g.set_ylabels(label='Spectrotemporal Dependence')
+title = 'Spectrotemporal Dependence in 3D'
+plt.savefig(f"figures/{title}" + ".svg", format="svg", dpi=300)
+
+
+
 df_curr = df_nj[df_nj["round"] == 2]
 df_curr = df_curr[df_curr["stim_type"] == "forward"]
-sns.displot(df_curr, x="spectral_coverage", hue="stim_number", kind="kde", col="plane", palette="winter", col_order=col_order)
+sns.displot(df_curr, x="spectral_coverage", hue="plane", kind="kde", col="stim_number", palette="winter", col_order=col_order)
 g.add_legend()
 cursor(hover=True)
 
