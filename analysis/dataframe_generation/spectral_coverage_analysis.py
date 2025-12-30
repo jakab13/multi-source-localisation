@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 
 # --- 1. Load data ---
-df = pd.read_csv("Dataframes/numerosity_judgement_spectral_coverage_otsu.csv")
+df = pd.read_csv("Dataframes/numerosity_judgement_spectral_coverage_otsu_2.csv")
 
 df = df[~(df.resp_number == 1)]
 
@@ -25,8 +25,8 @@ subj_means = (
                 "stim_type",
                 "resp_number"])
     .agg(
-        spectral_coverage=("spectral_coverage", "mean"),
-        n_trials=("spectral_coverage", "size")  # how many rows went into that mean
+        spectral_coverage_2=("spectral_coverage_2", "mean"),
+        n_trials=("spectral_coverage_2", "size")  # how many rows went into that mean
     )
     .reset_index()
 )
@@ -37,7 +37,7 @@ subj_means["resp_number"] = subj_means["resp_number"].astype(int).astype("catego
 
 group_means = (
     df.groupby(["plane", "stim_number", "resp_number"], as_index=False)
-    ["spectral_coverage"]
+    ["spectral_coverage_2"]
     .mean()
 )
 
@@ -46,7 +46,7 @@ group_means = (
 # =========================================
 
 # assume subj_means is already computed and contains:
-# plane, stim_number (category or int), resp_number, spectral_coverage, n_trials
+# plane, stim_number (category or int), resp_number, spectral_coverage_2, n_trials
 
 # Make sure stim_number is categorical (for ordering), then get numeric codes
 subj_means["stim_number"] = subj_means["stim_number"].astype(int).astype("category")
@@ -82,9 +82,9 @@ g = sns.relplot(
     col="plane",
     col_order=planes_of_interest,
     x="x_jittered",
-    y="spectral_coverage",
+    y="spectral_coverage_2",
     hue="resp_number",
-    style="stim_type",
+    row="stim_type",
     size="n_trials",
     sizes=(10, 300),
     alpha=0.5,
@@ -109,7 +109,7 @@ g.set_axis_labels("Stimulus number (stim_number)", "Spectral coverage (subject m
 g.set_titles("Plane: {col_name}")
 g._legend.set_title("resp_number / n_trials")
 
-# g.fig.savefig("numerosity_spectral_coverage.svg", format="svg", bbox_inches="tight")
+# g.fig.savefig("numerosity_spectral_coverage_2.svg", format="svg", bbox_inches="tight")
 
 # plt.tight_layout()
 plt.show()
@@ -122,49 +122,49 @@ coef_rows = []
 
 for plane in planes_of_interest:
     for stim in sorted(df["stim_number"].unique()):
-    # for stim_type in df["stim_type"].unique():
-        subset = df[(df["plane"] == plane) & (df["stim_number"] == stim)]
-        # Minimum data requirements
-        if subset["subject_id"].nunique() < 2 or len(subset) < 10:
-            continue
+        for stim_type in df["stim_type"].unique():
+            subset = df[(df["plane"] == plane) & (df["stim_number"] == stim)]
+            # Minimum data requirements
+            if subset["subject_id"].nunique() < 2 or len(subset) < 10:
+                continue
 
-        # Mixed model
-        md = smf.mixedlm(
-            "resp_number ~ spectral_coverage + stim_type",
-            subset,
-            groups=subset["subject_id"]
-        )
+            # Mixed model
+            md = smf.mixedlm(
+                "resp_number ~ spectral_coverage_2 + stim_type",
+                subset,
+                groups=subset["subject_id"]
+            )
 
-        try:
-            mdf = md.fit(reml=False)
-        except Exception as e:
-            print(f"Model failed for plane={plane}, stim={stim}: {e}")
-            continue
+            try:
+                mdf = md.fit(reml=False)
+            except Exception as e:
+                print(f"Model failed for plane={plane}, stim={stim}: {e}")
+                continue
 
-        intercept = mdf.fe_params["Intercept"]
-        slope = mdf.fe_params["spectral_coverage"]
+            intercept = mdf.fe_params["Intercept"]
+            slope = mdf.fe_params["spectral_coverage_2"]
 
-        # Collect SE, t-value, p-value
-        se = mdf.bse["spectral_coverage"]
-        tval = mdf.tvalues["spectral_coverage"]
-        pval = mdf.pvalues["spectral_coverage"]
+            # Collect SE, t-value, p-value
+            se = mdf.bse["spectral_coverage_2"]
+            tval = mdf.tvalues["spectral_coverage_2"]
+            pval = mdf.pvalues["spectral_coverage_2"]
 
-        # Optional: AIC/BIC
-        aic = mdf.aic
-        bic = mdf.bic
+            # Optional: AIC/BIC
+            aic = mdf.aic
+            bic = mdf.bic
 
-        coef_rows.append({
-            "plane": plane,
-            "stim_number": stim,
-            # "stim_type": stim_type,
-            "intercept": intercept,
-            "slope": slope,
-            "se": se,
-            "tval": tval,
-            "pval": pval,
-            "aic": aic,
-            "bic": bic
-        })
+            coef_rows.append({
+                "plane": plane,
+                "stim_number": stim,
+                "stim_type": stim_type,
+                "intercept": intercept,
+                "slope": slope,
+                "se": se,
+                "tval": tval,
+                "pval": pval,
+                "aic": aic,
+                "bic": bic
+            })
 
 coefs_df = pd.DataFrame(coef_rows)
 print(coefs_df)
@@ -192,7 +192,7 @@ g = sns.catplot(
     data=coefs_df,
     col="plane",
     col_order=planes_of_interest,  # ["horizontal", "vertical", "distance"]
-    # row="stim_type",
+    row="stim_type",
     # hue="stim_type",
     x="stim_number",
     y="slope",
@@ -234,6 +234,6 @@ for ax, plane in zip(g.axes.flat, planes_of_interest):
             fontweight="bold"
         )
 
-# g.fig.savefig("numerosity_spectral_coverage_stats.svg", format="svg", bbox_inches="tight")
+# g.fig.savefig("numerosity_spectral_coverage_2_stats.svg", format="svg", bbox_inches="tight")
 plt.show()
 
