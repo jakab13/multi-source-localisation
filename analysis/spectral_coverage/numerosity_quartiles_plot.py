@@ -49,12 +49,15 @@ def label_quartiles(g: pd.DataFrame, min_trials=8) -> pd.DataFrame:
         g["cov_group"] = np.nan
         return g
 
-    q1 = np.quantile(x, 0.10)
-    q3 = np.quantile(x, 0.90)
+    q1 = np.quantile(x, 0.1)
+    q2_low = np.quantile(x, 0.45)
+    q2_high = np.quantile(x, 0.55)
+    q3 = np.quantile(x, 0.9)
 
     lab = np.full(len(g), np.nan, dtype=object)
-    lab[x <= q1] = "low (Q1)"
-    lab[x >= q3] = "high (Q4)"
+    lab[x <= q1] = "low"
+    # lab[(x > q2_low) & (x <= q2_high)] = "mid"
+    lab[x > q3] = "high"
     g["cov_group"] = lab
     return g
 
@@ -82,24 +85,28 @@ agg = (
 )
 agg["sem_resp"] = agg["sd_resp"] / np.sqrt(agg["n_subj"].clip(lower=1))
 # --- colour map you requested ---
+
+blue_cmap = plt.get_cmap("Blues")
+
 COL = {
     # ("forward",  "low (Q1)"):  "#4FA3FF",  # brighter blue
     # ("forward",  "high (Q4)"): "#0B4FA8",  # darker blue
     # ("reversed", "low (Q1)"):  "#FFB15C",  # brighter orange
     # ("reversed", "high (Q4)"): "#CC6D00",  # darker orange
-    ("low (Q1)"):  "#4FA3FF",  # brighter blue
-    ("high (Q4)"): "#0B4FA8",  # darker blue
+    ("low"):  blue_cmap(0.2),  # brighter blue
+    ("mid"):  blue_cmap(0.5),  # brighter blue
+    ("high"): blue_cmap(0.8),  # darker blue
 }
 
 # Optional: keep markers/linestyles consistent across stim_type
 STYLE = {
-    "low (Q1)":  dict(marker="o", linestyle="-"),
-    "high (Q4)": dict(marker="o", linestyle="-"),
+    "low":  dict(marker="o", linestyle="-"),
+    "high": dict(marker="o", linestyle="-"),
 }
 
 plane_order = ["horizontal", "vertical", "distance"]
 # stim_type_order = ["forward", "reversed"]
-cov_order = ["low (Q1)", "high (Q4)"]
+cov_order = ["low", "mid", "high"]
 
 stim_numbers = sorted(df["stim_number"].unique())
 # nrows, ncols = len(stim_type_order), len(plane_order)
@@ -141,12 +148,12 @@ for c, plane in enumerate(plane_order):
         )
 
         # SEM band (ribbon)
-        ax.fill_between(
-            x, m - se, m + se,
-            color=COL[cov_group],
-            alpha=0.20,
-            linewidth=0,
-        )
+        # ax.fill_between(
+        #     x, m - se, m + se,
+        #     color=COL[cov_group],
+        #     alpha=0.20,
+        #     linewidth=0,
+        # )
 
     # veridical reference
     ax.plot(stim_numbers, stim_numbers, linestyle=":", linewidth=1, color="0.4")
